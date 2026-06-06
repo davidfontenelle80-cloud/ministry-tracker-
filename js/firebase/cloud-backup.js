@@ -65,7 +65,24 @@
     localStorage.setItem(markerKey(appId), iso || new Date().toISOString());
   }
 
-  function ensureReady() {
+
+  function localExactKeyIsNewer(data, exactKeys) {
+    var remoteKeys = (data && data.keys) || {};
+    for (var i = 0; i < (exactKeys || []).length; i++) {
+      var key = exactKeys[i];
+      var localRaw = localStorage.getItem(key);
+      var remoteRaw = remoteKeys[key];
+      if (!localRaw || !remoteRaw || localRaw === remoteRaw) continue;
+      try {
+        var localState = JSON.parse(localRaw);
+        var remoteState = JSON.parse(remoteRaw);
+        if (localState && remoteState && localState.updatedAt && remoteState.updatedAt) {
+          if (Date.parse(localState.updatedAt) > Date.parse(remoteState.updatedAt)) return true;
+        }
+      } catch (e) {}
+    }
+    return false;
+  }  function ensureReady() {
     if (!window.KHub || !KHub.Firebase || !KHub.Firebase.db) {
       return Promise.reject(new Error('Firebase not ready'));
     }
