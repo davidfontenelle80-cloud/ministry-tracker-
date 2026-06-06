@@ -1,7 +1,7 @@
 /**
  * cloud-backup.js - KHub Cloud Backup Module
- * Saves localStorage data to Firestore as both a device backup and shared latest save.
- * The shared latest save lets the same app restore the newest state on another device.
+ * Saves localStorage data to Firestore as both a device backup and shared latest device save.
+ * The shared latest device save lets the same app restore the newest state on another device.
  */
 (function () {
   'use strict';
@@ -26,7 +26,7 @@
   }
 
   function latestRef(appId) {
-    return appRef(appId).collection('shared').doc('latest');
+    return appRef(appId).collection('devices').doc('latest');
   }
 
   function markerKey(appId) {
