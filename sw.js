@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy so the cache key changes.
  */
 
-const CACHE_VERSION = 'ministry-tracker-v1';
+const CACHE_VERSION = 'ministry-tracker-v2';
 
 /**
  * All URLs that make up the app shell.

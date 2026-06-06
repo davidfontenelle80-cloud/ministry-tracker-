@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
   <meta name="description" content="Ministry Tracker — field service hour tracker for JW congregation. EN/ES bilingual." />
-  <meta name="theme-color" content="#0b0d12" />
+  <meta name="theme-color" content="#FFFFFF" />
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
@@ -764,6 +764,20 @@
         <span id="lbl_pasteImportBtn">Paste backup text</span>
       </button>
       <div id="lastBackupInfo" class="text-xs text-faint text-center" style="padding-top: 4px;"></div>
+
+      <!-- Cloud backup -->
+      <div style="border-top: 1px solid var(--border); margin: 12px 0;"></div>
+      <div class="text-xs uppercase tracking-wider text-dim font-semibold mb-2">Cloud</div>
+      <button id="btnCloudSave" class="btn btn-secondary w-full">
+        <i class="fa-solid fa-cloud-arrow-up text-accent"></i>
+        <span>Save to Cloud</span>
+      </button>
+      <button id="btnCloudRestore" class="btn btn-secondary w-full">
+        <i class="fa-solid fa-cloud-arrow-down text-blue"></i>
+        <span>Restore from Cloud</span>
+      </button>
+      <div id="cloudBackupInfo" class="text-xs text-faint text-center" style="padding-top: 4px;"></div>
+
       <div style="border-top: 1px solid var(--border); margin: 12px 0;"></div>
       <button id="btnClearMonth" class="btn btn-secondary w-full text-amber">
         <i class="fa-solid fa-eraser"></i>
@@ -801,8 +815,6 @@
       <div class="nav-icon"><i class="fa-solid fa-list"></i></div>
       <span class="nav-label" id="nav_log">Log</span>
     </button>
-    <button class="nav-btn" data-screen="reports">
-      <div class="nav-icon"><i class="fa-solid fa-chart-column"></i></div>
       <span class="nav-label" id="nav_reports">Reports</span>
     </button>
   </div>
@@ -812,8 +824,14 @@
 <div id="modalRoot"></div>
   </div>
 
+  <!-- Firebase SDK (compat — no build step required) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
   <!-- JS load order: KHub infra, then app -->
   <script src="js/config.js"></script>
+  <script src="js/firebase/firebase-config.js"></script>
+  <script src="js/firebase/cloud-backup.js"></script>
   <script src="js/i18n.js"></script>
   <script src="js/theme.js"></script>
   <script src="js/error-boundary.js"></script>

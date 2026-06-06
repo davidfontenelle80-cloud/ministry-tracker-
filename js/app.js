@@ -3260,6 +3260,66 @@ function wireEvents() {
   document.getElementById('importFile').onchange = (e) => {
     const f = e.target.files[0]; if (f) importJSON(f); e.target.value = '';
   };
+
+  // ── Cloud backup ──────────────────────────────────────────────────────────
+  (function setupCloudBackup() {
+    const APP_ID   = 'ministry-tracker';
+    const EXACT_KEYS = [APP_CONFIG.storageKey];
+    const PREFIX   = APP_CONFIG.archivePrefix;
+    const infoEl   = document.getElementById('cloudBackupInfo');
+
+    function refreshCloudInfo() {
+      const ts = window.KHub?.CloudBackup?.lastSaved(APP_ID);
+      if (infoEl) {
+        infoEl.textContent = ts
+          ? 'Last cloud save: ' + new Date(ts).toLocaleString()
+          : 'Not saved to cloud yet';
+      }
+    }
+    refreshCloudInfo();
+
+    const saveBtn    = document.getElementById('btnCloudSave');
+    const restoreBtn = document.getElementById('btnCloudRestore');
+
+    if (!window.KHub?.Firebase?.db) {
+      if (saveBtn)    saveBtn.disabled    = true;
+      if (restoreBtn) restoreBtn.disabled = true;
+      if (infoEl)     infoEl.textContent  = 'Cloud backup unavailable';
+      return;
+    }
+
+    if (saveBtn) {
+      saveBtn.onclick = () => {
+        saveBtn.disabled = true;
+        KHub.CloudBackup.save(APP_ID, EXACT_KEYS, PREFIX)
+          .then(() => { toast('Saved to cloud ☁'); refreshCloudInfo(); })
+          .catch(e => { toast('Cloud save failed'); console.error(e); })
+          .finally(() => { saveBtn.disabled = false; });
+      };
+    }
+
+    if (restoreBtn) {
+      restoreBtn.onclick = () => {
+        openConfirmModal(
+          'Replace your current data with the cloud backup? This cannot be undone.',
+          () => {
+            restoreBtn.disabled = true;
+            KHub.CloudBackup.restore(APP_ID, EXACT_KEYS, PREFIX, () => {
+              toast('Restored from cloud ☁'); location.reload();
+            }).catch(e => {
+              const msg = e.message === 'no-backup'
+                ? 'No cloud backup found for this device'
+                : 'Cloud restore failed';
+              toast(msg); restoreBtn.disabled = false; console.error(e);
+            });
+          },
+          { confirmLabel: 'Restore', danger: true }
+        );
+      };
+    }
+  })();
+  // ─────────────────────────────────────────────────────────────────────────
+
   document.getElementById('btnClearMonth').onclick = () => {
     const mk = currentReportMonth;
     openConfirmModal(t('confirmClearMonth'), () => {
@@ -3327,15 +3387,8 @@ window.onload = function() {
       openBackupReminderModal();
     }
   }, 800);
+  // Auto-save to cloud silently on close / hide
+  if (window.KHub?.CloudBackup) {
+    KHub.CloudBackup.autoSave('ministry-tracker', [APP_CONFIG.storageKey], APP_CONFIG.archivePrefix);
+  }
 };
-
-/* KHub global error handler */
-window.addEventListener('error', function(e) {
-  console.error('[Ministry] Uncaught error:', e.error || e.message);
-  var eb = document.getElementById('error-boundary');
-  var em = document.getElementById('error-message');
-  if (eb && em) { em.textContent = e.message || 'An unexpected error occurred.'; eb.hidden = false; }
-});
-window.addEventListener('unhandledrejection', function(e) {
-  console.error('[Ministry] Unhandled rejection:', e.reason);
-});
