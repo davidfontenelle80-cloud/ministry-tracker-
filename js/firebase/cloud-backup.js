@@ -1,7 +1,6 @@
 /**
  * cloud-backup.js - KHub Cloud Backup Module
- * Saves localStorage data to Firestore as both a device backup and shared latest device save.
- * The shared latest device save lets the same app restore the newest state on another device.
+ * Saves localStorage data to Firestore as both a device backup and a best-effort shared latest save.
  */
 (function () {
   'use strict';
@@ -65,7 +64,6 @@
     localStorage.setItem(markerKey(appId), iso || new Date().toISOString());
   }
 
-
   function localExactKeyIsNewer(data, exactKeys) {
     var remoteKeys = (data && data.keys) || {};
     for (var i = 0; i < (exactKeys || []).length; i++) {
@@ -82,11 +80,27 @@
       } catch (e) {}
     }
     return false;
-  }  function ensureReady() {
+  }
+
+  function ensureReady() {
     if (!window.KHub || !KHub.Firebase || !KHub.Firebase.db) {
       return Promise.reject(new Error('Firebase not ready'));
     }
     return null;
+  }
+
+  function bestEffortLatestSave(appId, payload) {
+    return latestRef(appId).set(payload).catch(function (e) {
+      console.warn('[CloudBackup] latest save skipped:', e);
+      return null;
+    });
+  }
+
+  function getLatestSnapshot(appId) {
+    return latestRef(appId).get().catch(function (e) {
+      console.warn('[CloudBackup] latest read skipped:', e);
+      return null;
+    });
   }
 
   window.KHub.CloudBackup = {
@@ -103,10 +117,9 @@
         keys: collectKeys(exactKeys, scanPrefix)
       };
 
-      return Promise.all([
-        deviceRef(appId).set(payload),
-        latestRef(appId).set(payload)
-      ]).then(function () {
+      return deviceRef(appId).set(payload).then(function () {
+        return bestEffortLatestSave(appId, payload);
+      }).then(function () {
         markSaved(appId, iso);
         return iso;
       });
@@ -116,8 +129,8 @@
       var notReady = ensureReady();
       if (notReady) return notReady;
 
-      return latestRef(appId).get().then(function (latestSnap) {
-        if (latestSnap.exists) return latestSnap;
+      return getLatestSnapshot(appId).then(function (latestSnap) {
+        if (latestSnap && latestSnap.exists) return latestSnap;
         return deviceRef(appId).get();
       }).then(function (snap) {
         if (!snap.exists) return Promise.reject(new Error('no-backup'));
@@ -133,12 +146,13 @@
       var notReady = ensureReady();
       if (notReady) return notReady;
 
-      return latestRef(appId).get().then(function (snap) {
-        if (!snap.exists) return false;
+      return getLatestSnapshot(appId).then(function (snap) {
+        if (!snap || !snap.exists) return false;
         var data = snap.data() || {};
         var remoteISO = savedAtISO(data);
         var localISO = localStorage.getItem(markerKey(appId));
         if (remoteISO && localISO && Date.parse(remoteISO) <= Date.parse(localISO)) return false;
+        if (localExactKeyIsNewer(data, exactKeys)) return false;
         writeKeys(data.keys);
         markSaved(appId, remoteISO);
         if (typeof onSuccess === 'function') onSuccess(data);
