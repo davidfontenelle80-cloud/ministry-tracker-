@@ -1,13 +1,7 @@
 /**
- * cloud-backup.js — KHub Cloud Backup Module
- * Saves / restores localStorage data to Cloud Firestore.
- *
- * Requires: firebase-config.js (KHub.Firebase.db must be available)
- *
- * Usage from app.js:
- *   KHub.CloudBackup.save('ministry-tracker', ['ministry-tracker-v4'], prefixScan);
- *   KHub.CloudBackup.restore('ministry-tracker', ['ministry-tracker-v4'], () => location.reload());
- *   KHub.CloudBackup.autoSave('ministry-tracker', ['ministry-tracker-v4'], prefixScan);
+ * cloud-backup.js - KHub Cloud Backup Module
+ * Saves localStorage data to Firestore as both a device backup and shared latest save.
+ * The shared latest save lets the same app restore the newest state on another device.
  */
 (function () {
   'use strict';
@@ -23,17 +17,25 @@
     return id;
   }
 
-  function docRef(appId) {
-    return KHub.Firebase.db
-      .collection('backups')
-      .doc(appId)
-      .collection('devices')
-      .doc(getDeviceId());
+  function appRef(appId) {
+    return KHub.Firebase.db.collection('backups').doc(appId);
+  }
+
+  function deviceRef(appId) {
+    return appRef(appId).collection('devices').doc(getDeviceId());
+  }
+
+  function latestRef(appId) {
+    return appRef(appId).collection('shared').doc('latest');
+  }
+
+  function markerKey(appId) {
+    return 'khub-cloud-backup-' + appId;
   }
 
   function collectKeys(exactKeys, scanPrefix) {
     var result = {};
-    exactKeys.forEach(function (k) {
+    (exactKeys || []).forEach(function (k) {
       var v = localStorage.getItem(k);
       if (v !== null) result[k] = v;
     });
@@ -46,55 +48,96 @@
     return result;
   }
 
-  window.KHub.CloudBackup = {
+  function savedAtISO(data) {
+    if (!data) return '';
+    if (data.savedAtISO) return data.savedAtISO;
+    if (data.savedAt && typeof data.savedAt.toDate === 'function') return data.savedAt.toDate().toISOString();
+    return '';
+  }
 
+  function writeKeys(savedKeys) {
+    Object.keys(savedKeys || {}).forEach(function (k) {
+      localStorage.setItem(k, savedKeys[k]);
+    });
+  }
+
+  function markSaved(appId, iso) {
+    localStorage.setItem(markerKey(appId), iso || new Date().toISOString());
+  }
+
+  function ensureReady() {
+    if (!window.KHub || !KHub.Firebase || !KHub.Firebase.db) {
+      return Promise.reject(new Error('Firebase not ready'));
+    }
+    return null;
+  }
+
+  window.KHub.CloudBackup = {
     save: function (appId, exactKeys, scanPrefix) {
-      if (!window.KHub || !KHub.Firebase || !KHub.Firebase.db) {
-        return Promise.reject(new Error('Firebase not ready'));
-      }
-      var keys = collectKeys(exactKeys || [], scanPrefix);
+      var notReady = ensureReady();
+      if (notReady) return notReady;
+
+      var iso = new Date().toISOString();
       var payload = {
         appId: appId,
         savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        savedAtISO: iso,
         deviceId: getDeviceId(),
-        keys: keys
+        keys: collectKeys(exactKeys, scanPrefix)
       };
-      return docRef(appId)
-        .set(payload)
-        .then(function () {
-          var ts = new Date().toISOString();
-          localStorage.setItem('khub-cloud-backup-' + appId, ts);
-          return ts;
-        });
+
+      return Promise.all([
+        deviceRef(appId).set(payload),
+        latestRef(appId).set(payload)
+      ]).then(function () {
+        markSaved(appId, iso);
+        return iso;
+      });
     },
 
     restore: function (appId, exactKeys, scanPrefix, onSuccess) {
-      if (!window.KHub || !KHub.Firebase || !KHub.Firebase.db) {
-        return Promise.reject(new Error('Firebase not ready'));
-      }
-      return docRef(appId)
-        .get()
-        .then(function (snap) {
-          if (!snap.exists) {
-            return Promise.reject(new Error('no-backup'));
-          }
-          var data = snap.data();
-          var savedKeys = data.keys || {};
-          Object.keys(savedKeys).forEach(function (k) {
-            localStorage.setItem(k, savedKeys[k]);
-          });
-          if (typeof onSuccess === 'function') onSuccess();
-        });
+      var notReady = ensureReady();
+      if (notReady) return notReady;
+
+      return latestRef(appId).get().then(function (latestSnap) {
+        if (latestSnap.exists) return latestSnap;
+        return deviceRef(appId).get();
+      }).then(function (snap) {
+        if (!snap.exists) return Promise.reject(new Error('no-backup'));
+        var data = snap.data() || {};
+        writeKeys(data.keys);
+        markSaved(appId, savedAtISO(data));
+        if (typeof onSuccess === 'function') onSuccess(data);
+        return data;
+      });
+    },
+
+    restoreLatestIfNewer: function (appId, exactKeys, scanPrefix, onSuccess) {
+      var notReady = ensureReady();
+      if (notReady) return notReady;
+
+      return latestRef(appId).get().then(function (snap) {
+        if (!snap.exists) return false;
+        var data = snap.data() || {};
+        var remoteISO = savedAtISO(data);
+        var localISO = localStorage.getItem(markerKey(appId));
+        if (remoteISO && localISO && Date.parse(remoteISO) <= Date.parse(localISO)) return false;
+        writeKeys(data.keys);
+        markSaved(appId, remoteISO);
+        if (typeof onSuccess === 'function') onSuccess(data);
+        return true;
+      }).catch(function (e) {
+        console.warn('[CloudBackup] restoreLatestIfNewer failed:', e);
+        return false;
+      });
     },
 
     lastSaved: function (appId) {
-      return localStorage.getItem('khub-cloud-backup-' + appId);
+      return localStorage.getItem(markerKey(appId));
     },
 
     autoSave: function (appId, exactKeys, scanPrefix) {
-      if (!window.KHub || !KHub.Firebase || !KHub.Firebase.db) {
-        return;
-      }
+      if (!window.KHub || !KHub.Firebase || !KHub.Firebase.db) return;
       var saving = false;
       function doSave() {
         if (saving) return;
@@ -108,7 +151,5 @@
       });
       window.addEventListener('pagehide', function () { doSave(); });
     }
-
   };
-
 })();
