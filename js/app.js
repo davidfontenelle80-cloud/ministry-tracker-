@@ -3308,7 +3308,7 @@ function wireEvents() {
               toast('Restored from cloud ☁'); location.reload();
             }).catch(e => {
               const msg = e.message === 'no-backup'
-                ? 'No cloud backup found for this device'
+                ? 'No cloud backup found'
                 : 'Cloud restore failed';
               toast(msg); restoreBtn.disabled = false; console.error(e);
             });
@@ -3387,8 +3387,12 @@ window.onload = function() {
       openBackupReminderModal();
     }
   }, 800);
-  // Auto-save to cloud silently on close / hide
+  // Restore the newest cloud state first, then keep saving on close / hide.
   if (window.KHub?.CloudBackup) {
-    KHub.CloudBackup.autoSave('ministry-tracker', [APP_CONFIG.storageKey], APP_CONFIG.archivePrefix);
+    KHub.CloudBackup.restoreLatestIfNewer('ministry-tracker', [APP_CONFIG.storageKey], APP_CONFIG.archivePrefix, () => {
+      location.reload();
+    }).finally(() => {
+      KHub.CloudBackup.autoSave('ministry-tracker', [APP_CONFIG.storageKey], APP_CONFIG.archivePrefix);
+    });
   }
 };
