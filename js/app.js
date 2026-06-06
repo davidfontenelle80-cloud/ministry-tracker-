@@ -3328,3 +3328,14 @@ window.onload = function() {
     }
   }, 800);
 };
+
+/* KHub global error handler */
+window.addEventListener('error', function(e) {
+  console.error('[Ministry] Uncaught error:', e.error || e.message);
+  var eb = document.getElementById('error-boundary');
+  var em = document.getElementById('error-message');
+  if (eb && em) { em.textContent = e.message || 'An unexpected error occurred.'; eb.hidden = false; }
+});
+window.addEventListener('unhandledrejection', function(e) {
+  console.error('[Ministry] Unhandled rejection:', e.reason);
+});

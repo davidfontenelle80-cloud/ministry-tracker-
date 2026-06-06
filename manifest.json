@@ -4,8 +4,8 @@
   "description": "Field service hour tracker for JW congregation \u2014 EN/ES bilingual",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#10B981",
+  "background_color": "#0b0d12",
+  "theme_color": "#0b0d12",
   "orientation": "portrait-primary",
   "icons": [
     {
