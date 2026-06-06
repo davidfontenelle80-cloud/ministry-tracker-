@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'ministry-tracker-v9-cloud-local-newer-guard';
+const CACHE_VERSION = 'ministry-tracker-v10-cloud-device-save-fallback';
 
 /**
  * All URLs that make up the app shell.
