@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'ministry-tracker-v11-manual-time-validation';
+const CACHE_VERSION = 'ministry-tracker-v12-auth-cloud-profiles';
 
 /**
  * All URLs that make up the app shell.
