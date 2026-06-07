@@ -193,6 +193,7 @@ const I18N = {
     newTotal: 'Set total to',
     newTotalAfter: 'New total after save',
     nothingToAdd: 'Nothing to add',
+    enterTimeRequired: 'Enter an amount of time before using this feature.',
     setLowerTitle: 'Total is already higher',
     setLowerMsg: 'This day already has {cur} logged. You can\'t set the total to {target} without editing existing sessions.',
     openSessionsBtn: 'Open sessions for this day',
@@ -359,6 +360,7 @@ const I18N = {
     newTotal: 'Establecer total en',
     newTotalAfter: 'Nuevo total tras guardar',
     nothingToAdd: 'Nada para añadir',
+    enterTimeRequired: 'Ingresa una cantidad de tiempo antes de usar esta funcion.',
     setLowerTitle: 'El total ya es más alto',
     setLowerMsg: 'Este día ya tiene {cur} registrado. No puedes establecer el total en {target} sin editar las sesiones existentes.',
     openSessionsBtn: 'Abrir sesiones de este día',
@@ -2248,7 +2250,7 @@ function openQuickAddModal(dateStr) {
         </div>
         <div class="card-flat duration-tile text-center" id="qaDurationTile">
           <div id="qaDurationLabel" class="text-tiny uppercase tracking-wider text-dim font-bold">${t('addAmount')}</div>
-          <div id="qaDuration" class="display-num text-2xl font-mono text-accent mt-1">0:30</div>
+          <div id="qaDuration" class="display-num text-2xl font-mono text-accent mt-1"></div>
           <div class="text-tiny text-faint mt-1">${t('tapToEdit')}</div>
         </div>
       </div>
@@ -2278,7 +2280,7 @@ function openQuickAddModal(dateStr) {
 
   // Working state
   let qaMode = 'add';       // 'add' or 'set'
-  let qaDurMin = 30;        // default amount
+  let qaDurMin = 0;         // blank until the user enters time
 
   function getCurrentLogged() {
     const date = document.getElementById('qaDate').value;
@@ -2316,12 +2318,11 @@ function openQuickAddModal(dateStr) {
     label.textContent = qaMode === 'add' ? t('addAmount') : t('newTotal');
     // Switching to "set" pre-fills with current logged so the wheel starts somewhere sensible
     if (qaMode === 'set') {
-      qaDurMin = Math.max(getCurrentLogged(), 30);
-      document.getElementById('qaDuration').textContent = formatHM(qaDurMin);
+      qaDurMin = getCurrentLogged();
+      document.getElementById('qaDuration').textContent = qaDurMin > 0 ? formatHM(qaDurMin) : '';
     } else {
-      // back to "add" — reset to a sensible default
-      qaDurMin = 30;
-      document.getElementById('qaDuration').textContent = formatHM(qaDurMin);
+      qaDurMin = 0;
+      document.getElementById('qaDuration').textContent = '';
     }
     refreshPreview();
   }
@@ -2333,7 +2334,7 @@ function openQuickAddModal(dateStr) {
   document.getElementById('qaDurationTile').onclick = () => {
     openDurationWheel(qaDurMin, (newMin) => {
       qaDurMin = newMin;
-      document.getElementById('qaDuration').textContent = formatHM(qaDurMin);
+      document.getElementById('qaDuration').textContent = qaDurMin > 0 ? formatHM(qaDurMin) : '';
       refreshPreview();
     });
   };
@@ -2351,7 +2352,9 @@ function openQuickAddModal(dateStr) {
   document.getElementById('qaSave').onclick = () => {
     const date = document.getElementById('qaDate').value;
     if (!date) { toast(t('invalidJson')); return; }
-    if (qaDurMin <= 0 && qaMode === 'add') { toast(t('invalidJson')); return; }
+    const qaStudiesVal = parseInt(document.getElementById('qaStudies').value) || 0;
+    if (qaDurMin <= 0 && qaMode === 'add' && qaStudiesVal <= 0) { toast(t('enterTimeRequired')); return; }
+    if (qaDurMin <= 0 && qaMode === 'set' && getDayMinutes(date) <= 0 && qaStudiesVal <= 0) { toast(t('enterTimeRequired')); return; }
 
     const cur = getDayMinutes(date);
 
@@ -3120,6 +3123,7 @@ function wireEvents() {
     const date = adjustSelectedDate;
     const current = getDayMinutes(date);
     openDurationWheel(current, (newTotal, studies) => {
+      if (newTotal <= 0 && current <= 0 && (!studies || studies <= 0)) { toast(t('enterTimeRequired')); return; }
       if (newTotal === current && !studies) return;
       if (newTotal < current) {
         // Block — can't go lower without manual edit
@@ -3143,8 +3147,8 @@ function wireEvents() {
   // + Add — add the picked amount on top of current
   document.getElementById('adjBtnAdd').onclick = () => {
     const date = adjustSelectedDate;
-    openDurationWheel(30, (addMin, studies) => {
-      if (addMin <= 0 && (!studies || studies <= 0)) return;
+    openDurationWheel(0, (addMin, studies) => {
+      if (addMin <= 0 && (!studies || studies <= 0)) { toast(t('enterTimeRequired')); return; }
       addSessionForDate(date, addMin || 0, (state.categories[0]||{id:'regular'}).id, '', studies || 0);
       saveState(); vibrate(15); renderAll();
       const parts = [];
