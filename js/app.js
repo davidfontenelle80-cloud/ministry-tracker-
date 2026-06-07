@@ -1564,18 +1564,27 @@ function renderLog() {
   filtered.forEach(s => { (groups[s.date] = groups[s.date] || []).push(s); });
   const dks = Object.keys(groups).sort((a,b) => b.localeCompare(a));
   list.innerHTML = dks.map(dk => {
-    const dayMins = groups[dk].reduce((a,s) => a + s.durationMin, 0);
+    const dayMins = groups[dk].reduce((a,s) => a + (s.durationMin || 0), 0);
     const d = fromYmd(dk);
     const dateLbl = d.toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     return `
       <div>
         <div class="row-between mb-2 px-4">
           <span class="text-xs font-bold uppercase tracking-wider text-dim">${dateLbl}</span>
-          <span class="text-xs font-mono font-bold text-accent">${formatHM(dayMins)}</span>
+          <div class="row gap-2 items-center">
+            <span class="text-xs font-mono font-bold text-accent">${formatHM(dayMins)}</span>
+            <button class="btn btn-secondary text-xs" style="padding:6px 10px;" data-log-add-date="${dk}">
+              <i class="fa-solid fa-plus text-accent"></i>
+              <span>Add</span>
+            </button>
+          </div>
         </div>
         <div class="stack-2">${groups[dk].map(sessionCardHTML).join('')}</div>
       </div>`;
   }).join('');
+  list.querySelectorAll('[data-log-add-date]').forEach(el => {
+    el.onclick = () => openQuickAddModal(el.dataset.logAddDate);
+  });
   list.querySelectorAll('[data-edit-session]').forEach(el => {
     el.onclick = () => openEditSessionModal(el.dataset.editSession);
   });
@@ -2156,8 +2165,12 @@ function openEditSessionModal(sessionId) {
   let lastEdit = 'times'; // 'times' or 'wheel'
 
   function refreshDurFromTimes() {
-    const [sh, sm] = document.getElementById('editStartTime').value.split(':').map(Number);
-    const [eh, em] = document.getElementById('editStopTime').value.split(':').map(Number);
+    const startVal = document.getElementById('editStartTime').value;
+    const stopVal = document.getElementById('editStopTime').value;
+    if (!startVal || !stopVal) return false;
+    const [sh, sm] = startVal.split(':').map(Number);
+    const [eh, em] = stopVal.split(':').map(Number);
+    if (![sh, sm, eh, em].every(Number.isFinite)) return false;
     const d = fromYmd(s.date);
     const a = new Date(d.getFullYear(), d.getMonth(), d.getDate(), sh, sm);
     let b = new Date(d.getFullYear(), d.getMonth(), d.getDate(), eh, em);
@@ -2166,6 +2179,7 @@ function openEditSessionModal(sessionId) {
     workingStopISO = b.toISOString();
     workingDurMin = roundMins(Math.round((b - a)/60000));
     document.getElementById('editSessDuration').textContent = formatHM(workingDurMin);
+    return true;
   }
   document.getElementById('editStartTime').oninput = () => { lastEdit = 'times'; refreshDurFromTimes(); };
   document.getElementById('editStopTime').oninput = () => { lastEdit = 'times'; refreshDurFromTimes(); };
@@ -2203,7 +2217,8 @@ function openEditSessionModal(sessionId) {
   document.querySelector('[data-save-sess]').onclick = () => {
     // Only re-derive from time inputs if user's last edit was the time fields.
     // If they used the wheel, workingStart/Stop/Dur already hold the correct values.
-    if (lastEdit === 'times') refreshDurFromTimes();
+    if (lastEdit === 'times' && !refreshDurFromTimes()) { toast(t('enterTimeRequired')); return; }
+    if (!Number.isFinite(workingDurMin) || workingDurMin < 0) { toast(t('enterTimeRequired')); return; }
     s.startISO = workingStartISO;
     s.stopISO = workingStopISO;
     s.durationMin = workingDurMin;
@@ -3173,6 +3188,8 @@ function wireEvents() {
 
   document.getElementById('adjBtnPlan').onclick = () => openPlanModal(adjustSelectedDate);
   document.getElementById('adjBtnAddDetailed').onclick = () => openQuickAddModal(adjustSelectedDate);
+  const logAddTimeBtn = document.getElementById('logAddTimeBtn');
+  if (logAddTimeBtn) logAddTimeBtn.onclick = () => openQuickAddModal(todayStr());
 
   document.querySelectorAll('[data-log-filter]').forEach(b => b.onclick = () => {
     logFilter = b.dataset.logFilter;
@@ -3273,11 +3290,15 @@ function wireEvents() {
     const infoEl = document.getElementById('cloudBackupInfo');
     const saveBtn = document.getElementById('btnCloudSave');
     const restoreBtn = document.getElementById('btnCloudRestore');
+    const homeSaveBtn = document.getElementById('homeCloudSaveBtn');
+    const homeRestoreBtn = document.getElementById('homeCloudRestoreBtn');
     let autoSaveStarted = false;
 
     if (!window.KHub?.Firebase?.db || !window.KHub?.Firebase?.auth || !window.KHub?.CloudAuth) {
       if (saveBtn) saveBtn.disabled = true;
       if (restoreBtn) restoreBtn.disabled = true;
+      if (homeSaveBtn) homeSaveBtn.disabled = true;
+      if (homeRestoreBtn) homeRestoreBtn.disabled = true;
       if (infoEl) infoEl.textContent = 'Cloud backup unavailable';
       return;
     }
@@ -3305,6 +3326,8 @@ function wireEvents() {
       }
       if (saveBtn) saveBtn.disabled = !user;
       if (restoreBtn) restoreBtn.disabled = !user;
+      if (homeSaveBtn) homeSaveBtn.disabled = !user;
+      if (homeRestoreBtn) homeRestoreBtn.disabled = !user;
       if (infoEl) {
         infoEl.textContent = user
           ? (ts ? 'Last cloud save: ' + new Date(ts).toLocaleString() : 'Signed in. Not saved to cloud yet')
@@ -3350,6 +3373,7 @@ function wireEvents() {
           .finally(() => { saveBtn.disabled = !signedIn(); });
       };
     }
+    if (homeSaveBtn && saveBtn) homeSaveBtn.onclick = () => saveBtn.click();
     if (restoreBtn) {
       restoreBtn.onclick = () => {
         if (!signedIn()) { openAccountDialog(); return; }
@@ -3367,6 +3391,7 @@ function wireEvents() {
         );
       };
     }
+    if (homeRestoreBtn && restoreBtn) homeRestoreBtn.onclick = () => restoreBtn.click();
     refreshCloudInfo();
     KHub.CloudAuth.onChange(function () { refreshCloudInfo(); startUserCloudSync(); });
   })();  // ─────────────────────────────────────────────────────────────────────
