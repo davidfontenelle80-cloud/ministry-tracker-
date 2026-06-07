@@ -1,6 +1,6 @@
 /**
  * cloud-backup.js - KHub Cloud Backup Module
- * Saves localStorage data to Firestore as both a device backup and a best-effort shared latest save.
+ * Saves localStorage data to a Firebase Auth user-scoped Firestore backup.
  */
 (function () {
   'use strict';
@@ -16,20 +16,50 @@
     return id;
   }
 
+  function auth() {
+    return window.KHub && KHub.Firebase && KHub.Firebase.auth;
+  }
+
+  function currentUser() {
+    var a = auth();
+    return a ? a.currentUser : null;
+  }
+
+  function authRequiredError() {
+    var err = new Error('auth-required');
+    err.code = 'auth-required';
+    return err;
+  }
+
+  function ensureReady(requireUser) {
+    if (!window.KHub || !KHub.Firebase || !KHub.Firebase.db || !KHub.Firebase.auth) {
+      return Promise.reject(new Error('Firebase not ready'));
+    }
+    if (requireUser !== false && !currentUser()) {
+      return Promise.reject(authRequiredError());
+    }
+    return null;
+  }
+
   function appRef(appId) {
     return KHub.Firebase.db.collection('backups').doc(appId);
   }
 
+  function userRef(appId) {
+    return appRef(appId).collection('users').doc(currentUser().uid);
+  }
+
   function deviceRef(appId) {
-    return appRef(appId).collection('devices').doc(getDeviceId());
+    return userRef(appId).collection('devices').doc(getDeviceId());
   }
 
   function latestRef(appId) {
-    return appRef(appId).collection('devices').doc('latest');
+    return userRef(appId).collection('meta').doc('latest');
   }
 
   function markerKey(appId) {
-    return 'khub-cloud-backup-' + appId;
+    var user = currentUser();
+    return 'khub-cloud-backup-' + appId + (user ? '-' + user.uid : '');
   }
 
   function collectKeys(exactKeys, scanPrefix) {
@@ -82,20 +112,6 @@
     return false;
   }
 
-  function ensureReady() {
-    if (!window.KHub || !KHub.Firebase || !KHub.Firebase.db) {
-      return Promise.reject(new Error('Firebase not ready'));
-    }
-    return null;
-  }
-
-  function bestEffortLatestSave(appId, payload) {
-    return latestRef(appId).set(payload).catch(function (e) {
-      console.warn('[CloudBackup] latest save skipped:', e);
-      return null;
-    });
-  }
-
   function getLatestSnapshot(appId) {
     return latestRef(appId).get().catch(function (e) {
       console.warn('[CloudBackup] latest read skipped:', e);
@@ -103,14 +119,45 @@
     });
   }
 
+  window.KHub.CloudAuth = {
+    currentUser: currentUser,
+    onChange: function (cb) {
+      var a = auth();
+      if (!a) return function () {};
+      return a.onAuthStateChanged(cb);
+    },
+    signIn: function (email, password) {
+      var notReady = ensureReady(false);
+      if (notReady) return notReady;
+      return auth().signInWithEmailAndPassword(String(email || '').trim(), password);
+    },
+    signUp: function (email, password) {
+      var notReady = ensureReady(false);
+      if (notReady) return notReady;
+      return auth().createUserWithEmailAndPassword(String(email || '').trim(), password);
+    },
+    signOut: function () {
+      var a = auth();
+      return a ? a.signOut() : Promise.resolve();
+    },
+    resetPassword: function (email) {
+      var notReady = ensureReady(false);
+      if (notReady) return notReady;
+      return auth().sendPasswordResetEmail(String(email || '').trim());
+    }
+  };
+
   window.KHub.CloudBackup = {
     save: function (appId, exactKeys, scanPrefix) {
-      var notReady = ensureReady();
+      var notReady = ensureReady(true);
       if (notReady) return notReady;
 
+      var user = currentUser();
       var iso = new Date().toISOString();
       var payload = {
         appId: appId,
+        uid: user.uid,
+        email: user.email || '',
         savedAt: firebase.firestore.FieldValue.serverTimestamp(),
         savedAtISO: iso,
         deviceId: getDeviceId(),
@@ -118,7 +165,7 @@
       };
 
       return deviceRef(appId).set(payload).then(function () {
-        return bestEffortLatestSave(appId, payload);
+        return latestRef(appId).set(payload);
       }).then(function () {
         markSaved(appId, iso);
         return iso;
@@ -126,7 +173,7 @@
     },
 
     restore: function (appId, exactKeys, scanPrefix, onSuccess) {
-      var notReady = ensureReady();
+      var notReady = ensureReady(true);
       if (notReady) return notReady;
 
       return getLatestSnapshot(appId).then(function (latestSnap) {
@@ -143,8 +190,13 @@
     },
 
     restoreLatestIfNewer: function (appId, exactKeys, scanPrefix, onSuccess) {
-      var notReady = ensureReady();
-      if (notReady) return notReady;
+      var notReady = ensureReady(true);
+      if (notReady) {
+        return notReady.catch(function (e) {
+          if (e && e.code === 'auth-required') return false;
+          throw e;
+        });
+      }
 
       return getLatestSnapshot(appId).then(function (snap) {
         if (!snap || !snap.exists) return false;
@@ -167,11 +219,15 @@
       return localStorage.getItem(markerKey(appId));
     },
 
+    isSignedIn: function () {
+      return !!currentUser();
+    },
+
     autoSave: function (appId, exactKeys, scanPrefix) {
-      if (!window.KHub || !KHub.Firebase || !KHub.Firebase.db) return;
+      if (!window.KHub || !KHub.Firebase || !KHub.Firebase.db || !KHub.Firebase.auth) return;
       var saving = false;
       function doSave() {
-        if (saving) return;
+        if (saving || !currentUser()) return;
         saving = true;
         KHub.CloudBackup.save(appId, exactKeys, scanPrefix)
           .catch(function (e) { console.warn('[CloudBackup] autoSave failed:', e); })
@@ -181,6 +237,7 @@
         if (document.visibilityState === 'hidden') doSave();
       });
       window.addEventListener('pagehide', function () { doSave(); });
+      return doSave;
     }
   };
 })();
