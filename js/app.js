@@ -3438,4 +3438,5 @@ window.onload = function() {
     if (shouldShowBackupPopup() && !state.backupBannerDismissed) {
       openBackupReminderModal();
     }
-  }, 800);`n};
+  }, 800);
+};
