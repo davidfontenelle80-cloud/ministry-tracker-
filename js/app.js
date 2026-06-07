@@ -3267,62 +3267,110 @@ function wireEvents() {
 
   // ── Cloud backup ──────────────────────────────────────────────────────────
   (function setupCloudBackup() {
-    const APP_ID   = 'ministry-tracker';
+    const APP_ID = 'ministry-tracker';
     const EXACT_KEYS = [APP_CONFIG.storageKey];
-    const PREFIX   = APP_CONFIG.archivePrefix;
-    const infoEl   = document.getElementById('cloudBackupInfo');
-
-    function refreshCloudInfo() {
-      const ts = window.KHub?.CloudBackup?.lastSaved(APP_ID);
-      if (infoEl) {
-        infoEl.textContent = ts
-          ? 'Last cloud save: ' + new Date(ts).toLocaleString()
-          : 'Not saved to cloud yet';
-      }
-    }
-    refreshCloudInfo();
-
-    const saveBtn    = document.getElementById('btnCloudSave');
+    const PREFIX = APP_CONFIG.archivePrefix;
+    const infoEl = document.getElementById('cloudBackupInfo');
+    const saveBtn = document.getElementById('btnCloudSave');
     const restoreBtn = document.getElementById('btnCloudRestore');
+    let autoSaveStarted = false;
 
-    if (!window.KHub?.Firebase?.db) {
-      if (saveBtn)    saveBtn.disabled    = true;
+    if (!window.KHub?.Firebase?.db || !window.KHub?.Firebase?.auth || !window.KHub?.CloudAuth) {
+      if (saveBtn) saveBtn.disabled = true;
       if (restoreBtn) restoreBtn.disabled = true;
-      if (infoEl)     infoEl.textContent  = 'Cloud backup unavailable';
+      if (infoEl) infoEl.textContent = 'Cloud backup unavailable';
       return;
     }
 
-    if (saveBtn) {
-      saveBtn.onclick = () => {
-        saveBtn.disabled = true;
-        KHub.CloudBackup.save(APP_ID, EXACT_KEYS, PREFIX)
-          .then(() => { toast('Saved to cloud ☁'); refreshCloudInfo(); })
-          .catch(e => { toast('Cloud save failed'); console.error(e); })
-          .finally(() => { saveBtn.disabled = false; });
-      };
+    const accountBtn = document.createElement('button');
+    accountBtn.id = 'btnCloudAccount';
+    accountBtn.className = 'btn btn-secondary w-full';
+    accountBtn.innerHTML = '<i class="fa-solid fa-user-lock text-blue"></i><span>Cloud Account</span>';
+    if (saveBtn && saveBtn.parentNode) saveBtn.parentNode.insertBefore(accountBtn, saveBtn);
+
+    function cloudUser() { return KHub.CloudAuth.currentUser(); }
+    function signedIn() { return !!cloudUser(); }
+    function cloudErr(e) {
+      if (e && e.code === 'auth-required') return 'Sign in to your cloud account first';
+      if (e && e.message === 'no-backup') return 'No cloud backup found';
+      return 'Cloud backup failed';
+    }
+    function refreshCloudInfo() {
+      const user = cloudUser();
+      const ts = window.KHub?.CloudBackup?.lastSaved(APP_ID);
+      if (accountBtn) {
+        accountBtn.innerHTML = user
+          ? '<i class="fa-solid fa-user-check text-accent"></i><span>Signed in: ' + (user.email || 'Cloud account') + '</span>'
+          : '<i class="fa-solid fa-user-lock text-blue"></i><span>Sign in for Cloud Backup</span>';
+      }
+      if (saveBtn) saveBtn.disabled = !user;
+      if (restoreBtn) restoreBtn.disabled = !user;
+      if (infoEl) {
+        infoEl.textContent = user
+          ? (ts ? 'Last cloud save: ' + new Date(ts).toLocaleString() : 'Signed in. Not saved to cloud yet')
+          : 'Sign in to keep this app separate from other users.';
+      }
+    }
+    function openAccountDialog() {
+      const user = cloudUser();
+      if (user) {
+        openConfirmModal('Sign out of cloud backup?', function () {
+          KHub.CloudAuth.signOut().then(function () { toast('Signed out'); refreshCloudInfo(); });
+        }, { confirmLabel: 'Sign out' });
+        return Promise.resolve(null);
+      }
+      return KHub.CloudAuth.openDialog().then(function (result) {
+        if (result === 'reset-sent') toast('Password reset email sent');
+        else if (result) toast('Signed in');
+        refreshCloudInfo();
+        return result;
+      }).catch(function () {});
+    }
+    function startUserCloudSync() {
+      if (!signedIn()) return;
+      KHub.CloudBackup.restoreLatestIfNewer(APP_ID, EXACT_KEYS, PREFIX, function () {
+        location.reload();
+      }).finally(function () {
+        if (!autoSaveStarted) {
+          autoSaveStarted = true;
+          KHub.CloudBackup.autoSave(APP_ID, EXACT_KEYS, PREFIX);
+        }
+        refreshCloudInfo();
+      });
     }
 
+    accountBtn.onclick = openAccountDialog;
+    if (saveBtn) {
+      saveBtn.onclick = () => {
+        if (!signedIn()) { openAccountDialog(); return; }
+        saveBtn.disabled = true;
+        KHub.CloudBackup.save(APP_ID, EXACT_KEYS, PREFIX)
+          .then(() => { toast('Saved to cloud'); refreshCloudInfo(); })
+          .catch(e => { toast(cloudErr(e)); console.error(e); })
+          .finally(() => { saveBtn.disabled = !signedIn(); });
+      };
+    }
     if (restoreBtn) {
       restoreBtn.onclick = () => {
+        if (!signedIn()) { openAccountDialog(); return; }
         openConfirmModal(
-          'Replace your current data with the cloud backup? This cannot be undone.',
+          'Replace your current data with your signed-in cloud backup? This cannot be undone.',
           () => {
             restoreBtn.disabled = true;
             KHub.CloudBackup.restore(APP_ID, EXACT_KEYS, PREFIX, () => {
-              toast('Restored from cloud ☁'); location.reload();
+              toast('Restored from cloud'); location.reload();
             }).catch(e => {
-              const msg = e.message === 'no-backup'
-                ? 'No cloud backup found'
-                : 'Cloud restore failed';
-              toast(msg); restoreBtn.disabled = false; console.error(e);
+              toast(cloudErr(e)); restoreBtn.disabled = !signedIn(); console.error(e);
             });
           },
           { confirmLabel: 'Restore', danger: true }
         );
       };
     }
-  })();
-  // ─────────────────────────────────────────────────────────────────────────
+    refreshCloudInfo();
+    KHub.CloudAuth.onChange(function () { refreshCloudInfo(); startUserCloudSync(); });
+  })();  // ─────────────────────────────────────────────────────────────────────
+
 
   document.getElementById('btnClearMonth').onclick = () => {
     const mk = currentReportMonth;
@@ -3390,13 +3438,4 @@ window.onload = function() {
     if (shouldShowBackupPopup() && !state.backupBannerDismissed) {
       openBackupReminderModal();
     }
-  }, 800);
-  // Restore the newest cloud state first, then keep saving on close / hide.
-  if (window.KHub?.CloudBackup) {
-    KHub.CloudBackup.restoreLatestIfNewer('ministry-tracker', [APP_CONFIG.storageKey], APP_CONFIG.archivePrefix, () => {
-      location.reload();
-    }).finally(() => {
-      KHub.CloudBackup.autoSave('ministry-tracker', [APP_CONFIG.storageKey], APP_CONFIG.archivePrefix);
-    });
-  }
-};
+  }, 800);`n};
