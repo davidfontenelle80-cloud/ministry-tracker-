@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'ministry-tracker-v13-auth-cloud-dialog-retry';
+const CACHE_VERSION = 'ministry-tracker-v14-backup-actions-log-fix';
 
 /**
  * All URLs that make up the app shell.
@@ -122,4 +122,3 @@ self.addEventListener('message', event => {
     self.skipWaiting();
   }
 });
-
