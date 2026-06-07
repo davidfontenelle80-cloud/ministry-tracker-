@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'ministry-tracker-v19-google-cloud-auth';
+const CACHE_VERSION = 'ministry-tracker-v20-cloud-error-details';
 
 /**
  * All URLs that make up the app shell.

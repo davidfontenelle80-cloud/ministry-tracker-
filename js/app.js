@@ -3314,7 +3314,13 @@ function wireEvents() {
     function cloudErr(e) {
       if (e && e.code === 'auth-required') return 'Sign in to your cloud account first';
       if (e && e.message === 'no-backup') return 'No cloud backup found';
-      return 'Cloud backup failed';
+      if (window.KHub?.CloudAuth?.authMessage) return KHub.CloudAuth.authMessage(e);
+      return (e && (e.message || e.code)) || 'Cloud backup failed';
+    }
+    function handleCloudError(e) {
+      console.error(e);
+      toast(cloudErr(e));
+      if (e && e.code === 'auth-required') openAccountDialog();
     }
     function refreshCloudInfo() {
       const user = cloudUser();
@@ -3369,7 +3375,7 @@ function wireEvents() {
         saveBtn.disabled = true;
         KHub.CloudBackup.save(APP_ID, EXACT_KEYS, PREFIX)
           .then(() => { toast('Saved to cloud'); refreshCloudInfo(); })
-          .catch(e => { toast(cloudErr(e)); console.error(e); })
+          .catch(handleCloudError)
           .finally(() => { saveBtn.disabled = !signedIn(); });
       };
     }
@@ -3384,7 +3390,7 @@ function wireEvents() {
             KHub.CloudBackup.restore(APP_ID, EXACT_KEYS, PREFIX, () => {
               toast('Restored from cloud'); location.reload();
             }).catch(e => {
-              toast(cloudErr(e)); restoreBtn.disabled = !signedIn(); console.error(e);
+              handleCloudError(e); restoreBtn.disabled = !signedIn();
             });
           },
           { confirmLabel: 'Restore', danger: true }
