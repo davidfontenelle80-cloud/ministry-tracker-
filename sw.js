@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'ministry-tracker-v21-cloud-permission-message';
+const CACHE_VERSION = 'ministry-tracker-v22-mobile-google-redirect';
 
 /**
  * All URLs that make up the app shell.

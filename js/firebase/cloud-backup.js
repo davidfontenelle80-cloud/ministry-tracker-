@@ -1,4 +1,4 @@
-﻿/**
+/**
  * cloud-backup.js - KHub Cloud Backup Module
  * Saves localStorage data to a Firebase Auth user-scoped Firestore backup.
  */
@@ -110,6 +110,31 @@
       } catch (e) {}
     }
     return false;
+  }
+
+  function useGoogleRedirect() {
+    var ua = (navigator && navigator.userAgent) || '';
+    var standalone = false;
+    try {
+      standalone = !!(navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches));
+    } catch (e) {}
+    return standalone || /iPhone|iPad|iPod|Android/i.test(ua);
+  }
+
+  function googleProvider() {
+    var provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    return provider;
+  }
+
+  function finishGoogleRedirect() {
+    var notReady = ensureReady(false);
+    if (notReady) return notReady;
+    if (!auth().getRedirectResult) return Promise.resolve(null);
+    return auth().getRedirectResult().catch(function (e) {
+      console.warn('[CloudAuth] Google redirect result failed:', e);
+      return null;
+    });
   }
 
   function getLatestSnapshot(appId) {
@@ -230,9 +255,16 @@
     signInWithGoogle: function () {
       var notReady = ensureReady(false);
       if (notReady) return notReady;
-      var provider = new firebase.auth.GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-      return auth().signInWithPopup(provider);
+      var provider = googleProvider();
+      if (useGoogleRedirect() && auth().signInWithRedirect) {
+        return auth().signInWithRedirect(provider).then(function () { return 'redirect-started'; });
+      }
+      return auth().signInWithPopup(provider).catch(function (e) {
+        if ((e && (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request')) && auth().signInWithRedirect) {
+          return auth().signInWithRedirect(provider).then(function () { return 'redirect-started'; });
+        }
+        throw e;
+      });
     },
     signOut: function () {
       var a = auth();
@@ -244,6 +276,7 @@
       return auth().sendPasswordResetEmail(String(email || '').trim());
     },
     openDialog: openAuthDialog,
+    finishGoogleRedirect: finishGoogleRedirect,
     authMessage: authMessage
   };
 
