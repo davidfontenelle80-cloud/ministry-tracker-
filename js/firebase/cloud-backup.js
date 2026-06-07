@@ -125,6 +125,8 @@
     if (code.indexOf('auth/email-already-in-use') !== -1) return 'That email already has an account. Try signing in.';
     if (code.indexOf('auth/weak-password') !== -1) return 'Use a password with at least 6 characters.';
     if (code.indexOf('auth/invalid-email') !== -1) return 'Enter a valid email address.';
+    if (code.indexOf('auth/configuration-not-found') !== -1) return 'Cloud sign-in is not enabled yet. In Firebase Authentication, enable Email/Password sign-in.';
+    if (code.indexOf('auth/requests-from-referer') !== -1) return 'This website is blocked by the Google API key restriction. Add https://davidfontenelle80-cloud.github.io/* to allowed websites.';
     return e && e.message ? e.message : 'Cloud account failed.';
   }
 
@@ -163,7 +165,12 @@
         passEl.value = '';
       }, 100);
       var close = function () { overlay.remove(); };
-      var busy = function (on) { overlay.querySelectorAll('button').forEach(function (b) { b.disabled = on; }); };
+      var busy = function (on) {
+        ['khubCloudSignIn', 'khubCloudCreate', 'khubCloudReset'].forEach(function (id) {
+          var b = document.getElementById(id);
+          if (b) b.disabled = on;
+        });
+      };
       var run = function (promiseFactory, successText) {
         errEl.textContent = '';
         busy(true);
@@ -173,7 +180,6 @@
         }).catch(function (e) {
           errEl.textContent = authMessage(e);
           busy(false);
-          reject(e);
         });
       };
       document.getElementById('khubCloudCancel').onclick = function () { close(); resolve(null); };
