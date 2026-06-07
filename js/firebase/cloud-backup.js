@@ -169,7 +169,6 @@
         }).catch(function (e) {
           errEl.textContent = authMessage(e);
           busy(false);
-          reject(e);
         });
       };
       document.getElementById('khubCloudCancel').onclick = function () { close(); resolve(null); };
