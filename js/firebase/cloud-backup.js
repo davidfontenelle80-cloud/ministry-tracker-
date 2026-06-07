@@ -1,4 +1,4 @@
-/**
+﻿/**
  * cloud-backup.js - KHub Cloud Backup Module
  * Saves localStorage data to a Firebase Auth user-scoped Firestore backup.
  */
@@ -127,6 +127,9 @@
     if (code.indexOf('auth/invalid-email') !== -1) return 'Enter a valid email address.';
     if (code.indexOf('auth/configuration-not-found') !== -1) return 'Cloud sign-in is not enabled yet. In Firebase Authentication, enable Email/Password sign-in.';
     if (code.indexOf('auth/requests-from-referer') !== -1) return 'This website is blocked by the Google API key restriction. Add https://davidfontenelle80-cloud.github.io/* to allowed websites.';
+    if (code.indexOf('auth/unauthorized-domain') !== -1) return 'This website is not authorized for Google sign-in. Add davidfontenelle80-cloud.github.io in Firebase Authentication settings.';
+    if (code.indexOf('auth/popup-blocked') !== -1) return 'The Google sign-in popup was blocked. Allow popups for this site and try again.';
+    if (code.indexOf('auth/popup-closed-by-user') !== -1 || code.indexOf('auth/cancelled-popup-request') !== -1) return 'Google sign-in was cancelled. Try again when you are ready.';
     return e && e.message ? e.message : 'Cloud account failed.';
   }
 
@@ -142,7 +145,11 @@
       overlay.innerHTML =
         '<div style="width:min(420px,100%);background:#fff;color:#111827;border:1px solid #e5e7eb;border-radius:14px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.35);">' +
           '<h3 id="khubCloudAuthTitle" style="margin:0 0 8px;font-size:18px;color:#111827;">Cloud account</h3>' +
-          '<p style="margin:0 0 12px;color:#4b5563;font-size:13px;line-height:1.4;">First time? Enter an email/password and tap Create account. Already made one? Enter it and tap Sign in. Each person needs their own account.</p>' +
+          '<p style="margin:0 0 12px;color:#4b5563;font-size:13px;line-height:1.4;">Use Google, or use the same email/password on every device. Each person needs their own account.</p>' +
+          '<button id="khubCloudGoogle" type="button" style="box-sizing:border-box;width:100%;padding:11px 12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#111827;font-weight:700;margin:2px 0 10px;display:flex;align-items:center;justify-content:center;gap:8px;">' +
+            '<span style="font-size:16px;line-height:1;">G</span><span>Continue with Google</span>' +
+          '</button>' +
+          '<div style="display:flex;align-items:center;gap:10px;color:#6b7280;font-size:12px;margin:2px 0 10px;"><span style="height:1px;background:#e5e7eb;flex:1;"></span><span>or</span><span style="height:1px;background:#e5e7eb;flex:1;"></span></div>' +
           '<label style="display:block;font-size:13px;font-weight:700;margin:10px 0 6px;color:#374151;">Email</label>' +
           '<input id="khubCloudEmail" type="email" autocomplete="off" autocapitalize="none" spellcheck="false" style="box-sizing:border-box;width:100%;padding:11px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#111827;">' +
           '<label id="khubCloudPasswordLabel" style="display:block;font-size:13px;font-weight:700;margin:10px 0 6px;color:#374151;">Password</label>' +
@@ -166,7 +173,7 @@
       }, 100);
       var close = function () { overlay.remove(); };
       var busy = function (on) {
-        ['khubCloudSignIn', 'khubCloudCreate', 'khubCloudReset'].forEach(function (id) {
+        ['khubCloudGoogle', 'khubCloudSignIn', 'khubCloudCreate', 'khubCloudReset'].forEach(function (id) {
           var b = document.getElementById(id);
           if (b) b.disabled = on;
         });
@@ -183,6 +190,9 @@
         });
       };
       document.getElementById('khubCloudCancel').onclick = function () { close(); resolve(null); };
+      document.getElementById('khubCloudGoogle').onclick = function () {
+        run(function () { return window.KHub.CloudAuth.signInWithGoogle(); }, 'signed-in');
+      };
       document.getElementById('khubCloudSignIn').onclick = function () {
         run(function () { return window.KHub.CloudAuth.signIn(emailEl.value, passEl.value); }, 'signed-in');
       };
@@ -215,6 +225,13 @@
       var notReady = ensureReady(false);
       if (notReady) return notReady;
       return auth().createUserWithEmailAndPassword(String(email || '').trim(), password);
+    },
+    signInWithGoogle: function () {
+      var notReady = ensureReady(false);
+      if (notReady) return notReady;
+      var provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      return auth().signInWithPopup(provider);
     },
     signOut: function () {
       var a = auth();
