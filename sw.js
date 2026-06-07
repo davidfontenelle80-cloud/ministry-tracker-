@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'ministry-tracker-v12-auth-cloud-profiles';
+const CACHE_VERSION = 'ministry-tracker-v13-auth-cloud-dialog-retry';
 
 /**
  * All URLs that make up the app shell.
