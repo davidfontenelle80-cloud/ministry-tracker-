@@ -118,6 +118,76 @@
       return null;
     });
   }
+  function authMessage(e) {
+    var code = e && (e.code || e.message) || '';
+    if (code.indexOf('auth/user-not-found') !== -1) return 'No account found for that email.';
+    if (code.indexOf('auth/wrong-password') !== -1 || code.indexOf('auth/invalid-credential') !== -1) return 'Email or password was not correct.';
+    if (code.indexOf('auth/email-already-in-use') !== -1) return 'That email already has an account. Try signing in.';
+    if (code.indexOf('auth/weak-password') !== -1) return 'Use a password with at least 6 characters.';
+    if (code.indexOf('auth/invalid-email') !== -1) return 'Enter a valid email address.';
+    return e && e.message ? e.message : 'Cloud account failed.';
+  }
+
+  function openAuthDialog(startMode) {
+    startMode = startMode || 'signin';
+    return new Promise(function (resolve, reject) {
+      var old = document.getElementById('khubCloudAuthDialog');
+      if (old) old.remove();
+
+      var overlay = document.createElement('div');
+      overlay.id = 'khubCloudAuthDialog';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:18px;';
+      overlay.innerHTML =
+        '<div style="width:min(420px,100%);background:var(--panel,var(--card,#fff));color:var(--text,#111);border:1px solid var(--border,#ddd);border-radius:14px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.35);">' +
+          '<h3 id="khubCloudAuthTitle" style="margin:0 0 8px;font-size:18px;">Cloud account</h3>' +
+          '<p style="margin:0 0 12px;color:var(--muted,var(--text-muted,#666));font-size:13px;line-height:1.4;">Use the same email and password on your phone, tablet, and computer. Each person needs their own account.</p>' +
+          '<label style="display:block;font-size:13px;font-weight:700;margin:10px 0 6px;">Email</label>' +
+          '<input id="khubCloudEmail" type="email" autocomplete="email" style="box-sizing:border-box;width:100%;padding:11px;border-radius:10px;border:1px solid var(--border,#ccc);background:var(--input-bg,#fff);color:var(--text,#111);">' +
+          '<label id="khubCloudPasswordLabel" style="display:block;font-size:13px;font-weight:700;margin:10px 0 6px;">Password</label>' +
+          '<input id="khubCloudPassword" type="password" autocomplete="current-password" style="box-sizing:border-box;width:100%;padding:11px;border-radius:10px;border:1px solid var(--border,#ccc);background:var(--input-bg,#fff);color:var(--text,#111);">' +
+          '<div id="khubCloudAuthError" style="min-height:18px;margin:10px 0;color:#dc2626;font-size:13px;"></div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px;">' +
+            '<button id="khubCloudCancel" type="button" style="padding:10px 12px;border-radius:10px;border:1px solid var(--border,#ccc);background:transparent;color:inherit;">Cancel</button>' +
+            '<button id="khubCloudReset" type="button" style="padding:10px 12px;border-radius:10px;border:1px solid var(--border,#ccc);background:transparent;color:inherit;">Reset password</button>' +
+            '<button id="khubCloudCreate" type="button" style="padding:10px 12px;border-radius:10px;border:1px solid var(--border,#ccc);background:transparent;color:inherit;">Create account</button>' +
+            '<button id="khubCloudSignIn" type="button" style="padding:10px 12px;border-radius:10px;border:0;background:var(--accent,#2563eb);color:white;font-weight:700;">Sign in</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+
+      var emailEl = document.getElementById('khubCloudEmail');
+      var passEl = document.getElementById('khubCloudPassword');
+      var errEl = document.getElementById('khubCloudAuthError');
+      var close = function () { overlay.remove(); };
+      var busy = function (on) { overlay.querySelectorAll('button').forEach(function (b) { b.disabled = on; }); };
+      var run = function (promiseFactory, successText) {
+        errEl.textContent = '';
+        busy(true);
+        promiseFactory().then(function (result) {
+          close();
+          resolve(successText || result);
+        }).catch(function (e) {
+          errEl.textContent = authMessage(e);
+          busy(false);
+          reject(e);
+        });
+      };
+      document.getElementById('khubCloudCancel').onclick = function () { close(); resolve(null); };
+      document.getElementById('khubCloudSignIn').onclick = function () {
+        run(function () { return window.KHub.CloudAuth.signIn(emailEl.value, passEl.value); }, 'signed-in');
+      };
+      document.getElementById('khubCloudCreate').onclick = function () {
+        run(function () { return window.KHub.CloudAuth.signUp(emailEl.value, passEl.value); }, 'created');
+      };
+      document.getElementById('khubCloudReset').onclick = function () {
+        if (!emailEl.value.trim()) { errEl.textContent = 'Enter your email first.'; return; }
+        run(function () { return window.KHub.CloudAuth.resetPassword(emailEl.value); }, 'reset-sent');
+      };
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) { close(); resolve(null); } });
+      emailEl.focus();
+    });
+  }
+
 
   window.KHub.CloudAuth = {
     currentUser: currentUser,
@@ -144,7 +214,9 @@
       var notReady = ensureReady(false);
       if (notReady) return notReady;
       return auth().sendPasswordResetEmail(String(email || '').trim());
-    }
+    },
+    openDialog: openAuthDialog,
+    authMessage: authMessage
   };
 
   window.KHub.CloudBackup = {
