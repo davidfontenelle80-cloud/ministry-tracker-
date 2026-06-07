@@ -3324,10 +3324,10 @@ function wireEvents() {
           ? '<i class="fa-solid fa-user-check text-accent"></i><span>Signed in: ' + (user.email || 'Cloud account') + '</span>'
           : '<i class="fa-solid fa-user-lock text-blue"></i><span>Sign in for Cloud Backup</span>';
       }
-      if (saveBtn) saveBtn.disabled = !user;
-      if (restoreBtn) restoreBtn.disabled = !user;
-      if (homeSaveBtn) homeSaveBtn.disabled = !user;
-      if (homeRestoreBtn) homeRestoreBtn.disabled = !user;
+      if (saveBtn) saveBtn.disabled = false;
+      if (restoreBtn) restoreBtn.disabled = false;
+      if (homeSaveBtn) homeSaveBtn.disabled = false;
+      if (homeRestoreBtn) homeRestoreBtn.disabled = false;
       if (infoEl) {
         infoEl.textContent = user
           ? (ts ? 'Last cloud save: ' + new Date(ts).toLocaleString() : 'Signed in. Not saved to cloud yet')
