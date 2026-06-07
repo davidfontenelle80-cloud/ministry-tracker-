@@ -3315,7 +3315,7 @@ function wireEvents() {
       if (e && e.code === 'auth-required') return 'Sign in to your cloud account first';
       if (e && e.message === 'no-backup') return 'No cloud backup found';
       if (window.KHub?.CloudAuth?.authMessage) return KHub.CloudAuth.authMessage(e);
-      return (e && (e.message || e.code)) || 'Cloud backup failed';
+      return (e && (e.message || e.code)) || 'Cloud backup failed: no error details returned. Refresh and sign in again.';
     }
     function handleCloudError(e) {
       console.error(e);

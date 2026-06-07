@@ -130,6 +130,7 @@
     if (code.indexOf('auth/unauthorized-domain') !== -1) return 'This website is not authorized for Google sign-in. Add davidfontenelle80-cloud.github.io in Firebase Authentication settings.';
     if (code.indexOf('auth/popup-blocked') !== -1) return 'The Google sign-in popup was blocked. Allow popups for this site and try again.';
     if (code.indexOf('auth/popup-closed-by-user') !== -1 || code.indexOf('auth/cancelled-popup-request') !== -1) return 'Google sign-in was cancelled. Try again when you are ready.';
+    if (code.indexOf('permission-denied') !== -1 || code.indexOf('Missing or insufficient permissions') !== -1) return 'Cloud backup is blocked by Firestore rules. Update rules to allow backups/{appId}/users/{yourUserId}.';
     return e && e.message ? e.message : 'Cloud account failed.';
   }
 
