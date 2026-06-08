@@ -3381,19 +3381,55 @@ function wireEvents() {
         return result;
       }).catch(function () {});
     }
+    let cloudSaveTimer = null;
+    let cloudChecking = false;
+    let cloudSaving = false;
+
+    function checkCloudLatest() {
+      if (!signedIn() || cloudChecking) return Promise.resolve();
+      cloudChecking = true;
+      return KHub.CloudBackup.restoreLatestIfNewer(APP_ID, EXACT_KEYS, PREFIX, function () {
+        location.reload();
+      }).catch(function (e) {
+        console.warn('[MinistryCloud] restore check failed', e);
+      }).finally(function () {
+        cloudChecking = false;
+        refreshCloudInfo();
+      });
+    }
+    function saveCloudSoon() {
+      if (!signedIn()) return;
+      clearTimeout(cloudSaveTimer);
+      cloudSaveTimer = setTimeout(function () {
+        if (cloudSaving || !signedIn()) return;
+        cloudSaving = true;
+        KHub.CloudBackup.save(APP_ID, EXACT_KEYS, PREFIX)
+          .then(refreshCloudInfo)
+          .catch(function (e) { console.warn('[MinistryCloud] auto save failed', e); })
+          .finally(function () { cloudSaving = false; });
+      }, 1800);
+    }
     function startUserCloudSync() {
       if (!signedIn()) return;
-      KHub.CloudBackup.restoreLatestIfNewer(APP_ID, EXACT_KEYS, PREFIX, function () {
-        location.reload();
-      }).finally(function () {
+      checkCloudLatest().finally(function () {
         if (!autoSaveStarted) {
           autoSaveStarted = true;
           KHub.CloudBackup.autoSave(APP_ID, EXACT_KEYS, PREFIX);
+          document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') checkCloudLatest();
+            else saveCloudSoon();
+          });
+          window.addEventListener('focus', checkCloudLatest);
+          window.addEventListener('online', checkCloudLatest);
+          document.addEventListener('input', saveCloudSoon, true);
+          document.addEventListener('change', saveCloudSoon, true);
+          document.addEventListener('click', function (e) {
+            if (e && e.target && e.target.closest('button,[data-action],input,select,textarea')) saveCloudSoon();
+          }, true);
         }
         refreshCloudInfo();
       });
     }
-
     accountBtn.onclick = openAccountDialog;
     if (saveBtn) {
       saveBtn.onclick = () => {
