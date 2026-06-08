@@ -760,10 +760,12 @@ function resolveDefaultCategory() {
 }
 
 function quickAddMinutes(mins, dateStr = todayStr()) {
+  mins = parseInt(mins, 10) || 0;
+  if (mins <= 0) return;
   const now = new Date();
   const start = new Date(now.getTime() - mins*60000);
   const cat = resolveDefaultCategory();
-  state.sessions.push({
+  const session = {
     id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
     date: dateStr,
     startISO: start.toISOString(),
@@ -771,13 +773,23 @@ function quickAddMinutes(mins, dateStr = todayStr()) {
     durationMin: mins,
     category: cat,
     note: '', studies: 0,
-  });
+  };
+  state.sessions.push(session);
   state.lastUsedCategory = cat;
   state.sessionsSinceLastBackup = (state.sessionsSinceLastBackup || 0) + 1;
   saveState(); vibrate(15); renderAll();
-  toast(`+${mins} ${t('addedMin')}`);
+  toast(`+${mins} ${t('addedMin')}`, {
+    actionLabel: state.lang === 'es' ? 'Deshacer' : 'Undo',
+    onAction: () => {
+      const idx = state.sessions.findIndex(s => s.id === session.id);
+      if (idx === -1) return;
+      state.sessions.splice(idx, 1);
+      state.sessionsSinceLastBackup = Math.max(0, (state.sessionsSinceLastBackup || 0) - 1);
+      saveState(); vibrate(10); renderAll();
+      toast(state.lang === 'es' ? 'Deshecho' : 'Undone');
+    }
+  });
 }
-
 /* Note: All add-time confirmation prompts removed.
    Adding/editing time is always silent regardless of timer state. */
 
@@ -2949,16 +2961,30 @@ function switchScreen(name) {
 
 /* ===== TOAST ===== */
 let toastTimer;
-function toast(msg) {
+function toast(msg, opts = {}) {
   clearTimeout(toastTimer);
   document.querySelectorAll('.toast').forEach(el => el.remove());
   const el = document.createElement('div');
   el.className = 'toast';
-  el.textContent = msg;
+  if (opts.actionLabel && typeof opts.onAction === 'function') {
+    const text = document.createElement('span');
+    text.textContent = msg;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'toast-action';
+    btn.textContent = opts.actionLabel;
+    btn.onclick = () => {
+      clearTimeout(toastTimer);
+      el.remove();
+      opts.onAction();
+    };
+    el.append(text, btn);
+  } else {
+    el.textContent = msg;
+  }
   document.body.appendChild(el);
-  toastTimer = setTimeout(() => el.remove(), 2400);
+  toastTimer = setTimeout(() => el.remove(), opts.duration || 3200);
 }
-
 /* ===== EVENT WIRING ===== */
 function wireEvents() {
   document.querySelectorAll('.nav-btn').forEach(b => b.onclick = () => switchScreen(b.dataset.screen));
