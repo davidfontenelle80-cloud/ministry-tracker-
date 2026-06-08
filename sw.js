@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'ministry-tracker-v26-auto-cloud-sync';
+const CACHE_VERSION = 'ministry-tracker-v27-quick-add-labels';
 
 /**
  * All URLs that make up the app shell.

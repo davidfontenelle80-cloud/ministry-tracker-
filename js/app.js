@@ -74,7 +74,7 @@ const I18N = {
     goodMorning: 'Good morning', goodAfternoon: 'Good afternoon', goodEvening: 'Good evening',
     todayProgress: "Today's progress", todayMini: 'today',
     day: 'Day', month: 'Month', year: 'Year',
-    quickAdd: 'Quick add', thisWeek: 'This week', logged: 'logged',
+    quickAdd: 'Quick add minutes', quickAddHint: 'Adds time to today. Use the pen for date, category, studies, or Set total.', thisWeek: 'This week', logged: 'logged',
     serviceYear: 'Service year', projection: 'Projection',
     studies: 'Studies', streak: 'Streak', sessions: 'Sessions', serviceDays: 'Service days',
     readyToStart: 'Ready to start', inService: 'In service',
@@ -175,7 +175,7 @@ const I18N = {
     keypadClear: 'Clear',
     hoursLabel: 'Hours',
     minutesLabel: 'Minutes',
-    tapToEdit: 'tap to edit',
+    tapToEdit: 'tap to enter time',
     totalHoursFor: 'Total hours for',
     btnAdjust: 'Adjust',
     btnAdd: 'Add',
@@ -189,8 +189,10 @@ const I18N = {
     actionLabel: 'Action',
     addToTotal: 'Add to total',
     setTotal: 'Set total',
-    addAmount: 'Amount to add',
-    newTotal: 'Set total to',
+    addAmount: 'Time to add',
+    addAmountHelp: 'Adds this much time on top of the day total.',
+    newTotal: 'Set day total to',
+    setTotalHelp: 'Sets the final total for this day. The app adds only the difference.',
     newTotalAfter: 'New total after save',
     nothingToAdd: 'Nothing to add',
     enterTimeRequired: 'Enter an amount of time before using this feature.',
@@ -241,7 +243,7 @@ const I18N = {
     goodMorning: 'Buenos días', goodAfternoon: 'Buenas tardes', goodEvening: 'Buenas noches',
     todayProgress: 'Progreso de hoy', todayMini: 'hoy',
     day: 'Día', month: 'Mes', year: 'Año',
-    quickAdd: 'Añadir rápido', thisWeek: 'Esta semana', logged: 'registrado',
+    quickAdd: 'Añadir minutos', quickAddHint: 'Añade tiempo a hoy. Usa el lápiz para fecha, categoría, cursos o fijar total.', thisWeek: 'Esta semana', logged: 'registrado',
     serviceYear: 'Año de servicio', projection: 'Proyección',
     studies: 'Cursos', streak: 'Racha', sessions: 'Sesiones', serviceDays: 'Días de servicio',
     readyToStart: 'Listo para empezar', inService: 'En servicio',
@@ -342,7 +344,7 @@ const I18N = {
     keypadClear: 'Borrar',
     hoursLabel: 'Horas',
     minutesLabel: 'Minutos',
-    tapToEdit: 'toca para editar',
+    tapToEdit: 'toca para ingresar tiempo',
     totalHoursFor: 'Horas totales del',
     btnAdjust: 'Ajustar',
     btnAdd: 'Añadir',
@@ -356,8 +358,10 @@ const I18N = {
     actionLabel: 'Acción',
     addToTotal: 'Añadir al total',
     setTotal: 'Establecer total',
-    addAmount: 'Cantidad a añadir',
-    newTotal: 'Establecer total en',
+    addAmount: 'Tiempo a añadir',
+    addAmountHelp: 'Añade este tiempo encima del total del día.',
+    newTotal: 'Fijar total del día en',
+    setTotalHelp: 'Fija el total final de este día. La app añade solo la diferencia.',
     newTotalAfter: 'Nuevo total tras guardar',
     nothingToAdd: 'Nada para añadir',
     enterTimeRequired: 'Ingresa una cantidad de tiempo antes de usar esta funcion.',
@@ -804,7 +808,7 @@ function applyI18n() {
   const map = {
     lbl_todayProgress: 'todayProgress', lbl_todayMini: 'todayMini',
     lbl_day: 'day', lbl_month: 'month', lbl_year: 'year',
-    lbl_quickAdd: 'quickAdd', lbl_thisWeek: 'thisWeek', lbl_logged: 'logged',
+    lbl_quickAdd: 'quickAdd', lbl_quickAddHint: 'quickAddHint', lbl_thisWeek: 'thisWeek', lbl_logged: 'logged',
     lbl_serviceYear: 'serviceYear', lbl_serviceYear2: 'serviceYear', lbl_projection: 'projection', lbl_projection2: 'projection',
     lbl_studies: 'studies', lbl_studies2: 'studies', lbl_studies3: 'studies', lbl_streak: 'streak', lbl_serviceDays: 'serviceDays', lbl_serviceDays2: 'serviceDays',
     lbl_note: 'note', lbl_categoryHeader: 'selectCategory', lbl_backupTitle: 'backupTitle', lbl_homeExport: 'exportBtn', lbl_homeImport: 'importBtn', lbl_timerAdjustHint: 'timerAdjustHint', lbl_monthlyTargetTitle: 'monthlyTargetTitle', lbl_perMonthLabel: 'perMonthLabel', lbl_needThisMonth: 'needThisMonth', lbl_totalHoursFor: 'totalHoursFor', lbl_btnAdjust: 'btnAdjust', lbl_btnAdd: 'btnAdd', lbl_btnDeduct: 'btnDeduct', lbl_btnSetPlan: 'btnSetPlan', lbl_btnAddDetailed: 'btnAddDetailed', lbl_sessionsThisDay: 'sessionsThisDay', lbl_navTimer: 'nav_timer', lbl_navCal: 'nav_cal', lbl_navLog: 'nav_log', lbl_navReports: 'nav_reports', lbl_navSettings: 'nav_settings',
@@ -2241,8 +2245,9 @@ function openEditSessionModal(sessionId) {
   };
 }
 
-function openQuickAddModal(dateStr) {
-  dateStr = dateStr || currentTimerDate;
+function openQuickAddModal(dateStr, draft) {
+  draft = draft || {};
+  dateStr = draft.date || dateStr || currentTimerDate;
   openModal(`
     <div class="row-between items-center mb-4">
       <div class="font-bold text-xl">${t('quickAddSession')}</div>
@@ -2278,7 +2283,7 @@ function openQuickAddModal(dateStr) {
         <div class="card-flat duration-tile text-center" id="qaDurationTile">
           <div id="qaDurationLabel" class="text-tiny uppercase tracking-wider text-dim font-bold">${t('addAmount')}</div>
           <div id="qaDuration" class="display-num text-2xl font-mono text-accent mt-1"></div>
-          <div class="text-tiny text-faint mt-1">${t('tapToEdit')}</div>
+          <div id="qaDurationHelp" class="text-tiny text-faint mt-1">${t('addAmountHelp')}</div>
         </div>
       </div>
 
@@ -2291,12 +2296,12 @@ function openQuickAddModal(dateStr) {
 
       <div>
         <div class="text-xs font-bold uppercase text-dim mb-2">${t('addStudies')}</div>
-        <input type="number" id="qaStudies" min="0" value="0" />
+        <input type="number" id="qaStudies" min="0" value="${Math.max(0, parseInt(draft.studies) || 0)}" />
       </div>
 
       <div>
         <div class="text-xs font-bold uppercase text-dim mb-2">${t('addNote')}</div>
-        <textarea id="qaNote" rows="2" maxlength="500"></textarea>
+        <textarea id="qaNote" rows="2" maxlength="500">${escapeHtml(draft.note || '')}</textarea>
       </div>
 
       <div class="row gap-2">
@@ -2306,8 +2311,8 @@ function openQuickAddModal(dateStr) {
     </div>`);
 
   // Working state
-  let qaMode = 'add';       // 'add' or 'set'
-  let qaDurMin = 0;         // blank until the user enters time
+  let qaMode = draft.mode === 'set' ? 'set' : 'add';       // 'add' or 'set'
+  let qaDurMin = Math.max(0, parseInt(draft.durationMin) || 0);         // blank until the user enters time
 
   function getCurrentLogged() {
     const date = document.getElementById('qaDate').value;
@@ -2342,14 +2347,16 @@ function openQuickAddModal(dateStr) {
       b.classList.toggle('active', b.dataset.qaMode === qaMode);
     });
     const label = document.getElementById('qaDurationLabel');
+    const help = document.getElementById('qaDurationHelp');
     label.textContent = qaMode === 'add' ? t('addAmount') : t('newTotal');
+    if (help) help.textContent = qaMode === 'add' ? t('addAmountHelp') : t('setTotalHelp');
     // Switching to "set" pre-fills with current logged so the wheel starts somewhere sensible
     if (qaMode === 'set') {
-      qaDurMin = getCurrentLogged();
+      if (!draft || draft.durationMin === undefined) qaDurMin = getCurrentLogged();
       document.getElementById('qaDuration').textContent = qaDurMin > 0 ? formatHM(qaDurMin) : '';
     } else {
-      qaDurMin = 0;
-      document.getElementById('qaDuration').textContent = '';
+      if (!draft || draft.durationMin === undefined) qaDurMin = 0;
+      document.getElementById('qaDuration').textContent = qaDurMin > 0 ? formatHM(qaDurMin) : '';
     }
     refreshPreview();
   }
@@ -2357,12 +2364,22 @@ function openQuickAddModal(dateStr) {
   document.querySelectorAll('[data-qa-mode]').forEach(b => {
     b.onclick = () => { qaMode = b.dataset.qaMode; applyMode(); vibrate(8); };
   });
+  function readQuickAddDraft() {
+    return {
+      date: document.getElementById('qaDate').value || dateStr,
+      mode: qaMode,
+      durationMin: qaDurMin,
+      category: document.getElementById('qaCat').value,
+      studies: parseInt(document.getElementById('qaStudies').value) || 0,
+      note: document.getElementById('qaNote').value || ''
+    };
+  }
   document.getElementById('qaDate').onchange = refreshCurrent;
   document.getElementById('qaDurationTile').onclick = () => {
+    const nextDraft = readQuickAddDraft();
     openDurationWheel(qaDurMin, (newMin) => {
-      qaDurMin = newMin;
-      document.getElementById('qaDuration').textContent = qaDurMin > 0 ? formatHM(qaDurMin) : '';
-      refreshPreview();
+      nextDraft.durationMin = newMin;
+      setTimeout(() => openQuickAddModal(nextDraft.date, nextDraft), 80);
     });
   };
   document.getElementById('qaViewSessions').onclick = () => {
@@ -2372,6 +2389,9 @@ function openQuickAddModal(dateStr) {
   };
 
   // Initial render
+  if (draft.category) document.getElementById('qaCat').value = draft.category;
+  document.getElementById('qaDuration').textContent = qaDurMin > 0 ? formatHM(qaDurMin) : '';
+  applyMode();
   refreshCurrent();
   refreshPreview();
 
