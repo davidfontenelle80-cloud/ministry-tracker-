@@ -468,7 +468,7 @@
     padding: 12px 16px;
     width: 100%;
     font-family: inherit;
-    font-size: 15px;
+    font-size: 16px; /* 16px or larger or iOS Safari zooms on focus */
     transition: box-shadow 0.15s;
     border: none;
   }

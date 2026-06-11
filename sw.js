@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'ministry-tracker-v30-app-icons';
+const CACHE_VERSION = 'ministry-tracker-v31-sw-registered';
 
 /**
  * All URLs that make up the app shell.
@@ -33,6 +33,7 @@ const PRECACHE_URLS = [
   './css/components.css',
   './css/responsive.css',
   './js/config.js',
+  './js/sw-register.js',
   './js/i18n.js',
   './js/theme.js',
   './js/error-boundary.js',
