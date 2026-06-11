@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v32-credit-hours';
+const CACHE_VERSION = 'ministry-tracker-v33-credit-hours-separated';
 
 const PRECACHE_URLS = [
   './',
@@ -32,7 +32,6 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_VERSION)
       .then(cache => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting())
   );
 });
 

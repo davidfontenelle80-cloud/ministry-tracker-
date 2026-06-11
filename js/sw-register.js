@@ -63,6 +63,12 @@
         return;
       }
 
+      if (SW.registration.waiting && navigator.serviceWorker.controller) {
+        console.log('[KHub.SW] Update already waiting. Safe to reload:', isSafeToReload());
+        if (isSafeToReload()) SW._activateAndReload();
+        else SW._showBanner();
+      }
+
       // ── Listen for a newly installing SW ──────────────────
       SW.registration.addEventListener('updatefound', () => {
         const newSW = SW.registration.installing;
@@ -97,8 +103,8 @@
         }
       });
 
-      // ── Check for updates on load ─────────────────────────
-      SW._checkForUpdate();
+      // ── Force update check on every startup ───────────────
+      SW._checkForUpdate({ force: true });
 
       // ── Schedule 12-hour periodic check ──────────────────
       SW._schedulePeriodicCheck();
@@ -106,15 +112,15 @@
 
     // Called on page load — always triggers a SW re-fetch.
     // Also called by the periodic timer.
-    _checkForUpdate() {
+    _checkForUpdate(options = {}) {
       if (!SW.registration) return;
 
       const last  = parseInt(localStorage.getItem(UPDATE_CHECK_KEY) || '0', 10);
       const now   = Date.now();
       const due   = now - last >= UPDATE_INTERVAL_MS;
 
-      // Always check on first load (last === 0) or when interval has passed
-      if (last === 0 || due) {
+      // Always check on startup; periodic checks use the 12-hour gate.
+      if (options.force || last === 0 || due) {
         console.log('[KHub.SW] Checking for updates…');
         SW.registration.update()
           .then(() => localStorage.setItem(UPDATE_CHECK_KEY, String(Date.now())))
@@ -149,6 +155,9 @@
             location.reload();
           }
         }, { once: true });
+      } else {
+        SW._checkForUpdate({ force: true });
+        SW._showBanner();
       }
     },
 
