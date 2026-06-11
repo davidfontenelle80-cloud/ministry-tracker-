@@ -14,7 +14,7 @@
   window.KHub.Config = {
     // ── Identity ──────────────────────────────────────────
     appName:   'Ministry Tracker',
-    version:   '5.0.0-credit-hours',
+    version:   '5.0.1-credit-hours',
     repoOwner: 'davidfontenelle80-cloud',
     repoName:  'ministry-tracker-',
 
@@ -140,10 +140,15 @@
     }
 
     function migrateCreditState() {
-      if (!state || state.creditSystemVersion === 1) return;
+      if (!state) return;
+
+      const hadLegacyCreditByMonth = Object.values(state.creditByMonth || {}).some(v => (parseInt(v, 10) || 0) > 0);
+      const hadCreditSessions = ensureArray(state.sessions).some(session => normalizeCreditType(session.category) && (session.durationMin || 0) > 0);
+      const hadCreditCategories = ensureArray(state.categories).some(category => normalizeCreditType(category && category.id));
+      const needsMigration = state.creditSystemVersion !== 1 || hadLegacyCreditByMonth || hadCreditSessions || hadCreditCategories || !Array.isArray(state.creditEntries);
+      if (!needsMigration) return;
 
       backupBeforeMigration();
-
       state.creditEntries = ensureArray(state.creditEntries);
       const moved = [];
       const kept = [];
@@ -291,6 +296,7 @@
       if (typeof I18N === 'undefined') return;
       Object.assign(I18N.en, {
         credit: 'Credit',
+        hours: 'Field Service Hours',
         creditHours: 'Credit hours',
         fieldServiceHours: 'Field Service Hours',
         addCredit: 'Add credit',
@@ -306,6 +312,7 @@
       });
       Object.assign(I18N.es, {
         credit: 'Crédito',
+        hours: 'Horas de predicación',
         creditHours: 'Horas de crédito',
         fieldServiceHours: 'Horas de predicación',
         addCredit: 'Añadir crédito',
@@ -362,6 +369,17 @@
           quickCustom.insertAdjacentElement('afterend', btn);
         }
       }
+    }
+
+    function ensureWeekStudiesUI() {
+      const logged = document.getElementById('lbl_logged');
+      if (!logged) return;
+      const { start, end } = getWeekRange();
+      const s = ymd(start), e = ymd(end);
+      const studies = ensureArray(state.sessions)
+        .filter(x => x.date >= s && x.date <= e && x.stopISO)
+        .reduce((a, x) => a + (parseInt(x.studies, 10) || 0), 0);
+      logged.textContent = studies > 0 ? `${t('logged')} · ${studies} ${t('studies')}` : t('logged');
     }
 
     const originalRenderHome = renderHome;
@@ -644,6 +662,7 @@
     renderAll = function () {
       originalRenderAll();
       ensureHomeCreditUI();
+      ensureWeekStudiesUI();
       const creditAdd = document.getElementById('homeAddCreditBtn');
       if (creditAdd) creditAdd.onclick = () => openCreditEntryModal(todayStr());
     };

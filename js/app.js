@@ -7,9 +7,10 @@
 const APP_CONFIG = {
   storageKey: 'ministry-tracker-v4',
   archivePrefix: 'ministry-tracker-archive-sy-',
-  schemaVersion: 4,
+  schemaVersion: 5,
   defaults: {
-    schemaVersion: 4,
+    schemaVersion: 5,
+    creditSystemVersion: 1,
     publisherType: 'regular',
     userName: '',
     userNameHintSeen: false,
@@ -37,15 +38,15 @@ const APP_CONFIG = {
     sessions: [],
     studiesByDate: {},
     plannedByDate: {},
+    creditEntries: [],
     creditByMonth: {},
     categories: [
-      { id: 'regular', label_en: 'Regular', label_es: 'Regular' },
-      { id: 'ldc', label_en: 'LDC', label_es: 'LDC' },
-      { id: 'bethel', label_en: 'Bethel', label_es: 'Betel' },
-      { id: 'construction', label_en: 'Construction', label_es: 'Construcción' },
-      { id: 'pioneerSchool', label_en: 'Pioneer School', label_es: 'Escuela de Precursores' },
+      { id: 'regular', label_en: 'Door-to-door', label_es: 'Casa en casa' },
       { id: 'publicWit', label_en: 'Public Witnessing', label_es: 'Predicación pública' },
-      { id: 'other', label_en: 'Other', label_es: 'Otro' },
+      { id: 'cartWit', label_en: 'Cart Witnessing', label_es: 'Carrito' },
+      { id: 'informalWit', label_en: 'Informal Witnessing', label_es: 'Predicación informal' },
+      { id: 'specialCampaign', label_en: 'Special Campaign', label_es: 'Campaña especial' },
+      { id: 'other', label_en: 'Other Field Service', label_es: 'Otra predicación' },
     ],
   },
 };
@@ -93,7 +94,7 @@ const I18N = {
     all: 'All', thisMonth: 'This month', today: 'Today', empty: 'No sessions yet',
     searchEmpty: 'No sessions with notes matching "{q}"',
     searchPlaceholder: 'Search notes...',
-    monthlyReport: 'Monthly report', hours: 'Hours', credit: 'Credit',
+    monthlyReport: 'Monthly report', hours: 'Field Service Hours', credit: 'Credit',
     share: 'Share', avgMonth: 'Avg / month', byCategory: 'By category', tapEdit: 'tap to edit',
     profile: 'Profile', publisherType: 'Publisher type',
     userNameLabel: 'Your name', userNamePlaceholder: 'Optional', userNameNew: 'New',
@@ -230,7 +231,7 @@ const I18N = {
     lastBackup: 'Last backup',
     never: 'never',
     editCredit: 'Edit credit hours',
-    creditDesc: 'Approved theocratic activities (LDC, Bethel, Pioneer School). Counts toward your monthly total.',
+    creditDesc: 'Approved theocratic activities (LDC, Bethel, Pioneer School). Tracked separately from field service totals.',
     creditHours: 'Credit hours',
     catNameLabel: 'Name (English)',
     catNameLabelEs: 'Name (Spanish)',
@@ -262,7 +263,7 @@ const I18N = {
     all: 'Todo', thisMonth: 'Este mes', today: 'Hoy', empty: 'Sin sesiones aún',
     searchEmpty: 'No hay sesiones con notas que coincidan con "{q}"',
     searchPlaceholder: 'Buscar notas...',
-    monthlyReport: 'Informe mensual', hours: 'Horas', credit: 'Crédito',
+    monthlyReport: 'Informe mensual', hours: 'Horas de predicación', credit: 'Crédito',
     share: 'Compartir', avgMonth: 'Promedio / mes', byCategory: 'Por categoría', tapEdit: 'toca para editar',
     profile: 'Perfil', publisherType: 'Tipo de publicador',
     userNameLabel: 'Tu nombre', userNamePlaceholder: 'Opcional', userNameNew: 'Nuevo',
@@ -399,7 +400,7 @@ const I18N = {
     lastBackup: 'Último respaldo',
     never: 'nunca',
     editCredit: 'Editar horas de crédito',
-    creditDesc: 'Actividades teocráticas aprobadas (LDC, Betel, Escuela). Cuenta hacia tu total mensual.',
+    creditDesc: 'Actividades teocráticas aprobadas (LDC, Betel, Escuela). Se registran aparte de la predicación.',
     creditHours: 'Horas de crédito',
     catNameLabel: 'Nombre (Inglés)',
     catNameLabelEs: 'Nombre (Español)',
@@ -447,17 +448,16 @@ function migrateCategories(s) {
       c.label_es = 'Predicación pública';
     }
   });
-  // Merge old "cart" category into publicWit
+  // Rename old "cart" category into the v5 Cart Witnessing activity tag.
   const hasCart = s.categories.some(c => c.id === 'cart');
   if (hasCart) {
     // Re-tag any existing sessions
     if (Array.isArray(s.sessions)) {
-      s.sessions.forEach(sess => { if (sess.category === 'cart') sess.category = 'publicWit'; });
+      s.sessions.forEach(sess => { if (sess.category === 'cart') sess.category = 'cartWit'; });
     }
     s.categories = s.categories.filter(c => c.id !== 'cart');
-    // Ensure publicWit exists, add it if it doesn't
-    if (!s.categories.some(c => c.id === 'publicWit')) {
-      s.categories.push({ id: 'publicWit', label_en: 'Public Witnessing', label_es: 'Predicación pública' });
+    if (!s.categories.some(c => c.id === 'cartWit')) {
+      s.categories.push({ id: 'cartWit', label_en: 'Cart Witnessing', label_es: 'Carrito' });
     }
   }
   return s;
@@ -520,6 +520,7 @@ function checkServiceYearReset() {
     const archive = {
       sessions: state.sessions,
       studiesByDate: state.studiesByDate,
+      creditEntries: state.creditEntries,
       creditByMonth: state.creditByMonth,
       plannedByDate: state.plannedByDate,
       archivedAt: new Date().toISOString(),
@@ -528,6 +529,7 @@ function checkServiceYearReset() {
     try { localStorage.setItem(archKey, JSON.stringify(archive)); } catch(e) {}
     state.sessions = [];
     state.studiesByDate = {};
+    state.creditEntries = [];
     state.creditByMonth = {};
     state.plannedByDate = {};
     state.carryOverMin = 0;
@@ -554,12 +556,10 @@ function processMonthEndRollover() {
   const isSeptFirst = (now.getMonth() === 8);
 
   if (!isSeptFirst && state.carryOver) {
-    const prevTotal = getMonthMinutes(prevMK) + getMonthCredit(prevMK);
+    const prevTotal = getMonthMinutes(prevMK);
     const remainderMins = prevTotal % 60;
     if (remainderMins > 0) {
-      state.creditByMonth = state.creditByMonth || {};
-      const existing = state.creditByMonth[currentMK] || 0;
-      state.creditByMonth[currentMK] = existing + remainderMins;
+      // Carry-over is a field-service planning helper, not credit-hour storage.
       state.carryOverMin = remainderMins;
     } else {
       state.carryOverMin = 0;
@@ -620,7 +620,14 @@ function getMonthServiceDays(mk) {
   }
   return days.size;
 }
-function getMonthCredit(mk) { return state.creditByMonth[mk] || 0; }
+function getCreditEntriesForMonth(mk) {
+  return (Array.isArray(state.creditEntries) ? state.creditEntries : [])
+    .filter(e => e && e.date && e.date.startsWith(mk) && (parseInt(e.minutes, 10) || 0) > 0);
+}
+function getMonthCredit(mk) {
+  return getCreditEntriesForMonth(mk)
+    .reduce((a, e) => a + (parseInt(e.minutes, 10) || 0), 0);
+}
 function getServiceYearMinutes() {
   const { start, end } = getServiceYearRange();
   const s = ymd(start), e = ymd(end);
@@ -932,14 +939,9 @@ function renderHome() {
   const todayMins = getDayMinutes(todayStr());
   const dailyGoalMins = Math.round(state.dailyGoalHrs * 60);
   const mk = monthKey(today);
-  const monthMins = getMonthMinutes(mk) + getMonthCredit(mk);
+  const monthMins = getMonthMinutes(mk);
   const monthGoalMins = Math.round(state.monthlyGoalHrs * 60);
-  const syMins = getServiceYearMinutes() + Object.entries(state.creditByMonth || {}).reduce((a, [k,v]) => {
-    const [y, m] = k.split('-').map(Number);
-    const d = new Date(y, m-1, 1);
-    const { start, end } = getServiceYearRange();
-    return (d >= start && d <= end) ? a + v : a;
-  }, 0);
+  const syMins = getServiceYearMinutes();
   const syGoalMins = Math.round(state.annualGoalHrs * 60);
 
   updateRing('ringDay', 34, dailyGoalMins ? todayMins/dailyGoalMins : 0);
@@ -1044,7 +1046,7 @@ function renderHome() {
   const perMonthNeeded = remainingNeeded / monthsRemaining;
 
   // Need this month = perMonthNeeded - already logged this month
-  const monthMinsForCalc = getMonthMinutes(mk) + getMonthCredit(mk);
+  const monthMinsForCalc = getMonthMinutes(mk);
   const needThisMonth = Math.max(0, perMonthNeeded - monthMinsForCalc);
 
   // Ahead/behind: compare service-year-so-far to where you "should be"
@@ -1207,7 +1209,7 @@ function renderSuggestions() {
     chips.push({ icon: 'fa-bullseye', color: 'accent', text: `${formatHM(weekNeed)} ${t('needToHitWeek')}`, action: () => switchScreen('timer') });
   }
   const mk = monthKey(new Date());
-  const monthMins = getMonthMinutes(mk) + getMonthCredit(mk);
+  const monthMins = getMonthMinutes(mk);
   const monthGoal = Math.round(state.monthlyGoalHrs * 60);
   const monthNeed = monthGoal - monthMins;
   const dim = daysInMonth(new Date().getFullYear(), new Date().getMonth());
@@ -2613,9 +2615,16 @@ function openCreditEditModal() {
   document.getElementById('creditSave').onclick = () => {
     const h = parseFloat(document.getElementById('creditInput').value) || 0;
     const mins = Math.round(h * 60);
-    state.creditByMonth = state.creditByMonth || {};
-    if (mins <= 0) delete state.creditByMonth[mk];
-    else state.creditByMonth[mk] = mins;
+    state.creditEntries = (state.creditEntries || []).filter(e => !e.date || !e.date.startsWith(mk) || e.id !== 'c_manual_month_' + mk);
+    if (mins > 0) {
+      state.creditEntries.push({
+        id: 'c_manual_month_' + mk,
+        date: mk + '-01',
+        minutes: mins,
+        type: 'otherCredit',
+        note: 'Manual monthly credit total',
+      });
+    }
     saveState(); closeModal(); renderAll(); toast(t('save'));
   };
 }
@@ -2817,6 +2826,7 @@ function importJSONFromText(text) {
     // Strip private fields and merge
     const { _archives, _exportedAt, ...rest } = obj;
     state = { ...APP_CONFIG.defaults, ...rest };
+    if (!Array.isArray(state.creditEntries)) state.creditEntries = [];
     saveState(); applyTheme(); renderAll(); toast(t('importSuccess'));
     return true;
   } catch(e) { toast(t('invalidJson')); return false; }
@@ -2871,9 +2881,8 @@ function buildReportText(mk) {
   const studies = getMonthStudies(mk);
   const credit = getMonthCredit(mk);
   const serviceDays = getMonthServiceDays(mk);
-  const totalMins = mins + credit;
   const dateStamp = new Date().toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  return `${t('reportText')} — ${monthName} ${y}\n\n${t('hours')}: ${(totalMins/60).toFixed(1)} (${formatHM(totalMins)})\n${t('studies')}: ${studies}\n${credit ? `${t('credit')}: ${formatHM(credit)}\n` : ''}${t('serviceDays')}: ${serviceDays}\n\n— ${dateStamp}`;
+  return `${t('reportText')} — ${monthName} ${y}\n\n${t('hours')}: ${formatHM(mins)}\n${t('creditHours')}: ${formatHM(credit)}\n${t('studies')}: ${studies}\n${t('serviceDays')}: ${serviceDays}\n\n— ${dateStamp}`;
 }
 
 // Small picker for sharing report text: lets user choose Messages/Mail/etc. OR Copy.
@@ -3489,6 +3498,7 @@ function wireEvents() {
     const mk = currentReportMonth;
     openConfirmModal(t('confirmClearMonth'), () => {
       state.sessions = state.sessions.filter(s => !s.date.startsWith(mk));
+      state.creditEntries = (state.creditEntries || []).filter(e => !e.date || !e.date.startsWith(mk));
       delete (state.creditByMonth || {})[mk];
       saveState(); renderAll(); toast(t('cleared'));
     }, { confirmLabel: t('clearMonth'), danger: true });

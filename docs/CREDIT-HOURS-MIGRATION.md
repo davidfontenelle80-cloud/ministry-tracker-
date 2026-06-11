@@ -96,6 +96,16 @@ ministry-tracker-v4
 
 cloud save/restore continues to work. When restored data loads, the migration layer normalizes it into the v5 credit model.
 
+## v5.0.1 hardening
+
+The follow-up hardening pass makes the separation native in the base app, not only the compatibility shim:
+
+- `APP_CONFIG.defaults` now starts with `schemaVersion: 5`, `creditSystemVersion: 1`, `creditEntries: []`, and field-service-only activity tags.
+- Month, service-year, goal, ring, pace, projection, and suggestion calculations use only regular field service sessions.
+- Credit totals come from `creditEntries` only; legacy `creditByMonth` is treated as migration input, not active monthly storage.
+- Service-year archives include `creditEntries`, and clear-month removes both field sessions and credit entries for that month.
+- The service worker now checks for updates on every startup and uses a waiting-service-worker banner/refresh path instead of requiring a hard refresh.
+
 ## Testing checklist
 
 Test with a clean profile:
