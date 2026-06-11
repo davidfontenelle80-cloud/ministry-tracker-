@@ -398,8 +398,8 @@
       updateRing('ringMonth', 48, monthGoalMins ? monthMins / monthGoalMins : 0);
       updateRing('ringYear', 62, syGoalMins ? syMins / syGoalMins : 0);
       const rd = document.getElementById('ringDay'); if (rd) rd.setAttribute('stroke', 'var(--accent)');
-      const rm = document.getElementById('ringMonth'); if (rm) rm.setAttribute('stroke', 'var(--accent)');
-      const ry = document.getElementById('ringYear'); if (ry) ry.setAttribute('stroke', 'var(--accent)');
+      const rm = document.getElementById('ringMonth'); if (rm) rm.setAttribute('stroke', 'var(--amber)');
+      const ry = document.getElementById('ringYear'); if (ry) ry.setAttribute('stroke', 'var(--blue)');
 
       document.getElementById('homeTodayHours').textContent = formatHM(todayMins);
       document.getElementById('ringDayVal').textContent = formatHM(todayMins);
