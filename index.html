@@ -351,24 +351,30 @@
         <div id="timerCategoryChips" class="cat-chip-row"></div>
       </div>
 
-      <!-- Live studies stepper (only when timer is running) -->
-      <div id="timerStudiesPanel" class="card-flat row-between items-center w-full mt-4 hidden" style="padding: 10px 14px;">
-        <div class="row gap-2 items-center">
-          <i class="fa-solid fa-book text-amber"></i>
-          <div>
-            <div class="text-sm font-semibold" id="lbl_studies2">Studies</div>
-            <div class="text-tiny text-faint" id="lbl_studiesHint">Tap + during the session</div>
+      <!-- Bible courses stepper -->
+      <div id="timerStudiesPanel" class="card-flat w-full mt-4 hidden" style="padding: 10px 14px;">
+        <div class="row-between items-center">
+          <div class="row gap-2 items-center">
+            <i class="fa-solid fa-book text-amber"></i>
+            <div>
+              <div class="text-sm font-semibold" id="lbl_studies2">Studies</div>
+              <div class="text-tiny text-faint" id="lbl_studiesHint">Tap + before or during the session</div>
+            </div>
+          </div>
+          <div class="row gap-2 items-center">
+            <button class="btn btn-secondary btn-icon" id="timerStudyMinus" style="width:36px;height:36px;" aria-label="Decrease studies">
+              <i class="fa-solid fa-minus text-coral" style="font-size: 12px;"></i>
+            </button>
+            <div id="timerStudyCount" class="display-num font-mono text-lg" style="min-width: 24px; text-align: center;">0</div>
+            <button class="btn btn-secondary btn-icon" id="timerStudyPlus" style="width:36px;height:36px;" aria-label="Increase studies">
+              <i class="fa-solid fa-plus text-accent" style="font-size: 12px;"></i>
+            </button>
           </div>
         </div>
-        <div class="row gap-2 items-center">
-          <button class="btn btn-secondary btn-icon" id="timerStudyMinus" style="width:36px;height:36px;" aria-label="Decrease studies">
-            <i class="fa-solid fa-minus text-coral" style="font-size: 12px;"></i>
-          </button>
-          <div id="timerStudyCount" class="display-num font-mono text-lg" style="min-width: 24px; text-align: center;">0</div>
-          <button class="btn btn-secondary btn-icon" id="timerStudyPlus" style="width:36px;height:36px;" aria-label="Increase studies">
-            <i class="fa-solid fa-plus text-accent" style="font-size: 12px;"></i>
-          </button>
-        </div>
+        <button id="timerStudyOnlySave" class="btn btn-secondary w-full text-sm mt-3 hidden" style="padding:10px 12px;">
+          <i class="fa-solid fa-book text-amber"></i>
+          <span id="lbl_saveStudyOnly">Save study only</span>
+        </button>
       </div>
 
       <!-- Inline note field with expand option -->

@@ -63,6 +63,7 @@ let logSearch = ''; // search query for Log notes
 let liveTickInterval = null;
 let lastInteraction = Date.now();
 let longPressTimer = null;
+let pendingStudiesByDate = {};
 let pendingCategory = (function() {
   const last = state.lastUsedCategory;
   if (last && state.categories && state.categories.some(c => c.id === last)) return last;
@@ -132,6 +133,9 @@ const I18N = {
     keepRunning: 'Keep running', saveStop: 'Save & stop', discard: 'Discard',
     pickStart: 'Start time', pickStop: 'Stop time',
     quickAddSession: 'Quick add session', addStudies: 'Studies conducted',
+    saveStudyOnly: 'Save study only',
+    studiesHintReady: 'Tap + before Start, or save a study only',
+    studiesHintActive: 'Tap + during the session',
     studiesOptional: 'Optional, leave 0 if none',
     noteOptionalPlaceholder: 'Optional note (Bible study, return visit, etc.)',
     addNote: 'Note (optional)', selectCategory: 'Category',
@@ -301,6 +305,9 @@ const I18N = {
     keepRunning: 'Seguir', saveStop: 'Guardar y detener', discard: 'Descartar',
     pickStart: 'Hora de inicio', pickStop: 'Hora de fin',
     quickAddSession: 'Añadir sesión rápida', addStudies: 'Cursos realizados',
+    saveStudyOnly: 'Guardar solo curso',
+    studiesHintReady: 'Toca + antes de iniciar, o guarda solo un curso',
+    studiesHintActive: 'Toca + durante la sesión',
     studiesOptional: 'Opcional, deja 0 si no hay',
     noteOptionalPlaceholder: 'Nota opcional (curso bíblico, revisita, etc.)',
     addNote: 'Nota (opcional)', selectCategory: 'Categoría',
@@ -659,19 +666,30 @@ function getMonthPlannedTotal(mk) {
   Object.entries(state.plannedByDate || {}).forEach(([d, m]) => { if (d.startsWith(mk)) total += m; });
   return total;
 }
+function getPendingStudiesForDate(date) {
+  return Math.max(0, parseInt(pendingStudiesByDate[date] || 0, 10) || 0);
+}
+function setPendingStudiesForDate(date, count) {
+  count = Math.max(0, parseInt(count, 10) || 0);
+  if (count > 0) pendingStudiesByDate[date] = count;
+  else delete pendingStudiesByDate[date];
+}
 
 /* ===== TIMER ===== */
 function startTimer(dateStr) {
   if (state.activeTimer) return;
+  const timerDate = dateStr || todayStr();
   // Make sure pendingCategory is still valid
   if (!state.categories.find(c => c.id === pendingCategory)) {
     pendingCategory = (state.categories[0] || { id: 'regular' }).id;
   }
+  const pendingStudies = getPendingStudiesForDate(timerDate);
+  setPendingStudiesForDate(timerDate, 0);
   state.activeTimer = {
     startISO: new Date().toISOString(),
-    date: dateStr || todayStr(),
+    date: timerDate,
     category: pendingCategory,
-    studyCount: 0, note: '',
+    studyCount: pendingStudies, note: '',
   };
   saveState(); vibrate(20); startLiveTick(); renderAll();
 }
@@ -817,7 +835,7 @@ function applyI18n() {
     lbl_day: 'day', lbl_month: 'month', lbl_year: 'year',
     lbl_quickAdd: 'quickAdd', lbl_quickAddHint: 'quickAddHint', lbl_thisWeek: 'thisWeek', lbl_logged: 'logged',
     lbl_serviceYear: 'serviceYear', lbl_serviceYear2: 'serviceYear', lbl_projection: 'projection', lbl_projection2: 'projection',
-    lbl_studies: 'studies', lbl_studies2: 'studies', lbl_studies3: 'studies', lbl_streak: 'streak', lbl_serviceDays: 'serviceDays', lbl_serviceDays2: 'serviceDays',
+    lbl_studies: 'studies', lbl_studies2: 'studies', lbl_studies3: 'studies', lbl_saveStudyOnly: 'saveStudyOnly', lbl_streak: 'streak', lbl_serviceDays: 'serviceDays', lbl_serviceDays2: 'serviceDays',
     lbl_note: 'note', lbl_categoryHeader: 'selectCategory', lbl_backupTitle: 'backupTitle', lbl_homeExport: 'exportBtn', lbl_homeImport: 'importBtn', lbl_timerAdjustHint: 'timerAdjustHint', lbl_monthlyTargetTitle: 'monthlyTargetTitle', lbl_perMonthLabel: 'perMonthLabel', lbl_needThisMonth: 'needThisMonth', lbl_totalHoursFor: 'totalHoursFor', lbl_btnAdjust: 'btnAdjust', lbl_btnAdd: 'btnAdd', lbl_btnDeduct: 'btnDeduct', lbl_btnSetPlan: 'btnSetPlan', lbl_btnAddDetailed: 'btnAddDetailed', lbl_sessionsThisDay: 'sessionsThisDay', lbl_navTimer: 'nav_timer', lbl_navCal: 'nav_cal', lbl_navLog: 'nav_log', lbl_navReports: 'nav_reports', lbl_navSettings: 'nav_settings',
     lbl_tapChange: 'tapChange', lbl_sessionsOnDay: 'sessionsOnDay',
     lbl_monthlyPlan: 'monthlyPlan', lbl_tapDayToPlan: 'tapDayToPlan',
@@ -1245,6 +1263,9 @@ function renderTimer() {
   const mainLabel = document.getElementById('timerMainLabel');
   const status = document.getElementById('timerStatusLabel');
   const sub = document.getElementById('timerSubtitle');
+  const studiesPanel = document.getElementById('timerStudiesPanel');
+  const studiesHint = document.getElementById('lbl_studiesHint');
+  const studyOnlySave = document.getElementById('timerStudyOnlySave');
 
   const adjusters = document.getElementById('timerAdjusters');
   if (isActiveHere) {
@@ -1258,12 +1279,14 @@ function renderTimer() {
     const t1 = new Date(state.activeTimer.startISO);
     sub.textContent = `${t('start')}: ${t1.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
     document.getElementById('timerStudyCount').textContent = state.activeTimer.studyCount || 0;
+    if (studiesHint) studiesHint.textContent = t('studiesHintActive');
+    if (studyOnlySave) studyOnlySave.classList.add('hidden');
     // Sync inline note from state (only when textarea isn't focused, to avoid clobbering active typing)
     const noteInlineEl = document.getElementById('timerNoteInline');
     if (noteInlineEl && noteInlineEl !== document.activeElement) {
       noteInlineEl.value = state.activeTimer.note || '';
     }
-    document.getElementById('timerStudiesPanel').classList.remove('hidden');
+    studiesPanel.classList.remove('hidden');
     document.getElementById('timerNotePanel').classList.remove('hidden');
     if (adjusters) adjusters.classList.remove('hidden');
   } else {
@@ -1274,10 +1297,13 @@ function renderTimer() {
     mainIcon.className = 'fa-solid fa-play text-3xl mb-1';
     mainLabel.textContent = t('start');
     sub.textContent = '—';
-    document.getElementById('timerStudyCount').textContent = '0';
+    const pendingStudies = getPendingStudiesForDate(currentTimerDate);
+    document.getElementById('timerStudyCount').textContent = pendingStudies;
+    if (studiesHint) studiesHint.textContent = t('studiesHintReady');
+    if (studyOnlySave) studyOnlySave.classList.toggle('hidden', pendingStudies <= 0);
     const noteInlineElInactive = document.getElementById('timerNoteInline');
     if (noteInlineElInactive) noteInlineElInactive.value = '';
-    document.getElementById('timerStudiesPanel').classList.add('hidden');
+    studiesPanel.classList.toggle('hidden', isAnyActive);
     document.getElementById('timerNotePanel').classList.add('hidden');
     if (adjusters) adjusters.classList.add('hidden');
   }
@@ -3053,18 +3079,38 @@ function wireEvents() {
     if (state.activeTimer) state.confirmClose ? openConfirmCloseTimer() : stopTimer({save: true});
     else startTimer(currentTimerDate);
   };
-  // Studies stepper on the running timer
+  // Studies stepper works before Start and during an active timer.
   document.getElementById('timerStudyPlus').onclick = () => {
-    if (!state.activeTimer) { toast(t('readyToStart')); return; }
-    state.activeTimer.studyCount = (state.activeTimer.studyCount || 0) + 1;
-    saveState(); vibrate(10); renderTimer();
+    if (state.activeTimer) {
+      if (state.activeTimer.date !== currentTimerDate) { toast(t('inService')); return; }
+      state.activeTimer.studyCount = (state.activeTimer.studyCount || 0) + 1;
+      saveState();
+    } else {
+      setPendingStudiesForDate(currentTimerDate, getPendingStudiesForDate(currentTimerDate) + 1);
+    }
+    vibrate(10); renderTimer();
   };
   document.getElementById('timerStudyMinus').onclick = () => {
-    if (!state.activeTimer) { toast(t('readyToStart')); return; }
-    const cur = state.activeTimer.studyCount || 0;
-    if (cur <= 0) return;
-    state.activeTimer.studyCount = cur - 1;
-    saveState(); vibrate(8); renderTimer();
+    if (state.activeTimer) {
+      if (state.activeTimer.date !== currentTimerDate) { toast(t('inService')); return; }
+      const cur = state.activeTimer.studyCount || 0;
+      if (cur <= 0) return;
+      state.activeTimer.studyCount = cur - 1;
+      saveState();
+    } else {
+      const cur = getPendingStudiesForDate(currentTimerDate);
+      if (cur <= 0) return;
+      setPendingStudiesForDate(currentTimerDate, cur - 1);
+    }
+    vibrate(8); renderTimer();
+  };
+  document.getElementById('timerStudyOnlySave').onclick = () => {
+    if (state.activeTimer) { toast(t('inService')); return; }
+    const count = getPendingStudiesForDate(currentTimerDate);
+    if (count <= 0) return;
+    addSessionForDate(currentTimerDate, 0, resolveDefaultCategory(), '', count);
+    setPendingStudiesForDate(currentTimerDate, 0);
+    saveState(); vibrate(12); renderAll(); toast(t('save'));
   };
 
   // Inline note field on the running timer
