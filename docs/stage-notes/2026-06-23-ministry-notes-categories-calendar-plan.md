@@ -1,62 +1,99 @@
 ---
-title: "TEMP — Ministry Notes + Categories + Calendar Build Checklist"
+title: "TEMP — Ministry Notes & Reminders Implementation Tracker"
 app: "Ministry Tracker"
 repo: "davidfontenelle80-cloud/ministry-tracker-"
-stage: "Active build supervision"
-status: "active-temp-build-file"
+reference_repo: "davidfontenelle80-cloud/note-clip"
+boilerplate_repo: "davidfontenelle80-cloud/KHub-Boilerplate"
+stage: "Stage 0 — tracker update before coding"
+status: "active implementation tracker"
 created: "2026-06-23"
 updated: "2026-06-23"
 owner: "David"
 supervisor: "App Supervisor / Builder Sol"
 priority: "high"
-source_app_to_inspect: "davidfontenelle80-cloud/note-clip"
-target_app: "davidfontenelle80-cloud/ministry-tracker-"
-implementation_language: "Inspect, document, then duplicate/adapt structure. Do not merge."
+source_of_truth: true
 temporary_file: true
-delete_after: "Delete this markdown after Ministry Notes/Categories/Calendar feature is fully built, tested, live-approved, and final documentation is moved into permanent deployment/history docs."
-may_delete_when:
-  - "All checklist items are complete."
-  - "Live GitHub Pages is verified."
-  - "Cache version is confirmed current."
-  - "David or App Supervisor marks feature approved."
+must_update_after_each_stage: true
+delete_after: "Feature is implemented, tested, pushed, live-approved, summarized, and no longer needed as working memory."
+implementation_language: "Inspect Note Clip, document how it works, then duplicate/adapt the same structure inside Ministry Tracker. Do not merge Note Clip into Ministry Tracker."
 last_verified_live: null
-current_owner: "Codex/Coworker"
+current_owner: "Codex/Coworker/Claude/ChatGPT"
 commit_history: []
 ---
 
-# TEMP — Ministry Notes + Categories + Calendar Build Checklist
+# TEMP — Ministry Notes & Reminders Implementation Tracker
+
+## MASTER RULE — THIS FILE IS THE SOURCE OF TRUTH
+
+Before making code changes:
+
+1. Read this entire document.
+2. Inspect the actual repo.
+3. Compare repo state to this document.
+4. If repo state differs, update this document first.
+5. Do not code until the inspection report is added.
+
+After every completed stage:
+
+- Update checklist items.
+- Add commit hash.
+- Add files changed.
+- Add tests run.
+- Add screenshots if UI changed.
+- Add cache version before/after.
+- Add mobile verification.
+- Add desktop verification.
+- Add light/dark verification.
+- Add English/Spanish verification.
+- Add live GitHub Pages verification.
+- Add remaining risks.
+
+Never delete completed checklist items during the build. Mark them COMPLETE with commit/hash/date.
+
+Delete this temporary MD only after:
+
+- Feature complete.
+- QA complete.
+- Mobile verified.
+- Desktop verified.
+- Light/dark verified.
+- English/Spanish verified.
+- Export/import verified.
+- Cloud backup verified.
+- Live GitHub Pages verified.
+- Final summary recorded.
 
 ## Purpose of This Temporary File
 
-This is a temporary working memory file for Codex/Coworker while building the Ministry Notes feature.
+This is the temporary working tracker for the Ministry Tracker Notes & Reminders buildout.
 
-Use this file as the source of truth during the build. Update it as work progresses. Check off completed items. Add commit hashes, files changed, bugs found, and remaining risks.
+Purpose:
 
-When the feature is fully implemented, tested, live-approved, and final documentation has been moved into permanent docs, this temporary markdown file may be deleted.
+- Prevent model drift.
+- Let Codex, CoWork, Claude, or ChatGPT resume after credits/context loss.
+- Track what was done, what is left, how it was done, commits, files, tests, risks, screenshots, and live verification.
+- Keep one shared source of truth for staging decisions.
+- Force every worker to update progress after each stage.
 
-## Main Instruction
+This file must be deleted only after the full buildout is implemented, tested, live-approved, and summarized elsewhere.
 
-Inspect how Note Clip's Categories → Notes → Calendar workflow works. Document that behavior. Then duplicate/adapt the same structure inside Ministry Tracker as a separate Ministry Notes feature.
+## MAIN PROJECT GOAL
 
-Do **not** merge Note Clip into Ministry Tracker.
+Add a new **Notes & Reminders** feature to Ministry Tracker by duplicating/adapting the Note Clip **Categories → Notes → Calendar** workflow.
 
-Do **not** combine Note Clip notes with Ministry service categories.
+Important wording:
 
-Do **not** reuse Ministry Tracker's existing `categories` array for this feature.
+- Do **not** “merge” Note Clip into Ministry Tracker.
+- Inspect Note Clip, document how it works, then duplicate/adapt the same structure inside Ministry Tracker.
+- The new feature must feel native to Ministry Tracker, not pasted from Note Clip.
 
-## Critical Guardrail
+## CRITICAL GUARDRAIL — DO NOT TOUCH EXISTING SERVICE CATEGORIES
 
-Ministry Tracker already uses this existing field for service/session categories:
+Do **not** use or modify Ministry Tracker’s existing `categories` array for this feature.
 
-```js
-categories: []
-```
+Existing categories are for service/session logging and reports.
 
-That field is used for service logs, reports, session category totals, settings, and existing app behavior.
-
-Do not repurpose it.
-
-Create separate fields:
+Create separate data:
 
 ```js
 ministryNoteCategories: []
@@ -65,92 +102,111 @@ ministryNotes: []
 
 If any implementation starts mixing Ministry Notes with existing service/session `categories`, stop immediately and report the problem.
 
+## Target Bottom Navigation
+
+Current bottom nav:
+
+- Home
+- Timer
+- Calendar
+- Log
+- Reports
+
+New bottom nav:
+
+- Home
+- Timer
+- Calendar
+- Notes & Reminders
+- Reports
+
 ## Desired User Workflow
 
 David wants the Ministry app to work like this:
 
-1. Open a Ministry Notes/Categories area.
-2. See categories such as Return Visits and Bible Studies.
+1. Open the Notes & Reminders tab.
+2. See Ministry note categories such as Return Visits and Bible Studies.
 3. Tap a category.
 4. Add notes inside that category.
-5. Add date/time/reminder details to the note.
-6. Open the Calendar.
-7. See notes appear on the correct dates.
+5. Add person/contact/date/time/reminder details to the note.
+6. Open Calendar.
+7. See notes appear on the correct due dates.
 8. Tap a note from Calendar.
 9. Edit the same note record.
-10. Return to the Notes/Categories area and see the updated note.
+10. Return to Notes & Reminders and see the updated note.
 
 There must not be two separate note systems.
 
-A note created in Notes must be editable from Calendar.
+A note created in Notes & Reminders must be editable from Calendar.
 
-A note created from Calendar must appear in Notes.
+A note created from Calendar must appear in Notes & Reminders.
 
-## Ministry-Specific Default Note Categories
+## STAGE A — Navigation Cleanup FIRST
 
-Use these as the starting defaults. User must be able to edit/add/delete categories later.
+### Objective
 
-```txt
-Return Visits / Revisitas
-Bible Studies / Estudios bíblicos
-Interested Persons / Personas interesadas
-Calls / Llamadas
-Messages / Mensajes
-Territory / Territorio
-Appointments / Citas
-Personal / Personal
-```
+Free the Log tab slot by moving Log into Reports before building Notes & Reminders.
 
-## Recommended State Shape
+### Requirements
 
-Add to Ministry Tracker defaults and migration/merge logic:
+- [ ] Remove dedicated bottom-nav Log tab.
+- [ ] Add Notes & Reminders bottom-nav tab.
+- [ ] Move Log functionality into Reports.
+- [ ] Reports screen contains monthly report summary.
+- [ ] Reports screen contains service year report.
+- [ ] Reports screen contains category report.
+- [ ] Reports screen contains Log History section.
+- [ ] Log History defaults to current month.
+- [ ] Log History supports month picker.
+- [ ] Log History supports year picker.
+- [ ] Log History can view old months/years.
+- [ ] Log History supports searching existing session notes.
+- [ ] Log History supports editing sessions.
+- [ ] Log History supports deleting sessions.
+- [ ] Reports screen remains clean and uncluttered.
+- [ ] Existing log data remains unchanged.
+- [ ] Existing reports and totals do not change.
 
-```js
-ministryNoteCategories: [
-  { id: 'mncat_return_visits', label_en: 'Return Visits', label_es: 'Revisitas', icon: '↩️', color: '#BDD5EA' },
-  { id: 'mncat_bible_studies', label_en: 'Bible Studies', label_es: 'Estudios bíblicos', icon: '📖', color: '#C5E2C5' },
-  { id: 'mncat_interested', label_en: 'Interested Persons', label_es: 'Personas interesadas', icon: '👥', color: '#D4C5E2' },
-  { id: 'mncat_calls', label_en: 'Calls', label_es: 'Llamadas', icon: '☎️', color: '#F7D9B0' },
-  { id: 'mncat_messages', label_en: 'Messages', label_es: 'Mensajes', icon: '💬', color: '#F7F0B6' },
-  { id: 'mncat_territory', label_en: 'Territory', label_es: 'Territorio', icon: '🗺️', color: '#F2C4B0' },
-  { id: 'mncat_appointments', label_en: 'Appointments', label_es: 'Citas', icon: '📅', color: '#BDD5EA' },
-  { id: 'mncat_personal', label_en: 'Personal', label_es: 'Personal', icon: '📝', color: '#F7F0B6' }
-],
-ministryNotes: []
-```
+### Layout Guidance
 
-Recommended note object:
+Reports should show reports first and Log History below, or use a clean segmented/toggle section if better.
 
-```js
-{
-  id: string,
-  title: string,
-  body: string,
-  categoryId: string | null,
-  personName: string,
-  phone: string,
-  address: string,
-  locationName: string,
-  priority: 'high' | 'medium' | 'low',
-  status: 'active' | 'followup' | 'scheduled' | 'completed' | 'archived',
-  dueDate: 'YYYY-MM-DD' | '',
-  dueTime: 'HH:mm' | '',
-  reminder: '' | 'same_day' | 'day_before' | '1h_before' | 'custom',
-  reminderAt: ISO string | '',
-  sourceSessionId: string | null,
-  sourceDate: 'YYYY-MM-DD' | '',
-  completed: boolean,
-  archived: boolean,
-  createdAt: ISO string,
-  updatedAt: ISO string
-}
-```
+### Stop Conditions
 
-## Required Inspection Before Coding
+- Stop if hour totals change.
+- Stop if reports break.
+- Stop if sessions cannot be edited.
+- Stop if historical logs cannot be accessed.
+- Stop if mobile nav becomes crowded.
 
-Inspect Note Clip first and document findings below.
+### Stage A status
 
-### Note Clip files/functions to inspect
+`pending — do not start until David approves this tracker update`
+
+## STAGE B — Inspect Note Clip
+
+Before coding Notes & Reminders, inspect Note Clip and document findings in this file.
+
+### Required inspection topics
+
+- [ ] Storage shape for categories and notes.
+- [ ] Category grid behavior.
+- [ ] Category add/edit/delete.
+- [ ] Notes inside category.
+- [ ] All notes view.
+- [ ] Note cards.
+- [ ] Note modal.
+- [ ] Due date and due time.
+- [ ] Reminder fields.
+- [ ] Appointment/location fields.
+- [ ] Calendar note indicators.
+- [ ] Calendar selected-day note list.
+- [ ] Opening/editing note from calendar.
+- [ ] Export/import implications.
+- [ ] Cloud backup implications.
+- [ ] Service worker/cache version behavior.
+
+### Suggested Note Clip files/functions to inspect
 
 - [ ] `js/storage.js` — state shape, categories, notes, CRUD helpers.
 - [ ] `js/notes.js` — category grid, note cards, note modal, category modal, status/search/filter behavior.
@@ -159,26 +215,276 @@ Inspect Note Clip first and document findings below.
 - [ ] `index.html` — script load order and tab structure.
 - [ ] CSS files — category grid, note cards, modal, calendar rows.
 - [ ] i18n labels — note/category/calendar labels.
-- [ ] service worker/cache files — current cache version and deploy behavior.
-- [ ] backup/export/import/cloud behavior — confirm full state preservation.
+- [ ] Service worker/cache files — current cache version and deploy behavior.
+- [ ] Backup/export/import/cloud behavior — confirm full state preservation.
 
-### Inspection notes
-
-Add notes here as you inspect:
+### Note Clip inspection notes
 
 ```txt
-Pending.
+Pending. Must be filled before implementing Notes & Reminders.
 ```
+
+### Stage B status
+
+`pending`
+
+## STAGE C — Ministry Notes Data Model
+
+Add separate Ministry-specific data:
+
+```js
+ministryNoteCategories: []
+ministryNotes: []
+```
+
+### Default Ministry note categories
+
+- Return Visits / Revisitas
+- Bible Studies / Estudios bíblicos
+- Interested Persons / Personas interesadas
+- Calls / Llamadas
+- Messages / Mensajes
+- Territory / Territorio
+- Appointments / Citas
+- Personal / Personal
+
+### Recommended note object
+
+```js
+{
+  id,
+  title,
+  body,
+  categoryId,
+  personName,
+  phone,
+  address,
+  locationName,
+  priority,
+  status,
+  dueDate,
+  dueTime,
+  reminder,
+  reminderAt,
+  sourceSessionId,
+  sourceDate,
+  completed,
+  archived,
+  createdAt,
+  updatedAt
+}
+```
+
+### Required
+
+- [ ] Migration-safe defaults.
+- [ ] Existing users must not lose data.
+- [ ] Export/import must preserve new fields.
+- [ ] Cloud backup/restore must preserve new fields.
+- [ ] Existing `categories` array remains untouched.
+- [ ] Existing logs, reports, sessions, and credit hours remain unchanged.
+
+### Stop Conditions
+
+- Stop if service report totals change unexpectedly.
+- Stop if existing service `categories` are renamed, moved, or repurposed.
+- Stop if export/import drops notes.
+- Stop if cloud backup drops notes.
+
+### Stage C status
+
+`pending`
+
+## STAGE D — Notes & Reminders UI
+
+Create a dedicated Notes & Reminders tab.
+
+### Intro banner/card
+
+Title:
+
+```txt
+Notes & Reminders
+```
+
+Text idea:
+
+```txt
+Keep track of return visits, Bible studies, interested persons, calls, messages, territory follow-up, and ministry appointments. Create categories, organize notes, set reminders, and access them from the calendar.
+```
+
+### Required UI
+
+- [ ] Category grid.
+- [ ] All notes view.
+- [ ] Notes inside selected category.
+- [ ] Add/edit category.
+- [ ] Delete category safely.
+- [ ] Add/edit note.
+- [ ] Note card.
+- [ ] Search.
+- [ ] Status filters.
+- [ ] Priority.
+- [ ] Due date.
+- [ ] Due time.
+- [ ] Reminder fields.
+- [ ] Complete/archive/reopen.
+- [ ] Empty states that guide the user.
+
+### Avoid
+
+- [ ] No native `prompt()`.
+- [ ] No dead buttons.
+- [ ] No placeholder UI.
+- [ ] No fake success messages.
+- [ ] No push notification promises before infrastructure exists.
+
+### Stage D status
+
+`pending`
+
+## STAGE E — Calendar Integration
+
+Calendar must access the same Ministry Notes data.
+
+### Requirements
+
+- [ ] Notes with due dates appear on the calendar.
+- [ ] Calendar days with notes show an indicator.
+- [ ] Selecting a day shows that day’s Ministry Notes.
+- [ ] Tapping a note opens the same edit modal.
+- [ ] Editing from calendar updates the same record.
+- [ ] Adding a note from selected calendar day pre-fills `dueDate`.
+- [ ] Existing calendar planning/logging behavior remains intact.
+- [ ] No duplicate note systems.
+
+### Stop Conditions
+
+- Stop if Calendar data becomes ambiguous.
+- Stop if existing Calendar log/plan workflows break.
+- Stop if notes created from Calendar are stored separately from Notes & Reminders records.
+
+### Stage E status
+
+`pending`
+
+## STAGE F — Reminder Foundation
+
+### First pass requirements
+
+- [ ] Save reminder fields.
+- [ ] Show reminder badges.
+- [ ] Show reminders in calendar/upcoming/overdue.
+- [ ] Do not fake push notifications.
+
+### Later FCM path
+
+Later FCM push notification integration can connect to the existing approved KHub path:
+
+```txt
+/khubApps/ministry-tracker/users/{uid}/notificationTokens/{tokenId}
+```
+
+### Stop Conditions
+
+- Stop if app claims push notifications are enabled when they are not.
+- Stop if reminder data is saved but never visible.
+- Stop if FCM is attempted before approved infrastructure work.
+
+### Stage F status
+
+`pending`
+
+## STAGE G — Visual/Brand Alignment
+
+Use Ministry Tracker’s existing design:
+
+- Existing cards.
+- Existing buttons.
+- Existing modals.
+- Existing dark/light theme.
+- Existing bilingual labels.
+- Mobile-friendly touch targets.
+- Clean, ministry-appropriate tone.
+
+Do not copy Note Clip’s visual theme blindly unless it fits Ministry.
+
+### Checklist
+
+- [ ] Feature feels native to Ministry Tracker.
+- [ ] Ministry card styles are reused.
+- [ ] Ministry button/chip styles are reused.
+- [ ] Ministry modal style is reused.
+- [ ] Mobile touch targets are large enough.
+- [ ] Icon buttons have aria-labels.
+- [ ] Focus remains visible.
+- [ ] Spanish text does not overflow.
+- [ ] Light mode verified.
+- [ ] Dark mode verified.
+
+### Stage G status
+
+`pending`
+
+## STAGE H — QA / Live Verification
+
+### Required tests
+
+- [ ] App loads.
+- [ ] No console errors.
+- [ ] Home works.
+- [ ] Timer works.
+- [ ] Calendar works.
+- [ ] Reports work.
+- [ ] Log History works inside Reports.
+- [ ] Historical month/year log browsing works.
+- [ ] Session edit/delete still works.
+- [ ] Existing service categories still work.
+- [ ] Existing reports still calculate correctly.
+- [ ] Credit hours still work.
+- [ ] Notes & Reminders tab opens.
+- [ ] Note categories add/edit/delete.
+- [ ] Notes add/edit/delete.
+- [ ] Notes inside categories work.
+- [ ] Search works.
+- [ ] Status filters work.
+- [ ] Due dates appear on calendar.
+- [ ] Calendar edit updates same note.
+- [ ] Export/import includes notes/reminders.
+- [ ] Cloud backup/restore includes notes/reminders.
+- [ ] Mobile verified.
+- [ ] Desktop verified.
+- [ ] Light mode verified.
+- [ ] Dark mode verified.
+- [ ] English verified.
+- [ ] Spanish verified.
+- [ ] Service worker cache version bumped.
+- [ ] GitHub Pages live verified.
+
+### Approval rule
+
+If live GitHub Pages was not verified, status is:
+
+```txt
+code-implemented, not live-approved yet
+```
+
+Do not approve vague reports.
+
+### Stage H status
+
+`pending`
 
 ## Required Ministry Tracker Inspection Before Coding
 
-Inspect Ministry Tracker and document findings below.
+Inspect Ministry Tracker and document findings here before any code changes.
 
 - [ ] `index.html` screen structure.
 - [ ] Bottom nav structure.
 - [ ] Home screen entry points.
 - [ ] Calendar screen rendering and selected-day behavior.
 - [ ] Log screen and existing session notes.
+- [ ] Reports screen and report calculation logic.
 - [ ] Settings screen and existing service categories.
 - [ ] `js/app.js` state defaults and load/save logic.
 - [ ] i18n object in `js/app.js`.
@@ -190,284 +496,51 @@ Inspect Ministry Tracker and document findings below.
 
 ### Ministry inspection notes
 
-Add notes here as you inspect:
+```txt
+Pending. Must be filled before Stage A code changes.
+```
+
+## KHub / KO Boilerplate Review Requirement
+
+Before code implementation, review the KHub boilerplate for reusable systems and document findings here.
+
+### Reusable systems to check
+
+- [ ] Navigation.
+- [ ] Theme.
+- [ ] Light/dark mode.
+- [ ] Language/i18n.
+- [ ] Settings.
+- [ ] Storage.
+- [ ] Firebase/cloud backup.
+- [ ] PWA/service worker/cache.
+- [ ] Icons.
+- [ ] Accessibility.
+- [ ] Deployment.
+
+### Boilerplate gap report
 
 ```txt
+Reusable:
+Pending.
+
+Missing:
+Pending.
+
+App-specific:
+Pending.
+
+Boilerplate improvements:
 Pending.
 ```
 
-## Build Stages
+## Stage Commit / Verification Log
 
-Do not jump stages. Complete and update this checklist as each stage is done.
-
-## Stage 0 — Repo / Boilerplate Review
-
-Objective:
-Inspect Note Clip, Ministry Tracker, and relevant KHub boilerplate patterns before coding.
-
-Checklist:
-
-- [ ] Confirm Note Clip source files and exact functions to duplicate/adapt.
-- [ ] Confirm Ministry target files and exact functions to modify.
-- [ ] Confirm whether Ministry currently has one-file app logic or modular logic.
-- [ ] Confirm current Ministry cache version.
-- [ ] Confirm existing cloud backup path and behavior.
-- [ ] Confirm export/import includes full state.
-- [ ] Confirm i18n approach for English/Spanish labels.
-- [ ] Confirm modal approach.
-- [ ] Confirm calendar rendering approach.
-- [ ] Write inspection summary in this file.
-
-Success criteria:
-
-- Exact file/function map is documented.
-- Risks are documented.
-- Cache version is documented.
-- No app behavior changed unless explicitly approved.
-
-Stop conditions:
-
-- Unknown state shape.
-- Unknown cache version.
-- Unknown backup behavior.
-- Calendar behavior unclear.
-
-Stage 0 status: `pending`
-
-## Stage 1 — Data Model + Storage Helpers
-
-Objective:
-Add the Ministry Notes data model safely without changing existing service reports/logs.
-
-Checklist:
-
-- [ ] Add `ministryNoteCategories` defaults.
-- [ ] Add `ministryNotes` defaults.
-- [ ] Add migration/merge logic for existing users.
-- [ ] Add note ID generator or reuse existing safe generator.
-- [ ] Add `addMinistryNote(data)`.
-- [ ] Add `updateMinistryNote(id, patch)`.
-- [ ] Add `deleteMinistryNote(id)`.
-- [ ] Add `completeMinistryNote(id)`.
-- [ ] Add `archiveMinistryNote(id)`.
-- [ ] Add `restoreMinistryNote(id)`.
-- [ ] Add `addMinistryNoteCategory(data)`.
-- [ ] Add `updateMinistryNoteCategory(id, patch)`.
-- [ ] Add `deleteMinistryNoteCategory(id, behavior)`.
-- [ ] Confirm existing `categories` is untouched.
-- [ ] Confirm existing sessions/reports still load.
-- [ ] Confirm export/import preserves new fields.
-- [ ] Confirm cloud backup/restore preserves new fields.
-
-Success criteria:
-
-- Existing app loads with old data.
-- New fields appear safely after load.
-- Existing service categories remain unchanged.
-- Existing reports and timer still work.
-
-Stop conditions:
-
-- Any service report total changes unexpectedly.
-- Existing service `categories` are renamed, moved, or repurposed.
-- Export/import drops notes.
-- Cloud backup drops notes.
-
-Stage 1 status: `pending`
-
-## Stage 2 — Notes/Categories UI
-
-Objective:
-Duplicate/adapt Note Clip's categories and notes workflow inside Ministry Tracker.
-
-Checklist:
-
-- [ ] Add Ministry Notes entry point. Recommended MVP: Home card/button and Calendar button, not crowded bottom nav.
-- [ ] Add Ministry Notes screen/section.
-- [ ] Add category grid.
-- [ ] Add category card count.
-- [ ] Add selected-category notes view.
-- [ ] Add all-notes view.
-- [ ] Add status filters.
-- [ ] Add search.
-- [ ] Add note card.
-- [ ] Add note add/edit modal.
-- [ ] Add category add/edit modal.
-- [ ] Add safe category delete behavior.
-- [ ] Add complete/archive/restore behavior.
-- [ ] Add person fields only if approved or simple enough: personName, phone, address/location.
-- [ ] Add due date and due time fields.
-- [ ] Add reminder field saving.
-- [ ] Add English labels.
-- [ ] Add Spanish labels.
-- [ ] Confirm mobile layout.
-- [ ] Confirm desktop layout.
-- [ ] Confirm dark/light theme.
-
-Success criteria:
-
-- User can create a category.
-- User can create a note inside a category.
-- User can edit/delete/archive/complete a note.
-- User can search/filter notes.
-- Existing Ministry service log still works.
-
-Stop conditions:
-
-- UI creates dead buttons.
-- Native `prompt()` is introduced.
-- Mobile keyboard breaks text entry.
-- Theme or language breaks.
-
-Stage 2 status: `pending`
-
-## Stage 3 — Calendar Integration
-
-Objective:
-Make Ministry Notes accessible and editable from Calendar.
-
-Checklist:
-
-- [ ] Add note indicators to calendar days.
-- [ ] Show selected-day Ministry Notes below calendar.
-- [ ] Add upcoming Ministry Notes section.
-- [ ] Add overdue Ministry Notes section.
-- [ ] Open/edit the same note record from calendar.
-- [ ] Add new note from selected calendar date with `dueDate` prefilled.
-- [ ] Editing note date moves it to the correct calendar day.
-- [ ] Completed/archived notes do not clutter active calendar unless intentionally shown.
-- [ ] Existing calendar service plan/log behavior still works.
-- [ ] Existing studies/plans/logs still display correctly.
-
-Success criteria:
-
-- Note created in Notes appears on Calendar.
-- Note opened from Calendar edits the same record.
-- Note created from Calendar appears in Notes.
-- No duplicate note systems.
-
-Stop conditions:
-
-- Calendar data becomes ambiguous.
-- Existing calendar log/plan workflows break.
-- Notes created from Calendar are stored separately from Notes screen records.
-
-Stage 3 status: `pending`
-
-## Stage 4 — Reminder Foundation
-
-Objective:
-Save and display reminder information without overpromising push notifications.
-
-Checklist:
-
-- [ ] Save reminder preset values.
-- [ ] Save custom reminder date/time.
-- [ ] Show reminder badge on note cards.
-- [ ] Show reminder info in calendar rows.
-- [ ] Show upcoming reminders where appropriate.
-- [ ] Add clear denied/unavailable messaging if notification permission is not part of this stage.
-- [ ] Do not fake push notification success.
-- [ ] If FCM is added later, use approved KHub path from Firebase plan file.
-
-Success criteria:
-
-- Reminder information persists.
-- UI makes clear what is saved.
-- No false success messages.
-
-Stop conditions:
-
-- App claims notifications are enabled when they are not.
-- Reminder data is saved but never visible.
-
-Stage 4 status: `pending`
-
-## Stage 5 — Visual / Brand Alignment
-
-Objective:
-Make the duplicated structure look like Ministry Tracker, not a pasted foreign app.
-
-Checklist:
-
-- [ ] Use Ministry card styles.
-- [ ] Use Ministry buttons/chips.
-- [ ] Use Ministry modal styling.
-- [ ] Keep mobile touch targets large.
-- [ ] Ensure icon buttons have aria-labels.
-- [ ] Ensure focus remains visible.
-- [ ] Avoid excessive visual clutter on calendar.
-- [ ] Verify dark mode.
-- [ ] Verify light mode.
-- [ ] Verify Spanish text does not overflow.
-
-Success criteria:
-
-- Feature feels native to Ministry Tracker.
-- It preserves Note Clip's structure but adapts to Ministry's design.
-
-Stop conditions:
-
-- Bottom nav becomes crowded/unusable.
-- Visual style breaks existing screens.
-
-Stage 5 status: `pending`
-
-## Stage 6 — QA / Validation
-
-Objective:
-Validate the full feature before approval.
-
-Checklist:
-
-- [ ] App loads without console errors.
-- [ ] Existing timer works.
-- [ ] Existing service sessions save/load.
-- [ ] Existing log works.
-- [ ] Existing reports calculate correctly.
-- [ ] Existing credit hours work.
-- [ ] Existing service categories still work.
-- [ ] Ministry note categories add/edit/delete works.
-- [ ] Ministry notes add/edit/delete works.
-- [ ] Complete/archive/restore works.
-- [ ] Notes inside categories work.
-- [ ] All notes view works.
-- [ ] Search works.
-- [ ] Status filters work.
-- [ ] Due-date notes appear on calendar.
-- [ ] Calendar note edit updates the same record.
-- [ ] Calendar add note pre-fills selected date.
-- [ ] Export/import includes note fields.
-- [ ] Cloud backup/restore includes note fields.
-- [ ] Mobile verification complete.
-- [ ] Desktop verification complete.
-- [ ] Light mode verification complete.
-- [ ] Dark mode verification complete.
-- [ ] English verification complete.
-- [ ] Spanish verification complete.
-- [ ] Service worker cache version bumped.
-- [ ] GitHub Pages live app verified.
-
-Success criteria:
-
-- No regressions.
-- Live app works after cache refresh.
-- David/App Supervisor can approve.
-
-Stop conditions:
-
-- Console errors.
-- Data loss risk.
-- Backup/restore failure.
-- Live app stale because cache not bumped.
-
-Stage 6 status: `pending`
-
-## Required Report After Every Work Session
-
-Update this file and report back with:
+Add newest entries at the bottom. Do not remove old entries.
 
 ```txt
+Date:
+Stage:
 Summary:
 Commit hash:
 Files changed:
@@ -487,6 +560,32 @@ Live GitHub Pages verification:
 Remaining risks:
 Checklist items completed in this MD:
 Checklist items still pending:
+Status:
+```
+
+## Required Report After Each Stage
+
+Every worker must report back with:
+
+```txt
+Summary:
+Commit hash:
+Files changed:
+Tests run:
+Screenshots if UI changed:
+Cache version before:
+Cache version after:
+Bugs fixed:
+Known issues:
+Mobile verification:
+Desktop verification:
+Light/dark verification:
+English/Spanish verification:
+Export/import verification:
+Cloud backup/restore verification:
+Live GitHub Pages verification:
+Remaining risks:
+Updated MD checklist confirmation:
 ```
 
 ## Approval Rules
@@ -512,6 +611,8 @@ Do not approve if cache version was not bumped for deployable changes.
 
 Do not approve if service categories and Ministry note categories are mixed.
 
+Do not proceed to the next stage early.
+
 ## Final Cleanup Rule
 
 This is a temporary build-control file.
@@ -519,10 +620,15 @@ This is a temporary build-control file.
 Delete this file only after:
 
 - [ ] Feature fully implemented.
-- [ ] All checklist items complete or intentionally deferred with explanation.
-- [ ] Final implementation summarized in permanent docs or deployment history.
-- [ ] Cache version documented.
-- [ ] GitHub Pages live version verified.
+- [ ] QA complete.
+- [ ] Mobile verified.
+- [ ] Desktop verified.
+- [ ] Light/dark verified.
+- [ ] English/Spanish verified.
+- [ ] Export/import verified.
+- [ ] Cloud backup verified.
+- [ ] Live GitHub Pages verified.
+- [ ] Final summary recorded in permanent docs or deployment history.
 - [ ] David/App Supervisor approves deletion.
 
 When deleting, use commit message:
@@ -531,35 +637,56 @@ When deleting, use commit message:
 Remove temporary Ministry notes build checklist after approval
 ```
 
-## One-Message Prompt for Codex/Coworker
+## One-Message Prompt for Codex/Coworker — Stage 0 / A Start
 
 ```txt
 Open the Ministry Tracker repo: davidfontenelle80-cloud/ministry-tracker-.
 
-Read this file first and treat it as your temporary source of truth:
+Read this file first and treat it as the temporary source of truth:
 docs/stage-notes/2026-06-23-ministry-notes-categories-calendar-plan.md
 
-Then inspect the Note Clip repo: davidfontenelle80-cloud/note-clip.
+Do not code immediately.
 
-Your first job is not to code. Your first job is to inspect how Note Clip handles Categories → Notes → Calendar, document that structure inside the markdown checklist, and report back.
+First inspect:
+- Ministry Tracker actual repo state.
+- Note Clip repo: davidfontenelle80-cloud/note-clip.
+- KHub boilerplate repo: davidfontenelle80-cloud/KHub-Boilerplate.
 
-Important wording:
-Do not merge Note Clip into Ministry Tracker.
-Duplicate/adapt the structure as a separate Ministry Notes feature.
-Do not touch or repurpose Ministry Tracker's existing `categories` array. That belongs to service/session logging and reports.
+Update the markdown with the inspection report before code changes.
 
-As you build, keep updating the markdown checklist by checking off completed items, adding commit hashes, files changed, cache version, tests, known issues, and remaining risks.
+Main goal:
+Add a new Notes & Reminders feature to Ministry Tracker by duplicating/adapting Note Clip’s Categories → Notes → Calendar workflow. Do not merge Note Clip into Ministry Tracker.
 
-This markdown is temporary. Once the build is fully complete, live-approved, documented elsewhere, and David/App Supervisor approves, it may be deleted.
+First implementation stage after inspection:
+Stage A — Navigation Cleanup FIRST.
+
+Stage A must:
+- Remove the dedicated Log bottom-nav tab.
+- Add Notes & Reminders bottom-nav tab.
+- Move Log functionality into Reports.
+- Keep reports and totals unchanged.
+- Keep edit/delete session functionality.
+- Add current-month default, month picker, year picker, old month/year browsing, and session-note search to Log History inside Reports.
+
+Critical guardrail:
+Do not touch or repurpose Ministry Tracker’s existing `categories` array. That belongs to service/session logging and reports. New data must be separate:
+ministryNoteCategories: []
+ministryNotes: []
 
 Stop if:
 - Ministry Notes are being mixed with existing service categories.
 - Reports/hour totals would be affected.
+- Sessions cannot be edited/deleted.
+- Historical logs cannot be accessed.
 - Export/import would lose notes.
 - Cloud backup would lose notes.
 - Cache version cannot be confirmed.
 - Calendar behavior is unclear.
+- Mobile nav becomes crowded.
 
-Required report after each work session:
-Summary, commit hash, files changed, tests run, screenshots if UI changed, cache version before/after, bugs fixed, known issues, mobile verification, desktop verification, light/dark verification, English/Spanish verification, export/import verification, cloud backup/restore verification, live GitHub Pages verification, remaining risks, checklist items completed, checklist items still pending.
+Required report after each stage:
+Summary, commit hash, files changed, tests run, screenshots if UI changed, cache version before/after, bugs fixed, known issues, mobile verification, desktop verification, light/dark verification, English/Spanish verification, export/import verification, cloud backup/restore verification, live GitHub Pages verification, remaining risks, updated MD checklist confirmation.
+
+If live GitHub Pages was not verified, status must be:
+code-implemented, not live-approved yet
 ```
