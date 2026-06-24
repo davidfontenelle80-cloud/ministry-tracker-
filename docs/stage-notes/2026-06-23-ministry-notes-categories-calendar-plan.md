@@ -23,6 +23,16 @@ commit_history:
     stage: "Stage B"
     summary: "Note Clip inspection complete. Stage B findings documented."
     inspector: "Claude (Cowork)"
+  - date: "2026-06-24"
+    stage: "Stage C"
+    commit: "72e049a / e4c71ea"
+    summary: "ministryNoteCategories[] and ministryNotes[] added to APP_CONFIG.defaults. Migration-safe."
+    inspector: "Claude (Cowork)"
+  - date: "2026-06-24"
+    stage: "Stage D"
+    commit: "1650e54"
+    summary: "Category Management UI: 8 defaults seeded, responsive grid, add/edit/delete modals, i18n EN+ES, CACHE_VERSION v36."
+    inspector: "Claude (Cowork)"
 ---
 
 # TEMP — Ministry Notes & Reminders Implementation Tracker
@@ -312,7 +322,7 @@ ministryNotes: []
 
 ### Stage C status
 
-`pending`
+`COMPLETE — 2026-06-24 — commits 72e049a (feat: data model) / e4c71ea (docs)`
 
 ## STAGE D — Notes & Reminders UI
 
@@ -334,11 +344,11 @@ Keep track of return visits, Bible studies, interested persons, calls, messages,
 
 ### Required UI
 
-- [ ] Category grid.
+- [x] Category grid.
 - [ ] All notes view.
 - [ ] Notes inside selected category.
-- [ ] Add/edit category.
-- [ ] Delete category safely.
+- [x] Add/edit category.
+- [x] Delete category safely.
 - [ ] Add/edit note.
 - [ ] Note card.
 - [ ] Search.
@@ -348,19 +358,19 @@ Keep track of return visits, Bible studies, interested persons, calls, messages,
 - [ ] Due time.
 - [ ] Reminder fields.
 - [ ] Complete/archive/reopen.
-- [ ] Empty states that guide the user.
+- [x] Empty states that guide the user.
 
 ### Avoid
 
-- [ ] No native `prompt()`.
-- [ ] No dead buttons.
-- [ ] No placeholder UI.
-- [ ] No fake success messages.
-- [ ] No push notification promises before infrastructure exists.
+- [x] No native `prompt()`.
+- [x] No dead buttons.
+- [x] No placeholder UI.
+- [x] No fake success messages.
+- [x] No push notification promises before infrastructure exists.
 
 ### Stage D status
 
-`pending`
+`code-implemented, not live-approved yet — 2026-06-24 — commit 1650e54`
 
 ## STAGE E — Calendar Integration
 
@@ -580,6 +590,52 @@ Remaining risks: See Stage B Recommendations → Risks section
 Checklist items completed in this MD: All Stage B checklist items
 Checklist items still pending: Stage A, C, D, E, F, G, H all pending
 Status: APPROVED FOR STAGE C PLANNING
+```
+```txt
+Date: 2026-06-24
+Stage: Stage C
+Summary: ministryNoteCategories[] and ministryNotes[] added to APP_CONFIG.defaults (migration-safe, 4-space indent). Separate from service categories array.
+Commit hash: 72e049a (feat: Stage C data model) / e4c71ea (docs: Stage C complete)
+Files changed: js/app.js, docs/stage-notes/2026-06-23-ministry-notes-categories-calendar-plan.md
+Tests run: node --check js/app.js — SYNTAX OK
+Cache version before: v34-stage-a
+Cache version after: v35-stage-c-data-model
+Bugs fixed: N/A
+Known issues: None
+Mobile verification: N/A
+Desktop verification: N/A
+Light/dark verification: N/A
+English/Spanish verification: N/A
+Export/import verification: N/A
+Cloud backup/restore verification: N/A
+Live GitHub Pages verification: N/A
+Remaining risks: None — data model only, no UI
+Checklist items completed: All Stage C Required items
+Status: COMPLETE
+```
+
+```txt
+Date: 2026-06-24
+Stage: Stage D (Partial — Category Management only)
+Summary: ministryNoteCategories Management UI. 8 default categories seeded via migration guard in renderNotes(). Responsive 2-col grid. openCategoryModal() handles add/edit. deleteMinistryNoteCategory() uses openConfirmModal with danger:true. i18n EN+ES (13 keys each). CACHE_VERSION v36-stage-d-categories. index.html notes section uses <div id=notesContent> container. Full notes CRUD comes in Stage E.
+Commit hash: 1650e54c9250f354319ba971aa09ed28b59c9789
+Files changed: js/app.js, index.html, sw.js
+Tests run: node --check js/app.js — SYNTAX OK; 50/50 unit checks passed
+Cache version before: v35-stage-c-data-model
+Cache version after: v36-stage-d-categories
+Bugs fixed: Fixed 8-space indent on ministryNoteCategories/ministryNotes (corrected to 4-space in Stage D)
+Known issues: Full notes CRUD (Stage E) not yet implemented. Calendar integration pending.
+Mobile verification: N/A — pending live approval
+Desktop verification: N/A — pending live approval
+Light/dark verification: N/A — pending live approval
+English/Spanish verification: N/A — pending live approval
+Export/import verification: N/A — pending live approval
+Cloud backup/restore verification: N/A — pending live approval
+Live GitHub Pages verification: N/A — pending live approval
+Remaining risks: Notes inside categories not yet implemented.
+Checklist items completed: Category grid, Add/edit category, Delete category safely, Empty states, No native prompt, No dead buttons, No placeholder UI, No fake success messages, No push notification promises
+Checklist items still pending: All notes view, Notes inside selected category, Add/edit note, Note card, Search, Status filters, Priority, Due date, Due time, Reminder fields, Complete/archive/reopen
+Status: code-implemented, not live-approved yet
 ```
 
 ## Required Report After Each Stage
