@@ -50,8 +50,8 @@ const APP_CONFIG = {
     ],
         // Stage C — Ministry Notes & Reminders data model
         // Separate from service `categories`. Migration-safe: existing users get [] on first load.
-        ministryNoteCategories: [],
-        ministryNotes: [],
+    ministryNoteCategories: [],
+    ministryNotes: [],
   },
 };
 
@@ -250,6 +250,20 @@ const I18N = {
     cantDeleteLast: 'Need at least one category',
     invalidName: 'Name required',
     confirm: 'Confirm',
+    // Stage D — Ministry Note Categories
+    notesTitle: 'Notes & Reminders',
+    notesCategoriesHint: 'Organize your ministry notes by category.',
+    notesComingSoon: 'Notes are coming in a future update.',
+    addCategory: 'Add Category',
+    editCategory: 'Edit Category',
+    deleteCategory: 'Delete Category',
+    categoryName: 'Category name',
+    categoryIcon: 'Icon (emoji)',
+    categoryColor: 'Color',
+    categoryCount: '{n} categories',
+    noCategories: 'No categories yet. Add your first one.',
+    confirmDeleteCat: 'Delete this category?',
+    catModalNameEsHint: '(same as above — bilingual editing coming in Stage G)',
   },
   es: {
     goodMorning: 'Buenos días', goodAfternoon: 'Buenas tardes', goodEvening: 'Buenas noches',
@@ -423,8 +437,39 @@ const I18N = {
     cantDeleteLast: 'Necesitas al menos una categoría',
     invalidName: 'Nombre requerido',
     confirm: 'Confirmar',
+    // Stage D — Ministry Note Categories
+    notesTitle: 'Notas y Recordatorios',
+    notesCategoriesHint: 'Organiza tus notas del ministerio por categoría.',
+    notesComingSoon: 'Las notas llegarán en una próxima actualización.',
+    addCategory: 'Agregar categoría',
+    editCategory: 'Editar categoría',
+    deleteCategory: 'Eliminar categoría',
+    categoryName: 'Nombre de la categoría',
+    categoryIcon: 'Ícono (emoji)',
+    categoryColor: 'Color',
+    categoryCount: '{n} categorías',
+    noCategories: 'Sin categorías. Agrega la primera.',
+    confirmDeleteCat: '¿Eliminar esta categoría?',
+    catModalNameEsHint: '(mismo que arriba — edición bilingüe llega en la Etapa G)',
   },
 };
+
+const DEFAULT_MINISTRY_NOTE_CATEGORIES = [
+  { id: 'mnc-1', name: { en: 'Return Visits',     es: 'Revisitas' },             icon: '🔄', color: '#6366f1' },
+  { id: 'mnc-2', name: { en: 'Bible Studies',      es: 'Estudios bíblicos' },    icon: '📖', color: '#10b981' },
+  { id: 'mnc-3', name: { en: 'Interested Persons', es: 'Personas interesadas' }, icon: '👤', color: '#f59e0b' },
+  { id: 'mnc-4', name: { en: 'Calls',              es: 'Llamadas' },             icon: '📞', color: '#3b82f6' },
+  { id: 'mnc-5', name: { en: 'Messages',           es: 'Mensajes' },             icon: '💬', color: '#8b5cf6' },
+  { id: 'mnc-6', name: { en: 'Territory',          es: 'Territorio' },           icon: '🗺️', color: '#ec4899' },
+  { id: 'mnc-7', name: { en: 'Appointments',       es: 'Citas' },                icon: '📅', color: '#14b8a6' },
+  { id: 'mnc-8', name: { en: 'Personal',           es: 'Personal' },             icon: '🙏', color: '#f97316' },
+];
+
+const CAT_PRESET_COLORS = [
+  '#6366f1', '#10b981', '#f59e0b', '#3b82f6',
+  '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#ef4444', '#64748b',
+];
+
 function t(k) { return (I18N[state.lang || 'en'] || I18N.en)[k] ?? k; }
 function categoryLabel(catId) {
   const cat = (state.categories || []).find(c => c.id === catId);
@@ -1646,8 +1691,187 @@ function renderLog() {
 
 /* ---------- NOTES & REMINDERS (Stage A placeholder) ---------- */
 function renderNotes() {
-  // Stage A placeholder — full Notes & Reminders UI arrives in Stage D
+  const scr = document.getElementById('notesContent');
+  if (!scr) return;
+  const lang = state.lang || 'en';
+
+  // Migration guard: seed defaults on first render if array is empty
+  if (!Array.isArray(state.ministryNoteCategories) || state.ministryNoteCategories.length === 0) {
+    state.ministryNoteCategories = DEFAULT_MINISTRY_NOTE_CATEGORIES.map(c => ({
+      id: c.id, name: { en: c.name.en, es: c.name.es }, icon: c.icon, color: c.color,
+    }));
+    saveState();
+  }
+
+  const cats = state.ministryNoteCategories;
+  const n = cats.length;
+  const countLabel = t('categoryCount').replace('{n}', n);
+
+  let gridHTML;
+  if (n === 0) {
+    gridHTML = `<div class="card text-center" style="padding:40px 16px;">
+      <div class="text-faint text-sm mb-4">${t('noCategories')}</div>
+      <button class="btn btn-primary" onclick="openAddCategoryModal()">
+        <i class="fa-solid fa-plus"></i><span>${t('addCategory')}</span>
+      </button>
+    </div>`;
+  } else {
+    const cards = cats.map(cat => {
+      const name = (cat.name && typeof cat.name === 'object')
+        ? (cat.name[lang] || cat.name.en || '')
+        : (cat.name || '');
+      const color = cat.color || 'var(--accent)';
+      const icon = cat.icon || '📝';
+      return `<div class="card" style="border-left:4px solid ${color}; display:flex; flex-direction:column; justify-content:space-between; min-height:110px;">
+        <div>
+          <div style="font-size:26px; line-height:1; margin-bottom:6px;">${escapeHtml(icon)}</div>
+          <div class="font-semibold text-sm">${escapeHtml(name)}</div>
+        </div>
+        <div class="row gap-1 mt-3" style="justify-content:flex-end;">
+          <button class="btn btn-secondary btn-icon" style="width:44px;height:44px;" aria-label="${t('editCategory')}" onclick="openEditCategoryModal('${cat.id}')">
+            <i class="fa-solid fa-pen" style="font-size:11px;"></i>
+          </button>
+          <button class="btn btn-secondary btn-icon" style="width:44px;height:44px;" aria-label="${t('deleteCategory')}" onclick="deleteMinistryNoteCategory('${cat.id}')">
+            <i class="fa-solid fa-trash" style="font-size:11px; color:var(--coral);"></i>
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+    gridHTML = `<div class="grid grid-2">${cards}</div>`;
+  }
+
+  scr.innerHTML = `
+    <div class="card card-flat mb-4">
+      <div class="text-sm text-dim">${t('notesCategoriesHint')}</div>
+      <div class="text-tiny text-faint mt-1">${t('notesComingSoon')}</div>
+    </div>
+    <div class="row-between mb-3">
+      <span class="text-xs font-bold uppercase tracking-wider text-dim">${countLabel}</span>
+      <button class="btn btn-primary" style="font-size:13px;padding:7px 14px;" onclick="openAddCategoryModal()">
+        <i class="fa-solid fa-plus"></i><span>${t('addCategory')}</span>
+      </button>
+    </div>
+    ${gridHTML}`;
 }
+
+/* ---------- CATEGORY MODAL (Add / Edit) ---------- */
+function openCategoryModal(existingCat) {
+  const isEdit = !!existingCat;
+  const lang = state.lang || 'en';
+  const title = isEdit ? t('editCategory') : t('addCategory');
+  const currentName = isEdit
+    ? ((existingCat.name && typeof existingCat.name === 'object')
+        ? (existingCat.name[lang] || existingCat.name.en || '')
+        : (existingCat.name || ''))
+    : '';
+  const currentIcon  = isEdit ? (existingCat.icon  || '📝')     : '📝';
+  const currentColor = isEdit ? (existingCat.color || '#6366f1') : '#6366f1';
+
+  const swatches = CAT_PRESET_COLORS.map(c => {
+    const sel = c === currentColor;
+    return `<button type="button" class="cat-swatch" data-swatch-color="${c}" aria-label="${c}"
+      style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;
+             border:3px solid ${sel ? 'var(--text)' : 'transparent'};flex-shrink:0;"
+      onclick="selectCatSwatch('${c}')"></button>`;
+  }).join('');
+
+  openModal(`
+    <div class="row-between items-center mb-4">
+      <div class="font-bold text-xl">${escapeHtml(title)}</div>
+      <button data-close-modal class="btn btn-secondary btn-icon" style="width:36px;height:36px;" aria-label="${t('cancel')}">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="stack-3">
+      <div>
+        <label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="catModalName">${t('categoryName')}</label>
+        <input type="text" id="catModalName" class="input" value="${escapeHtml(currentName)}" placeholder="${t('categoryName')}" maxlength="40" autocomplete="off">
+      </div>
+      <div>
+        <label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="catModalIcon">${t('categoryIcon')}</label>
+        <input type="text" id="catModalIcon" class="input" value="${escapeHtml(currentIcon)}" placeholder="📝" maxlength="4"
+          style="font-size:24px;text-align:center;width:64px;padding:6px 4px;">
+      </div>
+      <div>
+        <label class="text-xs font-bold uppercase tracking-wider text-dim block mb-2">${t('categoryColor')}</label>
+        <div class="row gap-2" style="flex-wrap:wrap;align-items:center;">
+          ${swatches}
+          <input type="color" id="catModalColor" value="${escapeHtml(currentColor)}"
+            style="width:28px;height:28px;padding:0;border:none;background:none;cursor:pointer;border-radius:50%;overflow:hidden;"
+            aria-label="${t('categoryColor')}">
+        </div>
+      </div>
+    </div>
+    <div class="row gap-2 mt-4">
+      <button class="btn btn-secondary flex-1" data-close-modal>${t('cancel')}</button>
+      <button class="btn btn-primary flex-1" id="catModalSave">${t('save')}</button>
+    </div>`);
+
+  document.querySelectorAll('[data-close-modal]').forEach(b => b.onclick = closeModal);
+
+  const colorInput = document.getElementById('catModalColor');
+  if (colorInput) {
+    colorInput.addEventListener('input', () => {
+      document.querySelectorAll('.cat-swatch').forEach(s => {
+        s.style.borderColor = s.dataset.swatchColor === colorInput.value ? 'var(--text)' : 'transparent';
+      });
+    });
+  }
+
+  setTimeout(() => { const el = document.getElementById('catModalName'); if (el) el.focus(); }, 60);
+
+  document.getElementById('catModalSave').onclick = () => {
+    const nameVal  = (document.getElementById('catModalName')?.value || '').trim();
+    const iconVal  = (document.getElementById('catModalIcon')?.value || '').trim() || '📝';
+    const colorVal = document.getElementById('catModalColor')?.value || '#6366f1';
+    if (!nameVal) { toast(t('invalidName')); return; }
+
+    if (isEdit) {
+      const cat = state.ministryNoteCategories.find(c => c.id === existingCat.id);
+      if (cat) { cat.name = { en: nameVal, es: nameVal }; cat.icon = iconVal; cat.color = colorVal; }
+    } else {
+      state.ministryNoteCategories.push({
+        id: 'mnc-' + Date.now(),
+        name: { en: nameVal, es: nameVal },
+        icon: iconVal,
+        color: colorVal,
+      });
+    }
+    saveState(); closeModal(); renderNotes(); toast(t('save'));
+  };
+}
+
+function selectCatSwatch(color) {
+  const inp = document.getElementById('catModalColor');
+  if (inp) inp.value = color;
+  document.querySelectorAll('.cat-swatch').forEach(s => {
+    s.style.borderColor = s.dataset.swatchColor === color ? 'var(--text)' : 'transparent';
+  });
+}
+
+function openAddCategoryModal() { openCategoryModal(null); }
+
+function openEditCategoryModal(id) {
+  const cat = (state.ministryNoteCategories || []).find(c => c.id === id);
+  if (cat) openCategoryModal(cat);
+}
+
+function deleteMinistryNoteCategory(id) {
+  const cat = (state.ministryNoteCategories || []).find(c => c.id === id);
+  if (!cat) return;
+  const lang = state.lang || 'en';
+  const name = (cat.name && typeof cat.name === 'object')
+    ? (cat.name[lang] || cat.name.en || '') : (cat.name || '');
+  openConfirmModal(
+    t('confirmDeleteCat') + ' ' + name,
+    () => {
+      state.ministryNoteCategories = state.ministryNoteCategories.filter(c => c.id !== id);
+      saveState(); renderNotes(); toast(t('delete'));
+    },
+    { confirmLabel: t('delete'), danger: true }
+  );
+}
+
 
 /* ---------- LOG HISTORY (inside Reports — Stage A) ---------- */
 function renderLogHistory() {
