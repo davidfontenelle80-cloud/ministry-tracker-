@@ -4,7 +4,7 @@ app: "Ministry Tracker"
 repo: "davidfontenelle80-cloud/ministry-tracker-"
 reference_repo: "davidfontenelle80-cloud/note-clip"
 boilerplate_repo: "davidfontenelle80-cloud/KHub-Boilerplate"
-stage: "Stage B — complete"
+stage: "Stage C — COMPLETE"
 status: "active implementation tracker"
 created: "2026-06-23"
 updated: "2026-06-24"
@@ -175,6 +175,21 @@ Free the Log tab slot by moving Log into Reports before building Notes & Reminde
 
 Reports should show reports first and Log History below, or use a clean segmented/toggle section if better.
 
+
+### Stage C status
+
+`COMPLETE — commit 72e049a — 2026-06-24`
+
+**What was done:**
+- Added `ministryNoteCategories: []` to `APP_CONFIG.defaults` in `js/app.js`.
+- Added `ministryNotes: []` to `APP_CONFIG.defaults` in `js/app.js`.
+- Both fields placed after the `categories` array (service categories — untouched).
+- Migration safety: `loadState()` spread operator on `APP_CONFIG.defaults`.
+- Export/import safety: new fields in same state blob; `|| []` fallback automatic.
+- Cloud backup safety: both fields in `ministry-tracker-v4` localStorage blob; `KHub.CloudBackup.save()` picks them up automatically.
+- Bumped `CACHE_VERSION`: `v34-stage-a-notes-nav` → `v35-stage-c-data-model`.
+- **Critical guardrail honored**: existing `categories` array untouched. No UI, no category screens, no note screens, no calendar integration.
+
 ### Stop Conditions
 
 - Stop if hour totals change.
@@ -281,12 +296,12 @@ ministryNotes: []
 
 ### Required
 
-- [ ] Migration-safe defaults.
-- [ ] Existing users must not lose data.
-- [ ] Export/import must preserve new fields.
-- [ ] Cloud backup/restore must preserve new fields.
-- [ ] Existing `categories` array remains untouched.
-- [ ] Existing logs, reports, sessions, and credit hours remain unchanged.
+- [x] Migration-safe defaults. — commit 72e049a
+- [x] Existing users must not lose data. — commit 72e049a
+- [x] Export/import must preserve new fields. (|| [] fallback in loadState spread) — commit 72e049a
+- [x] Cloud backup/restore must preserve new fields. (same state blob at ministry-tracker-v4) — commit 72e049a
+- [x] Existing `categories` array remains untouched. — commit 72e049a
+- [x] Existing logs, reports, sessions, and credit hours remain unchanged. — commit 72e049a
 
 ### Stop Conditions
 
@@ -1465,3 +1480,28 @@ ministryNotes: [
 - js/communication.js (drafts/messaging; not relevant for ministry notes)
 - js/push.js (FCM push layer; relevant for Stage F, not Stage C/D)
 - js/onboarding.js (first-run flow; not needed for ministry adaptation)
+
+
+```txt
+Date: 2026-06-24
+Stage: Stage C — Ministry Notes Data Model
+Summary: Added ministryNoteCategories:[] and ministryNotes:[] to APP_CONFIG.defaults. Migration-safe via loadState() spread. No UI changes. Bumped CACHE_VERSION to v35.
+Commit hash: 72e049a
+Files changed: js/app.js, sw.js (2 files)
+Tests run: static code review; APP_CONFIG.defaults spread confirmed; saveState() full-serialize confirmed; cloud backup collectKeys() confirmed unaffected; existing categories array verified untouched
+Screenshots if UI changed: N/A — data model only, no UI
+Cache version before: ministry-tracker-v34-stage-a-notes-nav
+Cache version after: ministry-tracker-v35-stage-c-data-model
+Bugs fixed: none
+Known issues: none
+Mobile verification: N/A — no UI change
+Desktop verification: N/A — no UI change
+Light/dark verification: N/A — no UI change
+English/Spanish verification: N/A — no new i18n keys
+Export/import verification: state spread provides automatic || [] for new fields
+Cloud backup/restore verification: new fields in same ministry-tracker-v4 blob; automatically included
+Live GitHub Pages verification: code-implemented, not live-approved yet
+Remaining risks: none — data-model-only change with no side effects
+Updated MD checklist confirmation: all 6 Stage C checklist items marked complete
+Status: code-implemented, not live-approved yet
+```
