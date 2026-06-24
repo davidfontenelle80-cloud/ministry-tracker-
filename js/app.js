@@ -60,6 +60,8 @@ let adjustSelectedDate = todayStr(); // The day shown in the Adjust Time card
 let currentReportMonth = monthKey(new Date());
 let logFilter = 'month';
 let logSearch = ''; // search query for Log notes
+let logHistoryMonth = monthKey(new Date()); // month shown in Log History (Reports)
+let logHistorySearch = ''; // search query for Log History
 let liveTickInterval = null;
 let lastInteraction = Date.now();
 let longPressTimer = null;
@@ -117,7 +119,8 @@ const I18N = {
     pastSYHours: 'hours', pastSYStudies: 'studies', pastSYDays: 'days', pastSYArchived: 'archived',
     importBtn: 'Import from file', pasteImportBtn: 'Paste backup text',
     clearMonth: 'Clear current month', clearAll: 'Clear all data',
-    nav_home: 'Home', nav_timer: 'Timer', nav_cal: 'Calendar', nav_log: 'Log', nav_reports: 'Reports', nav_settings: 'Settings',
+    nav_home: 'Home', nav_timer: 'Timer', nav_cal: 'Calendar', nav_log: 'Log', nav_notes: 'Notes & Reminders', nav_reports: 'Reports', nav_settings: 'Settings',
+    logHistory: 'Log History',
     weekdaysSun: ['S','M','T','W','T','F','S'],
     weekdaysMon: ['M','T','W','T','F','S','S'],
     weekdaysShortSun: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
@@ -289,7 +292,8 @@ const I18N = {
     pastSYHours: 'horas', pastSYStudies: 'cursos', pastSYDays: 'días', pastSYArchived: 'archivado',
     importBtn: 'Importar desde archivo', pasteImportBtn: 'Pegar texto de respaldo',
     clearMonth: 'Borrar mes actual', clearAll: 'Borrar todos los datos',
-    nav_home: 'Inicio', nav_timer: 'Cronómetro', nav_cal: 'Calendario', nav_log: 'Registro', nav_reports: 'Informes', nav_settings: 'Ajustes',
+    nav_home: 'Inicio', nav_timer: 'Cronómetro', nav_cal: 'Calendario', nav_log: 'Registro', nav_notes: 'Notas y Recordatorios', nav_reports: 'Informes', nav_settings: 'Ajustes',
+    logHistory: 'Historial de Registro',
     weekdaysSun: ['D','L','M','M','J','V','S'],
     weekdaysMon: ['L','M','M','J','V','S','D'],
     weekdaysShortSun: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],
@@ -824,7 +828,7 @@ function quickAddMinutes(mins, dateStr = todayStr()) {
 
 /* ===== RENDER ===== */
 function renderAll() {
-  renderHome(); renderTimer(); renderCalendar(); renderLog(); renderReports(); renderSettings();
+  renderHome(); renderTimer(); renderCalendar(); renderNotes(); renderReports(); renderLogHistory(); renderSettings();
   applyI18n();
   renderBackupBanner();
 }
@@ -836,7 +840,7 @@ function applyI18n() {
     lbl_quickAdd: 'quickAdd', lbl_quickAddHint: 'quickAddHint', lbl_thisWeek: 'thisWeek', lbl_logged: 'logged',
     lbl_serviceYear: 'serviceYear', lbl_serviceYear2: 'serviceYear', lbl_projection: 'projection', lbl_projection2: 'projection',
     lbl_studies: 'studies', lbl_studies2: 'studies', lbl_studies3: 'studies', lbl_saveStudyOnly: 'saveStudyOnly', lbl_streak: 'streak', lbl_serviceDays: 'serviceDays', lbl_serviceDays2: 'serviceDays',
-    lbl_note: 'note', lbl_categoryHeader: 'selectCategory', lbl_backupTitle: 'backupTitle', lbl_homeExport: 'exportBtn', lbl_homeImport: 'importBtn', lbl_timerAdjustHint: 'timerAdjustHint', lbl_monthlyTargetTitle: 'monthlyTargetTitle', lbl_perMonthLabel: 'perMonthLabel', lbl_needThisMonth: 'needThisMonth', lbl_totalHoursFor: 'totalHoursFor', lbl_btnAdjust: 'btnAdjust', lbl_btnAdd: 'btnAdd', lbl_btnDeduct: 'btnDeduct', lbl_btnSetPlan: 'btnSetPlan', lbl_btnAddDetailed: 'btnAddDetailed', lbl_sessionsThisDay: 'sessionsThisDay', lbl_navTimer: 'nav_timer', lbl_navCal: 'nav_cal', lbl_navLog: 'nav_log', lbl_navReports: 'nav_reports', lbl_navSettings: 'nav_settings',
+    lbl_note: 'note', lbl_categoryHeader: 'selectCategory', lbl_backupTitle: 'backupTitle', lbl_homeExport: 'exportBtn', lbl_homeImport: 'importBtn', lbl_timerAdjustHint: 'timerAdjustHint', lbl_monthlyTargetTitle: 'monthlyTargetTitle', lbl_perMonthLabel: 'perMonthLabel', lbl_needThisMonth: 'needThisMonth', lbl_totalHoursFor: 'totalHoursFor', lbl_btnAdjust: 'btnAdjust', lbl_btnAdd: 'btnAdd', lbl_btnDeduct: 'btnDeduct', lbl_btnSetPlan: 'btnSetPlan', lbl_btnAddDetailed: 'btnAddDetailed', lbl_sessionsThisDay: 'sessionsThisDay', lbl_navTimer: 'nav_timer', lbl_navCal: 'nav_cal', lbl_navNotes: 'nav_notes', lbl_navReports: 'nav_reports', lbl_navSettings: 'nav_settings',
     lbl_tapChange: 'tapChange', lbl_sessionsOnDay: 'sessionsOnDay',
     lbl_monthlyPlan: 'monthlyPlan', lbl_tapDayToPlan: 'tapDayToPlan',
     lbl_plannedTotal: 'plannedTotal', lbl_goalTotal: 'goalTotal', lbl_actualHours: 'actualHours',
@@ -861,7 +865,8 @@ function applyI18n() {
     lbl_backupBtn: 'backupBtn',
     lbl_importBtn: 'importBtn', lbl_pasteImportBtn: 'pasteImportBtn',
     lbl_clearMonth: 'clearMonth', lbl_clearAll: 'clearAll',
-    nav_home: 'nav_home', nav_timer: 'nav_timer', nav_cal: 'nav_cal', nav_log: 'nav_log', nav_reports: 'nav_reports',
+    nav_home: 'nav_home', nav_timer: 'nav_timer', nav_cal: 'nav_cal', nav_notes: 'nav_notes', nav_reports: 'nav_reports',
+    lbl_logHistory: 'logHistory',
     liveBannerLabel: 'inService', liveBannerStopLabel: 'stop',
   };
   Object.entries(map).forEach(([id, key]) => {
@@ -871,8 +876,8 @@ function applyI18n() {
   document.getElementById('langToggle').textContent = (state.lang || 'en').toUpperCase();
   const userNameInput = document.getElementById('setUserName');
   if (userNameInput) userNameInput.placeholder = t('userNamePlaceholder');
-  const logSearchInput = document.getElementById('logSearch');
-  if (logSearchInput) logSearchInput.placeholder = t('searchPlaceholder');
+  const logHistorySearchEl2 = document.getElementById('logHistorySearch');
+  if (logHistorySearchEl2) logHistorySearchEl2.placeholder = t('searchPlaceholder');
   // Log filter chips
   document.querySelectorAll('[data-log-filter]').forEach(b => {
     const f = b.dataset.logFilter;
@@ -1598,6 +1603,7 @@ function renderLog() {
   }
 
   const list = document.getElementById('logList');
+  if (!list) return; // Log screen removed in Stage A — log history is in Reports
   if (!filtered.length) {
     const msg = q ? t('searchEmpty').replace('{q}', escapeHtml(q)) : t('empty');
     list.innerHTML = `<div class="card text-center text-faint">${msg}</div>`;
@@ -1628,6 +1634,67 @@ function renderLog() {
   }).join('');
   list.querySelectorAll('[data-log-add-date]').forEach(el => {
     el.onclick = () => openQuickAddModal(el.dataset.logAddDate);
+  });
+  list.querySelectorAll('[data-edit-session]').forEach(el => {
+    el.onclick = () => openEditSessionModal(el.dataset.editSession);
+  });
+}
+
+/* ---------- NOTES & REMINDERS (Stage A placeholder) ---------- */
+function renderNotes() {
+  // Stage A placeholder — full Notes & Reminders UI arrives in Stage D
+}
+
+/* ---------- LOG HISTORY (inside Reports — Stage A) ---------- */
+function renderLogHistory() {
+  const monthLabel = document.getElementById('logHistoryMonthLabel');
+  if (!monthLabel) return;
+  const [y, m] = logHistoryMonth.split('-').map(Number);
+  monthLabel.textContent = `${t('months')[m-1]} ${y}`;
+
+  // Disable Next button when already at current month
+  const nextBtn = document.getElementById('logHistoryNext');
+  if (nextBtn) nextBtn.disabled = logHistoryMonth >= monthKey(new Date());
+
+  const all = state.sessions.filter(s => s.stopISO).sort((a,b) => b.startISO.localeCompare(a.startISO));
+  let filtered = all.filter(s => s.date.startsWith(logHistoryMonth));
+
+  const q = (logHistorySearch || '').trim().toLowerCase();
+  if (q) filtered = filtered.filter(s => (s.note || '').toLowerCase().includes(q));
+
+  const list = document.getElementById('logHistoryList');
+  if (!list) return;
+
+  if (!filtered.length) {
+    const msg = q ? t('searchEmpty').replace('{q}', escapeHtml(q)) : t('empty');
+    list.innerHTML = `<div class="text-faint text-sm text-center py-4">${msg}</div>`;
+    return;
+  }
+
+  const groups = {};
+  filtered.forEach(s => { (groups[s.date] = groups[s.date] || []).push(s); });
+  const dks = Object.keys(groups).sort((a,b) => b.localeCompare(a));
+  list.innerHTML = dks.map(dk => {
+    const dayMins = groups[dk].reduce((a,s) => a + (s.durationMin || 0), 0);
+    const d = fromYmd(dk);
+    const dateLbl = d.toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return `
+      <div>
+        <div class="row-between mb-2 px-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-dim">${dateLbl}</span>
+          <div class="row gap-2 items-center">
+            <span class="text-xs font-mono font-bold text-accent">${formatHM(dayMins)}</span>
+            <button class="btn btn-secondary text-xs" style="padding:6px 10px;" data-lh-add-date="${dk}">
+              <i class="fa-solid fa-plus text-accent"></i>
+              <span>Add</span>
+            </button>
+          </div>
+        </div>
+        <div class="stack-2">${groups[dk].map(sessionCardHTML).join('')}</div>
+      </div>`;
+  }).join('');
+  list.querySelectorAll('[data-lh-add-date]').forEach(el => {
+    el.onclick = () => openQuickAddModal(el.dataset.lhAddDate);
   });
   list.querySelectorAll('[data-edit-session]').forEach(el => {
     el.onclick = () => openEditSessionModal(el.dataset.editSession);
@@ -2979,7 +3046,7 @@ try {
   if (_mm.addEventListener) _mm.addEventListener('change', () => { if (state.theme === 'auto') applyTheme(); });
   else if (_mm.addListener) _mm.addListener(() => { if (state.theme === 'auto') applyTheme(); });
 } catch(e) {}
-const SCREEN_ORDER = ['home', 'timer', 'calendar', 'log', 'reports', 'settings'];
+const SCREEN_ORDER = ['home', 'timer', 'calendar', 'notes', 'reports', 'settings'];
 function switchScreen(name) {
   const prevName = currentScreen;
   if (prevName !== name) previousScreen = prevName;
@@ -3289,33 +3356,40 @@ function wireEvents() {
 
   document.getElementById('adjBtnPlan').onclick = () => openPlanModal(adjustSelectedDate);
   document.getElementById('adjBtnAddDetailed').onclick = () => openQuickAddModal(adjustSelectedDate);
-  const logAddTimeBtn = document.getElementById('logAddTimeBtn');
-  if (logAddTimeBtn) logAddTimeBtn.onclick = () => openQuickAddModal(todayStr());
+  // Log History (now inside Reports — Stage A)
+  const logHistoryAddBtn = document.getElementById('logHistoryAddBtn');
+  if (logHistoryAddBtn) logHistoryAddBtn.onclick = () => openQuickAddModal(todayStr());
 
-  document.querySelectorAll('[data-log-filter]').forEach(b => b.onclick = () => {
-    logFilter = b.dataset.logFilter;
-    document.querySelectorAll('[data-log-filter]').forEach(x => x.classList.toggle('active', x === b));
-    renderLog();
-  });
+  const logHistoryPrevBtn = document.getElementById('logHistoryPrev');
+  const logHistoryNextBtn = document.getElementById('logHistoryNext');
+  if (logHistoryPrevBtn) logHistoryPrevBtn.onclick = () => {
+    const [y, mo] = logHistoryMonth.split('-').map(Number);
+    logHistoryMonth = monthKey(new Date(y, mo - 2, 1));
+    renderLogHistory();
+  };
+  if (logHistoryNextBtn) logHistoryNextBtn.onclick = () => {
+    const [y, mo] = logHistoryMonth.split('-').map(Number);
+    const next = monthKey(new Date(y, mo, 1));
+    if (next <= monthKey(new Date())) { logHistoryMonth = next; renderLogHistory(); }
+  };
 
-  // Log search wiring
-  const logSearchEl = document.getElementById('logSearch');
-  const logSearchClear = document.getElementById('logSearchClear');
-  if (logSearchEl) {
-    // Debounce: don't re-render on every keystroke; wait 180ms
+  // Log History search wiring
+  const logHistorySearchEl = document.getElementById('logHistorySearch');
+  const logHistorySearchClear = document.getElementById('logHistorySearchClear');
+  if (logHistorySearchEl) {
     let searchDebounce = null;
-    logSearchEl.addEventListener('input', (e) => {
-      logSearch = e.target.value || '';
-      logSearchClear.classList.toggle('hidden', !logSearch.length);
+    logHistorySearchEl.addEventListener('input', (e) => {
+      logHistorySearch = e.target.value || '';
+      logHistorySearchClear.classList.toggle('hidden', !logHistorySearch.length);
       if (searchDebounce) clearTimeout(searchDebounce);
-      searchDebounce = setTimeout(() => { renderLog(); }, 180);
+      searchDebounce = setTimeout(() => { renderLogHistory(); }, 180);
     });
-    logSearchClear.onclick = () => {
-      logSearch = '';
-      logSearchEl.value = '';
-      logSearchClear.classList.add('hidden');
-      renderLog();
-      logSearchEl.focus();
+    logHistorySearchClear.onclick = () => {
+      logHistorySearch = '';
+      logHistorySearchEl.value = '';
+      logHistorySearchClear.classList.add('hidden');
+      renderLogHistory();
+      logHistorySearchEl.focus();
     };
   }
 

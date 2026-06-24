@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v33-credit-hours-separated';
+const CACHE_VERSION = 'ministry-tracker-v34-stage-a-notes-nav';
 
 const PRECACHE_URLS = [
   './',

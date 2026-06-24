@@ -536,31 +536,17 @@
     </div>
   </section>
 
-  <!-- ===== LOG ===== -->
-  <section id="screen-log" class="screen">
+  <!-- ===== NOTES & REMINDERS (Stage A placeholder) ===== -->
+  <section id="screen-notes" class="screen">
     <div class="screen-header">
-      <h1 class="screen-title" id="lbl_navLog">Log</h1>
-      <button id="logAddTimeBtn" class="btn btn-primary" style="padding: 9px 14px;">
-        <i class="fa-solid fa-plus"></i>
-        <span>Add time</span>
-      </button>
+      <h1 class="screen-title" id="lbl_navNotes">Notes &amp; Reminders</h1>
     </div>
-
-    <!-- Search box: filters by note content -->
-    <div class="row gap-2 items-center mb-3" style="position: relative;">
-      <i class="fa-solid fa-magnifying-glass text-faint" style="position: absolute; left: 14px; font-size: 13px; pointer-events: none;"></i>
-      <input type="text" id="logSearch" placeholder="Search notes..." autocomplete="off" style="padding-left: 38px; padding-right: 38px;" />
-      <button id="logSearchClear" class="btn btn-secondary btn-icon hidden" style="position: absolute; right: 4px; width: 32px; height: 32px;" aria-label="Clear search">
-        <i class="fa-solid fa-xmark" style="font-size: 11px;"></i>
-      </button>
+    <div class="card" style="text-align: center; padding: 48px 24px;">
+      <i class="fa-solid fa-note-sticky text-blue" style="font-size: 48px; margin-bottom: 16px; display: block; opacity: 0.7;"></i>
+      <div class="font-bold text-base mb-2">Notes &amp; Reminders</div>
+      <p class="text-faint text-sm">Coming soon — return visits, Bible studies, and ministry appointments.</p>
+      <p class="text-tiny text-faint mt-3">Your session log has moved to <strong>Reports → Log History</strong>.</p>
     </div>
-
-    <div class="row gap-2 mb-4" style="overflow-x: auto; padding-bottom: 4px;">
-      <button class="chip active" data-log-filter="month">This month</button>
-      <button class="chip" data-log-filter="week">This week</button>
-      <button class="chip" data-log-filter="today">Today</button>
-    </div>
-    <div id="logList" class="stack-3"></div>
   </section>
 
   <!-- ===== REPORTS ===== -->
@@ -635,6 +621,38 @@
     <div class="card">
       <div class="text-xs uppercase tracking-wider text-dim font-semibold mb-3" id="lbl_byCategory">By category</div>
       <div id="reportCategories" class="stack-3"></div>
+    </div>
+
+    <!-- Log History (moved from Log tab — Stage A) -->
+    <div class="card mt-4" id="logHistorySection">
+      <div class="row-between mb-3">
+        <div class="text-xs uppercase tracking-wider text-dim font-semibold" id="lbl_logHistory">Log History</div>
+        <button id="logHistoryAddBtn" class="btn btn-primary text-xs" style="padding: 6px 12px;">
+          <i class="fa-solid fa-plus"></i>
+          <span>Add time</span>
+        </button>
+      </div>
+      <!-- Search -->
+      <div class="row gap-2 items-center mb-3" style="position: relative;">
+        <i class="fa-solid fa-magnifying-glass text-faint" style="position: absolute; left: 14px; font-size: 13px; pointer-events: none;"></i>
+        <input type="text" id="logHistorySearch" placeholder="Search notes..." autocomplete="off" style="padding-left: 38px; padding-right: 38px;" />
+        <button id="logHistorySearchClear" class="btn btn-secondary btn-icon hidden" style="position: absolute; right: 4px; width: 32px; height: 32px;" aria-label="Clear search">
+          <i class="fa-solid fa-xmark" style="font-size: 11px;"></i>
+        </button>
+      </div>
+      <!-- Month navigator -->
+      <div class="row gap-2 items-center mb-3">
+        <button id="logHistoryPrev" class="btn btn-secondary btn-icon" style="width: 36px; height: 36px;">
+          <i class="fa-solid fa-chevron-left" style="font-size: 11px;"></i>
+        </button>
+        <div class="flex-1 text-center">
+          <div id="logHistoryMonthLabel" class="font-bold text-sm"></div>
+        </div>
+        <button id="logHistoryNext" class="btn btn-secondary btn-icon" style="width: 36px; height: 36px;">
+          <i class="fa-solid fa-chevron-right" style="font-size: 11px;"></i>
+        </button>
+      </div>
+      <div id="logHistoryList" class="stack-3"></div>
     </div>
   </section>
 
@@ -830,9 +848,9 @@
       <div class="nav-icon"><i class="fa-solid fa-calendar"></i></div>
       <span class="nav-label" id="nav_cal">Calendar</span>
     </button>
-    <button class="nav-btn" data-screen="log">
-      <div class="nav-icon"><i class="fa-solid fa-list"></i></div>
-      <span class="nav-label" id="nav_log">Log</span>
+    <button class="nav-btn" data-screen="notes">
+      <div class="nav-icon"><i class="fa-solid fa-note-sticky"></i></div>
+      <span class="nav-label" id="nav_notes">Notes &amp; Reminders</span>
     </button>
     <button class="nav-btn" data-screen="reports">
       <div class="nav-icon"><i class="fa-solid fa-chart-simple"></i></div>
