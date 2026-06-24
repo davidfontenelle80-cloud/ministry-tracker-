@@ -48,6 +48,10 @@ const APP_CONFIG = {
       { id: 'specialCampaign', label_en: 'Special Campaign', label_es: 'Campaña especial' },
       { id: 'other', label_en: 'Other Field Service', label_es: 'Otra predicación' },
     ],
+        // Stage C — Ministry Notes & Reminders data model
+        // Separate from service `categories`. Migration-safe: existing users get [] on first load.
+        ministryNoteCategories: [],
+        ministryNotes: [],
   },
 };
 
