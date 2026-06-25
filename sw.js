@@ -2,7 +2,7 @@
  * sw.js â KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v39-hotfix-appjs-regex';
+const CACHE_VERSION = 'ministry-tracker-v39-hotfix-appjs-syntax';
 
 const PRECACHE_URLS = [
   './',

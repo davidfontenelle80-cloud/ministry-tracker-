@@ -1833,7 +1833,7 @@ function renderNotesListView(scr, cat) {
     ? '<div class="card text-center" style="padding:40px 16px;"><div class="text-faint text-sm">' + t('noNotesInCategory') + '</div></div>'
     : notes.map(function(note) {
         var preview = (note.body || '').slice(0, 60) + ((note.body || '').length > 60 ? '…' : '');
-        var var noteCompl = note.completed ? 'opacity:0.55;text-decoration:line-through' : '';
+        var noteCompl = note.completed ? 'opacity:0.55;text-decoration:line-through' : '';
                 var noteBadges = '';
                 if(note.priority==='high') noteBadges+='<span style="background:var(--coral);color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">▲ '+(I18N[state.lang].priorityHigh||'High')+'</span>';
                 if(note.priority==='medium') noteBadges+='<span style="background:#f59e0b;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">◆ '+(I18N[state.lang].priorityMedium||'Medium')+'</span>';
