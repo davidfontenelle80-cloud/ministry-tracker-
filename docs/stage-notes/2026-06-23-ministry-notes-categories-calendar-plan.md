@@ -455,9 +455,36 @@ Do not copy Note Clip's visual theme blindly unless it fits Ministry.
 - [ ] Light mode verified.
 - [ ] Dark mode verified.
 
-### Stage G status
+### Stage G — Reminder Foundation + Visual Polish
 
-`pending`
+### Preflight (2026-06-25)
+
+**Goal**: Add reminder-ready fields to note model, fix Stage F category bug, and add visual polish (badges, chips, due-date display) to note cards.
+
+**Parts**:
+- Part 1: 8 new fields on note model (dueDate, dueTime, reminder, reminderAt, priority, status, completed, archived) + UI controls in note modal
+- Part 2: Category selector in modal — fix Stage F bug where notes added from calendar defaulted to first category
+- Part 3: Visual polish — priority badges, status chips, due date display, completed state styling, archived badge
+
+**Constraints**:
+- Zero new storage keys — all fields save via existing saveState()
+- Zero Firebase changes
+- Zero export/import format changes (new fields silently ignored by existing exports)
+- No push notifications, FCM, or background processing
+- All CSS uses CSS variables (--bg, --surface, --card, --border, --text, --text-dim, --accent, --coral, --input-bg, --radius-sm, --radius-full)
+- I18N: both `en` and `es` keys for all 14 new strings
+
+**Files to change**:
+- `js/app.js` — 8 targeted string replacements (i18n EN, i18n ES, badge vars, title div, DOM injection IIFE, save vars, update block, push block)
+- `sw.js` — CACHE_NAME: v38-stage-f-calendar → v39-stage-g-reminders
+
+**Push method**: GitHub Trees API via Chrome MCP javascript_tool only
+
+---
+
+## Stage G status
+
+`in-progress`
 
 ## STAGE H — QA / Live Verification
 
