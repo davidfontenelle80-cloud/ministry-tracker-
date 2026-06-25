@@ -1754,3 +1754,29 @@ Option B helper function — lines 2019-2020 replaced with 3 lines:
 ### Commit
 e0ffe9bc475f6c86d083c86c3623f474ad7a3e89 (hotfix code)
 89540405fbff9caee9ae4a8179b1f454400289f4 (MD update)
+
+
+### Completion — VERIFIED LIVE
+**Completed:** 2026-06-25 13:16 UTC
+**Status:** RESOLVED ✓
+
+#### Commits
+1. `ac4d3c2fd45bd89a9f82d7525a1636607a24b51c` — hotfix regex: sanitizeInlineArg helper (lines 2019-2020), sw cache → v39-hotfix-appjs-regex, MD entry
+2. `23cb6b2e4fb7563bb34dcf487531884276cc61fe` — hotfix syntax: fix double-var at line 1836 (Stage G regression), sw cache → v39-hotfix-appjs-syntax
+
+#### Root causes fixed
+- PRIMARY: Malformed regex `/['"]/g` (backslash-escaped closing quote) at lines 2019-2020 → replaced with sanitizeInlineArg() helper
+- SECONDARY (discovered during fix): `var var noteCompl` double-declaration at line 1836 (Stage G regression) → removed duplicate keyword
+
+#### Cache
+`ministry-tracker-v39-stage-g-reminders` → `v39-hotfix-appjs-regex` → `v39-hotfix-appjs-syntax`
+
+#### Live verification (desktop)
+- Home tab ✓
+- Timer tab ✓
+- Calendar tab ✓
+- Notes & Reminders tab ✓
+- Reports tab ✓
+- No JS SyntaxErrors ✓
+- No error modals ✓
+- Zero console errors ✓
