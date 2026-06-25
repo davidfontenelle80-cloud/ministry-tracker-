@@ -1,10 +1,10 @@
 ---
-title: "TEMP — Ministry Notes & Reminders Implementation Tracker"
+title: "TEMP â Ministry Notes & Reminders Implementation Tracker"
 app: "Ministry Tracker"
 repo: "davidfontenelle80-cloud/ministry-tracker-"
 reference_repo: "davidfontenelle80-cloud/note-clip"
 boilerplate_repo: "davidfontenelle80-cloud/KHub-Boilerplate"
-stage: "Stage C — COMPLETE"
+stage: "Stage C â COMPLETE"
 status: "active implementation tracker"
 created: "2026-06-23"
 updated: "2026-06-25"
@@ -28,6 +28,11 @@ commit_history:
     commit: "72e049a / e4c71ea"
     summary: "ministryNoteCategories[] and ministryNotes[] added to APP_CONFIG.defaults. Migration-safe."
     inspector: "Claude (Cowork)"
+  - date: "2026-06-25"
+    stage: "Hotfix"
+    commit: "ac4d3c2 / 23cb6b2 / 3037047"
+    summary: "Emergency regex + var declaration repair. App restored to working state. Stage G verified complete."
+    inspector: "Claude (Cowork)"
   - date: "2026-06-24"
     stage: "Stage D"
     commit: "1650e54"
@@ -35,9 +40,9 @@ commit_history:
     inspector: "Claude (Cowork)"
 ---
 
-# TEMP — Ministry Notes & Reminders Implementation Tracker
+# TEMP â Ministry Notes & Reminders Implementation Tracker
 
-## MASTER RULE — THIS FILE IS THE SOURCE OF TRUTH
+## MASTER RULE â THIS FILE IS THE SOURCE OF TRUTH
 
 Before making code changes:
 
@@ -93,7 +98,7 @@ This file must be deleted only after the full buildout is implemented, tested, l
 
 ## MAIN PROJECT GOAL
 
-Add a new **Notes & Reminders** feature to Ministry Tracker by duplicating/adapting the Note Clip **Categories → Notes → Calendar** workflow.
+Add a new **Notes & Reminders** feature to Ministry Tracker by duplicating/adapting the Note Clip **Categories â Notes â Calendar** workflow.
 
 Important wording:
 
@@ -101,7 +106,7 @@ Important wording:
 - Inspect Note Clip, document how it works, then duplicate/adapt the same structure inside Ministry Tracker.
 - The new feature must feel native to Ministry Tracker, not pasted from Note Clip.
 
-## CRITICAL GUARDRAIL — DO NOT TOUCH EXISTING SERVICE CATEGORIES
+## CRITICAL GUARDRAIL â DO NOT TOUCH EXISTING SERVICE CATEGORIES
 
 Do **not** use or modify Ministry Tracker's existing `categories` array for this feature.
 
@@ -155,7 +160,7 @@ A note created in Notes & Reminders must be editable from Calendar.
 
 A note created from Calendar must appear in Notes & Reminders.
 
-## STAGE A — Navigation Cleanup FIRST
+## STAGE A â Navigation Cleanup FIRST
 
 ### Objective
 
@@ -188,16 +193,16 @@ Reports should show reports first and Log History below, or use a clean segmente
 
 ### Stage C status
 
-`COMPLETE — commit 72e049a — 2026-06-24`
+`COMPLETE â commit 72e049a â 2026-06-24`
 
 **What was done:**
 - Added `ministryNoteCategories: []` to `APP_CONFIG.defaults` in `js/app.js`.
 - Added `ministryNotes: []` to `APP_CONFIG.defaults` in `js/app.js`.
-- Both fields placed after the `categories` array (service categories — untouched).
+- Both fields placed after the `categories` array (service categories â untouched).
 - Migration safety: `loadState()` spread operator on `APP_CONFIG.defaults`.
 - Export/import safety: new fields in same state blob; `|| []` fallback automatic.
 - Cloud backup safety: both fields in `ministry-tracker-v4` localStorage blob; `KHub.CloudBackup.save()` picks them up automatically.
-- Bumped `CACHE_VERSION`: `v34-stage-a-notes-nav` → `v35-stage-c-data-model`.
+- Bumped `CACHE_VERSION`: `v34-stage-a-notes-nav` â `v35-stage-c-data-model`.
 - **Critical guardrail honored**: existing `categories` array untouched. No UI, no category screens, no note screens, no calendar integration.
 
 ### Stop Conditions
@@ -210,9 +215,9 @@ Reports should show reports first and Log History below, or use a clean segmente
 
 ### Stage A status
 
-`pending — do not start until David approves this tracker update`
+`pending â do not start until David approves this tracker update`
 
-## STAGE B — Inspect Note Clip
+## STAGE B â Inspect Note Clip
 
 Before coding Notes & Reminders, inspect Note Clip and document findings in this file.
 
@@ -237,27 +242,27 @@ Before coding Notes & Reminders, inspect Note Clip and document findings in this
 
 ### Suggested Note Clip files/functions to inspect
 
-- [x] `js/storage.js` — state shape, categories, notes, CRUD helpers.
-- [x] `js/notes.js` — category grid, note cards, note modal, category modal, status/search/filter behavior.
-- [x] `js/calendar.js` — calendar indicators, notes by date, upcoming/overdue sections, open/edit note from calendar.
-- [x] `app.js` — routing/FAB behavior between notes and calendar.
-- [x] `index.html` — script load order and tab structure.
-- [ ] CSS files — category grid, note cards, modal, calendar rows.
-- [x] i18n labels — note/category/calendar labels.
-- [x] Service worker/cache files — current cache version and deploy behavior.
-- [x] Backup/export/import/cloud behavior — confirm full state preservation.
+- [x] `js/storage.js` â state shape, categories, notes, CRUD helpers.
+- [x] `js/notes.js` â category grid, note cards, note modal, category modal, status/search/filter behavior.
+- [x] `js/calendar.js` â calendar indicators, notes by date, upcoming/overdue sections, open/edit note from calendar.
+- [x] `app.js` â routing/FAB behavior between notes and calendar.
+- [x] `index.html` â script load order and tab structure.
+- [ ] CSS files â category grid, note cards, modal, calendar rows.
+- [x] i18n labels â note/category/calendar labels.
+- [x] Service worker/cache files â current cache version and deploy behavior.
+- [x] Backup/export/import/cloud behavior â confirm full state preservation.
 
 ### Note Clip inspection notes
 
 ```txt
-COMPLETE — see Stage B Findings section below.
+COMPLETE â see Stage B Findings section below.
 ```
 
 ### Stage B status
 
-`COMPLETE — 2026-06-24 — approved for Stage C planning`
+`COMPLETE â 2026-06-24 â approved for Stage C planning`
 
-## STAGE C — Ministry Notes Data Model
+## STAGE C â Ministry Notes Data Model
 
 Add separate Ministry-specific data:
 
@@ -269,7 +274,7 @@ ministryNotes: []
 ### Default Ministry note categories
 
 - Return Visits / Revisitas
-- Bible Studies / Estudios bíblicos
+- Bible Studies / Estudios bÃ­blicos
 - Interested Persons / Personas interesadas
 - Calls / Llamadas
 - Messages / Mensajes
@@ -306,12 +311,12 @@ ministryNotes: []
 
 ### Required
 
-- [x] Migration-safe defaults. — commit 72e049a
-- [x] Existing users must not lose data. — commit 72e049a
-- [x] Export/import must preserve new fields. (|| [] fallback in loadState spread) — commit 72e049a
-- [x] Cloud backup/restore must preserve new fields. (same state blob at ministry-tracker-v4) — commit 72e049a
-- [x] Existing `categories` array remains untouched. — commit 72e049a
-- [x] Existing logs, reports, sessions, and credit hours remain unchanged. — commit 72e049a
+- [x] Migration-safe defaults. â commit 72e049a
+- [x] Existing users must not lose data. â commit 72e049a
+- [x] Export/import must preserve new fields. (|| [] fallback in loadState spread) â commit 72e049a
+- [x] Cloud backup/restore must preserve new fields. (same state blob at ministry-tracker-v4) â commit 72e049a
+- [x] Existing `categories` array remains untouched. â commit 72e049a
+- [x] Existing logs, reports, sessions, and credit hours remain unchanged. â commit 72e049a
 
 ### Stop Conditions
 
@@ -322,9 +327,9 @@ ministryNotes: []
 
 ### Stage C status
 
-`COMPLETE — 2026-06-24 — commits 72e049a (feat: data model) / e4c71ea (docs)`
+`COMPLETE â 2026-06-24 â commits 72e049a (feat: data model) / e4c71ea (docs)`
 
-## STAGE D — Notes & Reminders UI
+## STAGE D â Notes & Reminders UI
 
 Create a dedicated Notes & Reminders tab.
 
@@ -370,9 +375,9 @@ Keep track of return visits, Bible studies, interested persons, calls, messages,
 
 ### Stage D status
 
-`code-implemented, not live-approved yet — 2026-06-24 — commit 1650e54`
+`code-implemented, not live-approved yet â 2026-06-24 â commit 1650e54`
 
-## STAGE E — Calendar Integration
+## STAGE E â Calendar Integration
 
 Calendar must access the same Ministry Notes data.
 
@@ -397,9 +402,9 @@ Calendar must access the same Ministry Notes data.
 
 `COMPLETE`
 
-> **Implemented 2026-06-24:** Notes inside category (add/edit/delete, EN+ES). Tap a category card to open its notes list. Stage E Calendar Integration deferred — renamed Stage F+ per build plan.
+> **Implemented 2026-06-24:** Notes inside category (add/edit/delete, EN+ES). Tap a category card to open its notes list. Stage E Calendar Integration deferred â renamed Stage F+ per build plan.
 
-## STAGE F — Calendar Integration
+## STAGE F â Calendar Integration
 
 ### First pass requirements
 
@@ -428,7 +433,7 @@ Later FCM push notification integration can connect to the existing approved KHu
 
 > **Implemented 2026-06-25:** Calendar Integration (Stage F). Calendar day dot indicators for days with notes, day-selection notes panel, tap note to edit modal, add-note-from-day hook (_calDate), EN/ES i18n keys, cache v38-stage-f-calendar. Commit: 93a86b6.
 
-## STAGE G — Visual/Brand Alignment
+## STAGE G â Visual/Brand Alignment
 
 Use Ministry Tracker's existing design:
 
@@ -455,7 +460,7 @@ Do not copy Note Clip's visual theme blindly unless it fits Ministry.
 - [ ] Light mode verified.
 - [ ] Dark mode verified.
 
-### Stage G — Reminder Foundation + Visual Polish
+### Stage G â Reminder Foundation + Visual Polish
 
 ### Preflight (2026-06-25)
 
@@ -463,11 +468,11 @@ Do not copy Note Clip's visual theme blindly unless it fits Ministry.
 
 **Parts**:
 - Part 1: 8 new fields on note model (dueDate, dueTime, reminder, reminderAt, priority, status, completed, archived) + UI controls in note modal
-- Part 2: Category selector in modal — fix Stage F bug where notes added from calendar defaulted to first category
-- Part 3: Visual polish — priority badges, status chips, due date display, completed state styling, archived badge
+- Part 2: Category selector in modal â fix Stage F bug where notes added from calendar defaulted to first category
+- Part 3: Visual polish â priority badges, status chips, due date display, completed state styling, archived badge
 
 **Constraints**:
-- Zero new storage keys — all fields save via existing saveState()
+- Zero new storage keys â all fields save via existing saveState()
 - Zero Firebase changes
 - Zero export/import format changes (new fields silently ignored by existing exports)
 - No push notifications, FCM, or background processing
@@ -475,8 +480,8 @@ Do not copy Note Clip's visual theme blindly unless it fits Ministry.
 - I18N: both `en` and `es` keys for all 14 new strings
 
 **Files to change**:
-- `js/app.js` — 8 targeted string replacements (i18n EN, i18n ES, badge vars, title div, DOM injection IIFE, save vars, update block, push block)
-- `sw.js` — CACHE_NAME: v38-stage-f-calendar → v39-stage-g-reminders
+- `js/app.js` â 8 targeted string replacements (i18n EN, i18n ES, badge vars, title div, DOM injection IIFE, save vars, update block, push block)
+- `sw.js` â CACHE_NAME: v38-stage-f-calendar â v39-stage-g-reminders
 
 **Push method**: GitHub Trees API via Chrome MCP javascript_tool only
 
@@ -494,33 +499,33 @@ Do not copy Note Clip's visual theme blindly unless it fits Ministry.
 - sw.js bump: `a1274a8f089b09739335d49d8500df770b3390e7`
 
 **Files changed**:
-- `js/app.js` — 8 changes: i18n EN (14 keys), i18n ES (14 keys), badge vars, title div, DOM injection IIFE (category/priority/status/due date/reminder/completed/archived), save handler vars, update block, push block
-- `sw.js` — CACHE_NAME v38-stage-f-calendar → v39-stage-g-reminders
+- `js/app.js` â 8 changes: i18n EN (14 keys), i18n ES (14 keys), badge vars, title div, DOM injection IIFE (category/priority/status/due date/reminder/completed/archived), save handler vars, update block, push block
+- `sw.js` â CACHE_NAME v38-stage-f-calendar â v39-stage-g-reminders
 
 **Changes summary**:
-- **Part 1 — Reminder fields**: `dueDate`, `dueTime`, `reminder`, `reminderAt`, `priority`, `status`, `completed`, `archived` added to note model and modal UI. All fields save via existing `saveState()`.
-- **Part 2 — Category fix**: Category `<select>` added to note modal. Pre-selects `note.categoryId` (edit mode) or `categoryId` parameter (add from context). `ncatId` used in both update and push blocks — Stage F calendar-add bug fixed.
-- **Part 3 — Visual polish**: Priority badges (red/amber/blue ▲◆▼), status chips, due-date badge (month abbr + year if not current), completed state (opacity 0.55 + strikethrough), archived badge. All colors via CSS variables.
+- **Part 1 â Reminder fields**: `dueDate`, `dueTime`, `reminder`, `reminderAt`, `priority`, `status`, `completed`, `archived` added to note model and modal UI. All fields save via existing `saveState()`.
+- **Part 2 â Category fix**: Category `<select>` added to note modal. Pre-selects `note.categoryId` (edit mode) or `categoryId` parameter (add from context). `ncatId` used in both update and push blocks â Stage F calendar-add bug fixed.
+- **Part 3 â Visual polish**: Priority badges (red/amber/blue â²ââ¼), status chips, due-date badge (month abbr + year if not current), completed state (opacity 0.55 + strikethrough), archived badge. All colors via CSS variables.
 
-**Cache**: v38-stage-f-calendar → v39-stage-g-reminders
+**Cache**: v38-stage-f-calendar â v39-stage-g-reminders
 
 **Tests to run after deploy**:
 - [ ] App loads, no console errors
 - [ ] Home, Timer, Calendar, Report all work
-- [ ] Add note from Calendar — category pre-selects correctly
-- [ ] Add note with priority High → red badge appears on card
-- [ ] Add note with priority Medium → amber badge
-- [ ] Add note with priority Low → blue badge
-- [ ] Add note with status In Progress → chip appears
-- [ ] Add note with due date → date badge appears on card
-- [ ] Mark note completed → card muted with strikethrough
-- [ ] Archive note → archived badge shows
-- [ ] Edit existing note → all new fields pre-fill correctly
+- [ ] Add note from Calendar â category pre-selects correctly
+- [ ] Add note with priority High â red badge appears on card
+- [ ] Add note with priority Medium â amber badge
+- [ ] Add note with priority Low â blue badge
+- [ ] Add note with status In Progress â chip appears
+- [ ] Add note with due date â date badge appears on card
+- [ ] Mark note completed â card muted with strikethrough
+- [ ] Archive note â archived badge shows
+- [ ] Edit existing note â all new fields pre-fill correctly
 - [ ] Export/import unaffected (new fields silently ignored)
 - [ ] Cloud backup unaffected
 - [ ] EN and ES labels correct in modal
-- [ ] Dark mode — all badges use CSS variables correctly
-- [ ] Mobile layout — modal fields scroll, badges wrap cleanly
+- [ ] Dark mode â all badges use CSS variables correctly
+- [ ] Mobile layout â modal fields scroll, badges wrap cleanly
 
 **Known issues / risks**:
 - reminderAt is stored (timestamp) but no notification delivery (Stage H deferred)
@@ -528,7 +533,7 @@ Do not copy Note Clip's visual theme blindly unless it fits Ministry.
 
 **Stage G**: COMPLETE
 
-## STAGE H — QA / Live Verification
+## STAGE H â QA / Live Verification
 
 ### Required tests
 
@@ -646,12 +651,12 @@ Stage: Stage B
 Summary: Note Clip inspection complete. All 12 key source files read. Stage B findings documented in MD. Storage shape, category system, notes system, note object, modals, calendar, upcoming/overdue, reminders, export/import, cloud backup, service worker, i18n, accessibility, and recommendations all documented.
 Commit hash: (pending commit)
 Files changed: docs/stage-notes/2026-06-23-ministry-notes-categories-calendar-plan.md
-Tests run: N/A (documentation only — no code changes)
+Tests run: N/A (documentation only â no code changes)
 Screenshots if UI changed: N/A
 Cache version before: N/A
 Cache version after: N/A
 Bugs fixed: N/A
-Known issues: firebase-config.js, communication.js, push.js, onboarding.js not retrieved (timeout) — not critical for Stage B
+Known issues: firebase-config.js, communication.js, push.js, onboarding.js not retrieved (timeout) â not critical for Stage B
 Mobile verification: N/A
 Desktop verification: N/A
 Light/dark verification: N/A
@@ -659,7 +664,7 @@ English/Spanish verification: N/A
 Export/import verification: N/A
 Cloud backup/restore verification: N/A
 Live GitHub Pages verification: N/A
-Remaining risks: See Stage B Recommendations → Risks section
+Remaining risks: See Stage B Recommendations â Risks section
 Checklist items completed in this MD: All Stage B checklist items
 Checklist items still pending: Stage A, C, D, E, F, G, H all pending
 Status: APPROVED FOR STAGE C PLANNING
@@ -670,7 +675,7 @@ Stage: Stage C
 Summary: ministryNoteCategories[] and ministryNotes[] added to APP_CONFIG.defaults (migration-safe, 4-space indent). Separate from service categories array.
 Commit hash: 72e049a (feat: Stage C data model) / e4c71ea (docs: Stage C complete)
 Files changed: js/app.js, docs/stage-notes/2026-06-23-ministry-notes-categories-calendar-plan.md
-Tests run: node --check js/app.js — SYNTAX OK
+Tests run: node --check js/app.js â SYNTAX OK
 Cache version before: v34-stage-a
 Cache version after: v35-stage-c-data-model
 Bugs fixed: N/A
@@ -682,29 +687,29 @@ English/Spanish verification: N/A
 Export/import verification: N/A
 Cloud backup/restore verification: N/A
 Live GitHub Pages verification: N/A
-Remaining risks: None — data model only, no UI
+Remaining risks: None â data model only, no UI
 Checklist items completed: All Stage C Required items
 Status: COMPLETE
 ```
 
 ```txt
 Date: 2026-06-24
-Stage: Stage D (Partial — Category Management only)
+Stage: Stage D (Partial â Category Management only)
 Summary: ministryNoteCategories Management UI. 8 default categories seeded via migration guard in renderNotes(). Responsive 2-col grid. openCategoryModal() handles add/edit. deleteMinistryNoteCategory() uses openConfirmModal with danger:true. i18n EN+ES (13 keys each). CACHE_VERSION v36-stage-d-categories. index.html notes section uses <div id=notesContent> container. Full notes CRUD comes in Stage E.
 Commit hash: 1650e54c9250f354319ba971aa09ed28b59c9789
 Files changed: js/app.js, index.html, sw.js
-Tests run: node --check js/app.js — SYNTAX OK; 50/50 unit checks passed
+Tests run: node --check js/app.js â SYNTAX OK; 50/50 unit checks passed
 Cache version before: v35-stage-c-data-model
 Cache version after: v36-stage-d-categories
 Bugs fixed: Fixed 8-space indent on ministryNoteCategories/ministryNotes (corrected to 4-space in Stage D)
 Known issues: Full notes CRUD (Stage E) not yet implemented. Calendar integration pending.
-Mobile verification: N/A — pending live approval
-Desktop verification: N/A — pending live approval
-Light/dark verification: N/A — pending live approval
-English/Spanish verification: N/A — pending live approval
-Export/import verification: N/A — pending live approval
-Cloud backup/restore verification: N/A — pending live approval
-Live GitHub Pages verification: N/A — pending live approval
+Mobile verification: N/A â pending live approval
+Desktop verification: N/A â pending live approval
+Light/dark verification: N/A â pending live approval
+English/Spanish verification: N/A â pending live approval
+Export/import verification: N/A â pending live approval
+Cloud backup/restore verification: N/A â pending live approval
+Live GitHub Pages verification: N/A â pending live approval
 Remaining risks: Notes inside categories not yet implemented.
 Checklist items completed: Category grid, Add/edit category, Delete category safely, Empty states, No native prompt, No dead buttons, No placeholder UI, No fake success messages, No push notification promises
 Checklist items still pending: All notes view, Notes inside selected category, Add/edit note, Note card, Search, Status filters, Priority, Due date, Due time, Reminder fields, Complete/archive/reopen
@@ -785,7 +790,7 @@ When deleting, use commit message:
 Remove temporary Ministry notes build checklist after approval
 ```
 
-## One-Message Prompt for Codex/Coworker — Stage 0 / A Start
+## One-Message Prompt for Codex/Coworker â Stage 0 / A Start
 
 ```txt
 Open the Ministry Tracker repo: davidfontenelle80-cloud/ministry-tracker-.
@@ -803,10 +808,10 @@ First inspect:
 Update the markdown with the inspection report before code changes.
 
 Main goal:
-Add a new Notes & Reminders feature to Ministry Tracker by duplicating/adapting Note Clip's Categories → Notes → Calendar workflow. Do not merge Note Clip into Ministry Tracker.
+Add a new Notes & Reminders feature to Ministry Tracker by duplicating/adapting Note Clip's Categories â Notes â Calendar workflow. Do not merge Note Clip into Ministry Tracker.
 
 First implementation stage after inspection:
-Stage A — Navigation Cleanup FIRST.
+Stage A â Navigation Cleanup FIRST.
 
 Stage A must:
 - Remove the dedicated Log bottom-nav tab.
@@ -842,7 +847,7 @@ code-implemented, not live-approved yet
 
 ---
 
-## Stage B — Note Clip Inspection Findings
+## Stage B â Note Clip Inspection Findings
 
 **Inspector:** Claude (Cowork)
 **Date:** 2026-06-24
@@ -851,7 +856,7 @@ code-implemented, not live-approved yet
 
 ---
 
-### Stage B Inspection Checklist — COMPLETE
+### Stage B Inspection Checklist â COMPLETE
 
 - [x] Storage shape for categories and notes.
 - [x] Category grid behavior.
@@ -901,9 +906,9 @@ Single key, full state serialized as JSON.
   },
   categories: [ /* category objects */ ],
   notes: [ /* note objects */ ],
-  lists: [ /* list objects — not relevant for ministry */ ],
-  sharedItems: [ /* shared items — not relevant */ ],
-  drafts: [ /* drafts — not relevant */ ],
+  lists: [ /* list objects â not relevant for ministry */ ],
+  sharedItems: [ /* shared items â not relevant */ ],
+  drafts: [ /* drafts â not relevant */ ],
   quickNotes: [],
 }
 ```
@@ -929,7 +934,7 @@ Result: short alphanumeric string, e.g. `"lqz7f4abc"`. Collision-safe for local 
 
 Default categories (8): Work, Medical, Personal, Home, Documents, Follow-Up, Orders, Ideas. IDs are preset strings (`cat_work`, etc.). User-added categories get generated IDs.
 
-#### Notes Storage Shape — ALL FIELDS
+#### Notes Storage Shape â ALL FIELDS
 
 ```js
 {
@@ -943,7 +948,7 @@ Default categories (8): Work, Medical, Personal, Home, Documents, Follow-Up, Ord
   dueDate:             string,   // ISO date 'YYYY-MM-DD' or ''
   dueTime:             string,   // 'HH:MM' 24h or ''
   reminder:            string,   // 'same_day'|'day_before'|'1h_before'|'2h_before'|'' / 'none'
-  reminderAt:          string,   // ISO datetime 'YYYY-MM-DDTHH:MM:00' — set by reminder bell picker
+  reminderAt:          string,   // ISO datetime 'YYYY-MM-DDTHH:MM:00' â set by reminder bell picker
   appointmentName:     string,   // appointment name/label
   appointmentDatetime: string,   // datetime-local string 'YYYY-MM-DDTHH:MM'
   leaveBy:             string,   // time 'HH:MM'
@@ -956,11 +961,11 @@ Default categories (8): Work, Medical, Personal, Home, Documents, Follow-Up, Ord
 }
 ```
 
-**Note:** `reminderAt` is NOT in the default object in `addNote()` — it is added later by `updateNote()` through the reminder bell picker in `reminders.js`. Any Ministry adaptation must explicitly include it in the default object.
+**Note:** `reminderAt` is NOT in the default object in `addNote()` â it is added later by `updateNote()` through the reminder bell picker in `reminders.js`. Any Ministry adaptation must explicitly include it in the default object.
 
 #### Relationships
 
-- `note.categoryId` → `category.id` (soft FK, nullable)
+- `note.categoryId` â `category.id` (soft FK, nullable)
 - Notes do NOT embed category data; they reference by ID only
 - If a category is deleted with `deleteNotes=false`, `note.categoryId` is set to `null` (tag-only removal)
 - If a category is deleted with `deleteNotes=true`, all notes with that `categoryId` are hard-deleted
@@ -980,33 +985,33 @@ Color cycles through `NOTE_COLORS` array based on `notes.length % 6`.
 
 #### Category Grid Layout
 
-`css .category-grid` — CSS grid. Cards show:
+`css .category-grid` â CSS grid. Cards show:
 - Icon (PNG img if `ic_` prefix, else emoji/text)
-- Edit button (✎) and Delete button (×) visible on card-top
+- Edit button (â) and Delete button (Ã) visible on card-top
 - Category name
 - Note count: `n notes`
 - Click anywhere on card (except buttons) to open notes for that category
 
 #### Category Add Flow
 
-1. In categories view, FAB triggers `App.Notes.onFab()` → `_openCatModal(null)`
+1. In categories view, FAB triggers `App.Notes.onFab()` â `_openCatModal(null)`
 2. Modal collects: `name` (required), `icon` (text field accepting PNG filename or emoji)
-3. `_saveCat('')` → `App.Storage.addCategory({ name, icon })` → re-render
+3. `_saveCat('')` â `App.Storage.addCategory({ name, icon })` â re-render
 4. No color picker in category modal (color defaults to `#F7F0B6`)
 
 #### Category Edit Flow
 
-1. ✎ button on card → `_editCat(id)` → `_openCatModal(cat)`
+1. â button on card â `_editCat(id)` â `_openCatModal(cat)`
 2. Prefills name and icon
-3. `_saveCat(id)` → `App.Storage.updateCategory(id, { name, icon })` → re-render
+3. `_saveCat(id)` â `App.Storage.updateCategory(id, { name, icon })` â re-render
 
-#### Category Delete Flow — IMPORTANT
+#### Category Delete Flow â IMPORTANT
 
 When a category has notes and is deleted:
 - A confirmation modal shows two options:
-  - **"Remove category tag only"** → `deleteCategory(id, false)` → notes remain, their `categoryId` becomes `null`
-  - **"Delete notes too"** → `deleteCategory(id, true)` → notes are hard-deleted
-- When a category has zero notes: simple `confirm()` → `deleteCategory(id, false)`
+  - **"Remove category tag only"** â `deleteCategory(id, false)` â notes remain, their `categoryId` becomes `null`
+  - **"Delete notes too"** â `deleteCategory(id, true)` â notes are hard-deleted
+- When a category has zero notes: simple `confirm()` â `deleteCategory(id, false)`
 
 **Ministry risk:** Ministry Tracker must replicate this two-path delete behavior to avoid data loss.
 
@@ -1057,15 +1062,15 @@ Four levels: urgent, high, medium, low. Medium is the default and is hidden from
 
 #### Archive Behavior
 
-`_archiveNote(id)` → `updateNote(id, { archived: true })`. No confirmation required. Archived notes only appear under the "Archived" status tab.
+`_archiveNote(id)` â `updateNote(id, { archived: true })`. No confirmation required. Archived notes only appear under the "Archived" status tab.
 
 #### Complete/Reopen Behavior
 
-`_completeNote(id)` → `updateNote(id, { completed: true, status: 'completed' })`. No "reopen" UI is implemented in Note Clip — completed notes can only be accessed via the "Completed" status tab. Re-editing a completed note would not reset completed status automatically.
+`_completeNote(id)` â `updateNote(id, { completed: true, status: 'completed' })`. No "reopen" UI is implemented in Note Clip â completed notes can only be accessed via the "Completed" status tab. Re-editing a completed note would not reset completed status automatically.
 
 ---
 
-### NOTE OBJECT — ALL FIELDS (Definitive)
+### NOTE OBJECT â ALL FIELDS (Definitive)
 
 | Field | Type | Default | Notes |
 |-------|------|---------|-------|
@@ -1098,7 +1103,7 @@ Four levels: urgent, high, medium, low. Medium is the default and is hidden from
 
 Fields: `cat-name` (text, required), `cat-icon` (text, accepts `ic_*` PNG filename or emoji).
 No color picker. No category type or parent.
-Validation: name must not be empty — shows toast error if blank.
+Validation: name must not be empty â shows toast error if blank.
 Save: calls `addCategory` or `updateCategory`.
 
 #### Note Modal
@@ -1127,19 +1132,19 @@ Built via `_openNoteModal(note)`. Sections:
 - If address is filled: Apple Maps link, Google Maps link, Copy Address button
 
 **Footer buttons (edit mode only):**
-- Delete (red), Complete (✓), Archive — then Cancel / Save
+- Delete (red), Complete (â), Archive â then Cancel / Save
 
 #### Save Flow
 
-`_saveNote(id)` reads all inputs. Validation: title AND body both empty → toast error, return. Otherwise calls `addNote(patch)` or `updateNote(id, patch)`, closes modal, re-renders notes, optionally refreshes dashboard reminders.
+`_saveNote(id)` reads all inputs. Validation: title AND body both empty â toast error, return. Otherwise calls `addNote(patch)` or `updateNote(id, patch)`, closes modal, re-renders notes, optionally refreshes dashboard reminders.
 
 #### Delete Flow
 
-`_deleteNote(id)` → native `confirm()` dialog → `App.Storage.deleteNote(id)`. If called from modal (`fromModal=true`), also closes the modal.
+`_deleteNote(id)` â native `confirm()` dialog â `App.Storage.deleteNote(id)`. If called from modal (`fromModal=true`), also closes the modal.
 
 #### Edit Flow
 
-`_editNote(id)` → finds note in state → `_openNoteModal(note)` with prefilled values.
+`_editNote(id)` â finds note in state â `_openNoteModal(note)` with prefilled values.
 
 ---
 
@@ -1161,8 +1166,8 @@ Selected date is highlighted with class `selected`. Today gets class `today`. Ea
 #### Opening Notes From Calendar
 
 `_openNote(id)`:
-1. Calls `App.showTab('notes')` — switches to the Notes tab
-2. `setTimeout(() => App.Notes?._editNote?.(id), 0)` — opens note edit modal on next tick
+1. Calls `App.showTab('notes')` â switches to the Notes tab
+2. `setTimeout(() => App.Notes?._editNote?.(id), 0)` â opens note edit modal on next tick
 
 **Important:** This means opening a note from calendar always navigates AWAY from the calendar tab. There is no inline edit within the calendar pane.
 
@@ -1189,30 +1194,30 @@ No "add note from calendar day" flow exists in Note Clip's calendar. Adding note
 
 `_overdueNotes()` in `calendar.js`:
 - Active notes WHERE:
-  - `dueDate < today` — past due date, OR
-  - `dueDate === today` AND `dueTime` set AND `new Date(dueDate + 'T' + dueTime) < now` — same day, time already passed
+  - `dueDate < today` â past due date, OR
+  - `dueDate === today` AND `dueTime` set AND `new Date(dueDate + 'T' + dueTime) < now` â same day, time already passed
 - Sorted ascending, limited to 8
 
 #### Reminder Logic (Two Layers)
 
-Layer A — In-app popup (`reminders.js`):
+Layer A â In-app popup (`reminders.js`):
 - `App.Reminders.checkReminders()` runs on init, every 60 seconds, and on `visibilitychange`
 - `_reminderTime(n)` calculates the fire time:
-  - `n.reminderAt` (direct ISO) → exact timestamp (highest priority)
-  - `n.reminder === 'same_day'` → `dueDate` at 08:00
-  - `n.reminder === 'day_before'` → day before `dueDate` at 08:00
-  - `n.reminder === '1h_before'` → `dueDate + dueTime - 1h`
-  - `n.reminder === '2h_before'` → `dueDate + dueTime - 2h`
-  - `dueDate + dueTime` with no reminder → fires at exact due datetime
+  - `n.reminderAt` (direct ISO) â exact timestamp (highest priority)
+  - `n.reminder === 'same_day'` â `dueDate` at 08:00
+  - `n.reminder === 'day_before'` â day before `dueDate` at 08:00
+  - `n.reminder === '1h_before'` â `dueDate + dueTime - 1h`
+  - `n.reminder === '2h_before'` â `dueDate + dueTime - 2h`
+  - `dueDate + dueTime` with no reminder â fires at exact due datetime
 - Popup bar appears with Open / Snooze (1h) / Dismiss actions
 - Dismissed notes stored in `noteClip_notified` localStorage key by note ID + signature
 - Snoozed notes stored in `noteClip_snoozed` key with snooze-until timestamp
 
-Layer B — Browser Notification API:
+Layer B â Browser Notification API:
 - If `Notification.permission === 'granted'` and `settings.notificationsEnabled === true`
 - `new Notification(title, { body, icon, tag })` fires and marks notes as notified
-- Layer B takes precedence — if browser notification fires, Layer A popup is skipped
-- FCM push via `App.Push.subscribe()` and `App.Push.syncReminder()` — requires `push.js` (not inspected)
+- Layer B takes precedence â if browser notification fires, Layer A popup is skipped
+- FCM push via `App.Push.subscribe()` and `App.Push.syncReminder()` â requires `push.js` (not inspected)
 
 ---
 
@@ -1220,7 +1225,7 @@ Layer B — Browser Notification API:
 
 #### How Categories Are Exported
 
-`App.Storage.exportJSON()` serializes `getState()` — the ENTIRE state including `categories`. No selective export.
+`App.Storage.exportJSON()` serializes `getState()` â the ENTIRE state including `categories`. No selective export.
 
 #### How Notes Are Exported
 
@@ -1245,14 +1250,14 @@ File downloaded as: `note-clip-backup-YYYY-MM-DD.json`
 
 #### Restore Behavior
 
-No import UI found in `settings.js` or `storage.js` — there is a `restore` i18n key defined but no `importJSON()` function observed in the inspected files. Cloud restore (`restoreFromCloud()`) uses `App.Storage.setState(restored)` which completely replaces the state.
+No import UI found in `settings.js` or `storage.js` â there is a `restore` i18n key defined but no `importJSON()` function observed in the inspected files. Cloud restore (`restoreFromCloud()`) uses `App.Storage.setState(restored)` which completely replaces the state.
 
 #### Risks When Adapting to Ministry Tracker
 
-1. **Key collision** — Ministry Tracker's existing export uses a different storage key and structure. If Ministry Notes are added to the same export object, the structure must be cleanly namespaced.
-2. **Missing restore UI** — Ministry Tracker already has import/restore. The new `ministryNotes` and `ministryNoteCategories` arrays must be explicitly preserved in the existing import/export logic.
-3. **`_cleanState()` in cloud-sync** — Note Clip's cloud backup strips to a whitelist. Ministry Tracker must add `ministryNotes` and `ministryNoteCategories` to any equivalent whitelist.
-4. **setState() replaces entirely** — Restoring from cloud or importing would overwrite all notes. No merge strategy exists.
+1. **Key collision** â Ministry Tracker's existing export uses a different storage key and structure. If Ministry Notes are added to the same export object, the structure must be cleanly namespaced.
+2. **Missing restore UI** â Ministry Tracker already has import/restore. The new `ministryNotes` and `ministryNoteCategories` arrays must be explicitly preserved in the existing import/export logic.
+3. **`_cleanState()` in cloud-sync** â Note Clip's cloud backup strips to a whitelist. Ministry Tracker must add `ministryNotes` and `ministryNoteCategories` to any equivalent whitelist.
+4. **setState() replaces entirely** â Restoring from cloud or importing would overwrite all notes. No merge strategy exists.
 
 ---
 
@@ -1301,14 +1306,14 @@ Backup document shape:
 
 #### Restore Behavior
 
-`restoreFromCloud()` → reads Firestore doc → `_cleanState(data.state)` → `App.Storage.setState(restored)`.
+`restoreFromCloud()` â reads Firestore doc â `_cleanState(data.state)` â `App.Storage.setState(restored)`.
 This is a FULL state replace. No partial merge.
 
 #### Risks When Adapting to Ministry Tracker
 
 1. **Ministry Tracker uses a different Firestore path.** Confirm the ministry app's backup path before connecting. Do not reuse Note Clip's path.
 2. **`_cleanState()` whitelist must be updated** to include `ministryNoteCategories` and `ministryNotes`.
-3. **Full replace on restore** — any Ministry Notes added after a backup will be lost on restore.
+3. **Full replace on restore** â any Ministry Notes added after a backup will be lost on restore.
 4. **Authentication layer** (Firebase Auth) must remain separate from Note Clip's auth.
 
 ---
@@ -1362,24 +1367,24 @@ Single object `STRINGS` with `en` and `es` keys. All translations are flat key-v
 |-----|----|----|
 | `tab_notes` | Notes | Notas |
 | `all_notes` | All Notes | Todas las Notas |
-| `by_category` | By Category | Por Categoría |
-| `categories` | Categories | Categorías |
+| `by_category` | By Category | Por CategorÃ­a |
+| `categories` | Categories | CategorÃ­as |
 | `add_note` | Add Note | Agregar Nota |
 | `edit_note` | Edit Note | Editar Nota |
-| `add_category` | Add Category | Nueva Categoría |
-| `edit_category` | Edit Category | Editar Categoría |
-| `delete_category` | Delete Category | Eliminar Categoría |
+| `add_category` | Add Category | Nueva CategorÃ­a |
+| `edit_category` | Edit Category | Editar CategorÃ­a |
+| `delete_category` | Delete Category | Eliminar CategorÃ­a |
 | `cat_delete_q` | (delete confirm) | (delete confirm) |
-| `cat_delete_tag` | Remove category tag only | Quitar solo la categoría |
-| `cat_delete_all` | Delete notes too | Eliminar las notas también |
-| `note_title` | Title | Título |
+| `cat_delete_tag` | Remove category tag only | Quitar solo la categorÃ­a |
+| `cat_delete_all` | Delete notes too | Eliminar las notas tambiÃ©n |
+| `note_title` | Title | TÃ­tulo |
 | `note_body` | Content | Contenido |
-| `note_due` | Due Date | Fecha límite |
+| `note_due` | Due Date | Fecha lÃ­mite |
 | `note_due_time` | Due Time | Hora |
 | `note_reminder` | Reminder | Recordatorio |
 | `note_appt` | Appointment | Cita |
 | `note_location` | Location | Lugar |
-| `note_address` | Address | Dirección |
+| `note_address` | Address | DirecciÃ³n |
 | `status_active` | Active | Activo |
 | `status_awaiting` | Awaiting Response | Esperando Respuesta |
 | `status_followup` | Follow-Up | Seguimiento |
@@ -1391,17 +1396,17 @@ Single object `STRINGS` with `en` and `es` keys. All translations are flat key-v
 | `priority_high` | High | Alta |
 | `priority_medium` | Medium | Media |
 | `priority_low` | Low | Baja |
-| `cal_upcoming` | Upcoming | (not found in i18n — needs adding) |
-| `cal_overdue` | Overdue | (not found in i18n — needs adding) |
+| `cal_upcoming` | Upcoming | (not found in i18n â needs adding) |
+| `cal_overdue` | Overdue | (not found in i18n â needs adding) |
 | `cal_no_notes_day` | (not found) | (needs adding) |
 
 **Note:** `cal_upcoming`, `cal_overdue`, `cal_no_notes_day`, `cal_no_overdue`, `cal_nothing_due` are used in `calendar.js` but are NOT present in the i18n.js `STRINGS` object inspected. These keys will fall back to the key name itself. Ministry Tracker must add these keys.
 
 #### Risks When Adapting to Ministry Tracker
 
-1. Ministry Tracker already has its own i18n object. The new Notes & Reminders keys must be merged into that object — not imported from Note Clip's `App.I18n`.
-2. Ministry-specific label names differ: "Return Visits / Revisitas", "Bible Studies / Estudios bíblicos", etc. These are not in Note Clip's i18n at all.
-3. Ministry Tracker is bilingual by nature. All new keys must have both EN and ES translations at time of implementation — no EN-only placeholders.
+1. Ministry Tracker already has its own i18n object. The new Notes & Reminders keys must be merged into that object â not imported from Note Clip's `App.I18n`.
+2. Ministry-specific label names differ: "Return Visits / Revisitas", "Bible Studies / Estudios bÃ­blicos", etc. These are not in Note Clip's i18n at all.
+3. Ministry Tracker is bilingual by nature. All new keys must have both EN and ES translations at time of implementation â no EN-only placeholders.
 4. Missing calendar i18n keys (`cal_overdue`, `cal_no_notes_day`, etc.) must be added.
 
 ---
@@ -1412,13 +1417,13 @@ Single object `STRINGS` with `en` and `es` keys. All translations are flat key-v
 
 - FAB has `aria-label="Add new"` (from index.html)
 - Calendar day cells are `<button>` elements with `aria-label="{ds}"` (the date string)
-- Category card delete/edit buttons use `title="Edit"` and `title="Delete"` — no `aria-label`
+- Category card delete/edit buttons use `title="Edit"` and `title="Delete"` â no `aria-label`
 - Nav tabs have `aria-label` on each button (Dashboard, Notes, Lists, etc.)
 
 #### Modal Focus Handling
 
-- On modal open: `document.getElementById('note-title').focus()` and `document.getElementById('cat-name').focus()` — first input receives focus
-- No focus trap implemented — Tab can leave the modal
+- On modal open: `document.getElementById('note-title').focus()` and `document.getElementById('cat-name').focus()` â first input receives focus
+- No focus trap implemented â Tab can leave the modal
 - Escape key handler in `app.js` closes modals via `document.querySelector('.modal-backdrop')?.remove()`
 
 #### Mobile Tap Targets
@@ -1426,8 +1431,8 @@ Single object `STRINGS` with `en` and `es` keys. All translations are flat key-v
 - Note card and category card are full-width tappable areas
 - Color swatches are small (no explicit min size found in inspected code)
 - Status tab buttons exist but no explicit min-height in the inspected JS
-- Modal action buttons use `.btn` class — size depends on CSS
-- `cal-day` cells in calendar are `<button>` elements — size depends on grid cell CSS
+- Modal action buttons use `.btn` class â size depends on CSS
+- `cal-day` cells in calendar are `<button>` elements â size depends on grid cell CSS
 
 ---
 
@@ -1436,9 +1441,9 @@ Single object `STRINGS` with `en` and `es` keys. All translations are flat key-v
 #### 1. Recommended Ministry Adaptation Approach
 
 **Copy directly (structure and logic):**
-- `addNote` / `updateNote` / `deleteNote` pattern → replicate as `addMinistryNote` / `updateMinistryNote` / `deleteMinistryNote`
-- `addCategory` / `updateCategory` / `deleteCategory` with two-path delete → replicate as `addMinistryNoteCategory` etc.
-- `generateId()` — reuse the same utility or Ministry Tracker's existing ID generator
+- `addNote` / `updateNote` / `deleteNote` pattern â replicate as `addMinistryNote` / `updateMinistryNote` / `deleteMinistryNote`
+- `addCategory` / `updateCategory` / `deleteCategory` with two-path delete â replicate as `addMinistryNoteCategory` etc.
+- `generateId()` â reuse the same utility or Ministry Tracker's existing ID generator
 - Status tab filter pattern
 - Note card render pattern (adapt styles to Ministry Tracker theme)
 - Category grid pattern
@@ -1448,23 +1453,23 @@ Single object `STRINGS` with `en` and `es` keys. All translations are flat key-v
 - Reminder check pattern from `reminders.js` (Layer A in-app popup at minimum)
 
 **Adapt (not copy directly):**
-- Storage key — use Ministry Tracker's existing key, add `ministryNoteCategories` and `ministryNotes` to its state shape
-- Category grid icons — use Ministry-appropriate icons/labels (Return Visits, Bible Studies, etc.) instead of Note Clip's icons
-- i18n keys — merge into Ministry Tracker's existing i18n object, use Ministry-appropriate labels
-- Cloud backup whitelist — add new arrays to Ministry Tracker's existing backup logic
-- Calendar integration — wire `ministryNotes` into Ministry Tracker's existing calendar, which already has its own rendering logic
-- Note modal status labels — adapt to ministry context (e.g. "Awaiting Response" = useful for return visits)
-- Color palette — can reuse Note Clip's 6 pastel colors or adopt ministry theme colors
-- FAB behavior — wire into Ministry Tracker's existing FAB or add a separate FAB for Notes tab
+- Storage key â use Ministry Tracker's existing key, add `ministryNoteCategories` and `ministryNotes` to its state shape
+- Category grid icons â use Ministry-appropriate icons/labels (Return Visits, Bible Studies, etc.) instead of Note Clip's icons
+- i18n keys â merge into Ministry Tracker's existing i18n object, use Ministry-appropriate labels
+- Cloud backup whitelist â add new arrays to Ministry Tracker's existing backup logic
+- Calendar integration â wire `ministryNotes` into Ministry Tracker's existing calendar, which already has its own rendering logic
+- Note modal status labels â adapt to ministry context (e.g. "Awaiting Response" = useful for return visits)
+- Color palette â can reuse Note Clip's 6 pastel colors or adopt ministry theme colors
+- FAB behavior â wire into Ministry Tracker's existing FAB or add a separate FAB for Notes tab
 
 **Build fresh:**
 - "Notes & Reminders" tab pane and bottom nav slot (replaces Log per Stage A)
 - Ministry-specific default categories (8 preset)
 - Ministry-appropriate empty states with bilingual text
 - Calendar integration reading from `ministryNotes` rather than Note Clip's `notes`
-- Any "add note from calendar day" flow (Note Clip doesn't have this — Ministry Tracker should)
+- Any "add note from calendar day" flow (Note Clip doesn't have this â Ministry Tracker should)
 - Search within notes (Note Clip has no user-facing search UI)
-- `personName` and `phone` fields (not in Note Clip — needed for ministry return visits)
+- `personName` and `phone` fields (not in Note Clip â needed for ministry return visits)
 
 ---
 
@@ -1472,32 +1477,32 @@ Single object `STRINGS` with `en` and `es` keys. All translations are flat key-v
 
 | Risk | Severity | Description |
 |------|----------|-------------|
-| Service category collision | CRITICAL | Must NOT touch or rename `state.categories` — this array belongs to service logging. All new data goes in `ministryNoteCategories`. |
+| Service category collision | CRITICAL | Must NOT touch or rename `state.categories` â this array belongs to service logging. All new data goes in `ministryNoteCategories`. |
 | Cloud backup whitelist | HIGH | `_cleanState()` equivalent in Ministry Tracker must be updated to include the two new arrays. |
-| Export/import gap | HIGH | Ministry Tracker's export/import logic must be updated before notes are tested — otherwise notes will be silently dropped on import. |
+| Export/import gap | HIGH | Ministry Tracker's export/import logic must be updated before notes are tested â otherwise notes will be silently dropped on import. |
 | Cache version not bumped | HIGH | Service worker must be updated on every code change or users will see stale app. |
-| `reminderAt` field absent from default | MEDIUM | The `reminderAt` field is not in `addNote()`'s default object — it must be explicitly added to the Ministry notes default shape. |
+| `reminderAt` field absent from default | MEDIUM | The `reminderAt` field is not in `addNote()`'s default object â it must be explicitly added to the Ministry notes default shape. |
 | Two-path category delete | MEDIUM | If implemented incorrectly, deleting a category could silently orphan notes or hard-delete them unintentionally. |
 | Missing i18n keys | MEDIUM | `cal_overdue`, `cal_no_notes_day`, `cal_no_overdue`, `cal_nothing_due`, `cal_nothing_upcoming` must be added before calendar is tested. |
 | No reopen/uncomplete flow | LOW | Note Clip has no "reopen completed note" UI. Ministry Tracker should decide if this is needed. |
 | No search UI | LOW | Note Clip has no search in the notes pane. Ministry Tracker may want this for large contact lists. |
-| `shared.js` tab not relevant | INFO | Skip entirely — not needed in Ministry Tracker. |
-| `lists.js` not relevant | INFO | Skip entirely — not needed for Ministry Notes. |
+| `shared.js` tab not relevant | INFO | Skip entirely â not needed in Ministry Tracker. |
+| `lists.js` not relevant | INFO | Skip entirely â not needed for Ministry Notes. |
 
 ---
 
 #### 3. Reusable Components (Direct Reuse)
 
-- `generateId()` pattern — reuse or use Ministry Tracker's existing equivalent
-- `addNote / updateNote / deleteNote` CRUD pattern — reuse with field name prefix
-- `addCategory / updateCategory / deleteCategory` CRUD pattern — reuse with prefix
+- `generateId()` pattern â reuse or use Ministry Tracker's existing equivalent
+- `addNote / updateNote / deleteNote` CRUD pattern â reuse with field name prefix
+- `addCategory / updateCategory / deleteCategory` CRUD pattern â reuse with prefix
 - Status filter tab pattern (`buildStatusTabs()`)
 - Note card render pattern (`buildNoteCard()`)
 - Category grid render pattern (`buildCategoryGrid()`)
 - Note modal structure with collapsed `<details>` sections for due date and appointment
 - Color swatch picker pattern
 - `_noteRows()` pattern from `calendar.js` for note lists in calendar sections
-- `_reminderTime()` logic from `reminders.js` — exact timing calculation
+- `_reminderTime()` logic from `reminders.js` â exact timing calculation
 - In-app reminder popup pattern (Layer A) from `reminders.js`
 - `_overdueNotes()` and `_upcomingNotes()` filter/sort logic
 - `_buildCalendar()` `has-note` indicator pattern
@@ -1527,14 +1532,14 @@ Single object `STRINGS` with `en` and `es` keys. All translations are flat key-v
 ```js
 // In Ministry Tracker state:
 ministryNoteCategories: [
-  { id: 'mncat_rv',    name: 'Return Visits',         nameEs: 'Revisitas',            icon: '👤', color: '#BDD5EA' },
-  { id: 'mncat_bs',    name: 'Bible Studies',          nameEs: 'Estudios bíblicos',    icon: '📖', color: '#C5E2C5' },
-  { id: 'mncat_ip',    name: 'Interested Persons',     nameEs: 'Personas interesadas', icon: '🌱', color: '#F7D9B0' },
-  { id: 'mncat_calls', name: 'Calls',                  nameEs: 'Llamadas',             icon: '📞', color: '#D4C5E2' },
-  { id: 'mncat_msgs',  name: 'Messages',               nameEs: 'Mensajes',             icon: '✉️', color: '#F7F0B6' },
-  { id: 'mncat_terr',  name: 'Territory',              nameEs: 'Territorio',           icon: '🗺️', color: '#BDD5EA' },
-  { id: 'mncat_appt',  name: 'Appointments',           nameEs: 'Citas',                icon: '📅', color: '#F2C4B0' },
-  { id: 'mncat_pers',  name: 'Personal',               nameEs: 'Personal',             icon: '📝', color: '#F7F0B6' },
+  { id: 'mncat_rv',    name: 'Return Visits',         nameEs: 'Revisitas',            icon: 'ð¤', color: '#BDD5EA' },
+  { id: 'mncat_bs',    name: 'Bible Studies',          nameEs: 'Estudios bÃ­blicos',    icon: 'ð', color: '#C5E2C5' },
+  { id: 'mncat_ip',    name: 'Interested Persons',     nameEs: 'Personas interesadas', icon: 'ð±', color: '#F7D9B0' },
+  { id: 'mncat_calls', name: 'Calls',                  nameEs: 'Llamadas',             icon: 'ð', color: '#D4C5E2' },
+  { id: 'mncat_msgs',  name: 'Messages',               nameEs: 'Mensajes',             icon: 'âï¸', color: '#F7F0B6' },
+  { id: 'mncat_terr',  name: 'Territory',              nameEs: 'Territorio',           icon: 'ðºï¸', color: '#BDD5EA' },
+  { id: 'mncat_appt',  name: 'Appointments',           nameEs: 'Citas',                icon: 'ð', color: '#F2C4B0' },
+  { id: 'mncat_pers',  name: 'Personal',               nameEs: 'Personal',             icon: 'ð', color: '#F7F0B6' },
 ],
 
 ministryNotes: [
@@ -1571,7 +1576,7 @@ ministryNotes: [
 
 ---
 
-#### 6. Proposed Implementation Order for Stages C–H
+#### 6. Proposed Implementation Order for Stages CâH
 
 | Stage | Work | Notes |
 |-------|------|-------|
@@ -1588,21 +1593,21 @@ ministryNotes: [
 
 ### Stage B Status
 
-`COMPLETE — approved for Stage C planning`
+`COMPLETE â approved for Stage C planning`
 
 **Note Clip files inspected:**
-- js/storage.js ✅
-- js/notes.js ✅
-- js/calendar.js ✅
-- js/dashboard.js ✅
-- js/reminders.js ✅
-- js/app.js ✅
-- js/settings.js ✅
-- js/firebase/cloud-sync.js ✅
-- js/i18n.js ✅
-- js/lists.js ✅
-- sw.js ✅
-- index.html ✅
+- js/storage.js â
+- js/notes.js â
+- js/calendar.js â
+- js/dashboard.js â
+- js/reminders.js â
+- js/app.js â
+- js/settings.js â
+- js/firebase/cloud-sync.js â
+- js/i18n.js â
+- js/lists.js â
+- sw.js â
+- index.html â
 
 **Files not retrieved (timed out, not critical for Stage B):**
 - js/firebase/firebase-config.js (init config; App.Firebase.init() referenced in cloud-sync.js)
@@ -1613,31 +1618,31 @@ ministryNotes: [
 
 ```txt
 Date: 2026-06-24
-Stage: Stage C — Ministry Notes Data Model
+Stage: Stage C â Ministry Notes Data Model
 Summary: Added ministryNoteCategories:[] and ministryNotes:[] to APP_CONFIG.defaults. Migration-safe via loadState() spread. No UI changes. Bumped CACHE_VERSION to v35.
 Commit hash: 72e049a
 Files changed: js/app.js, sw.js (2 files)
 Tests run: static code review; APP_CONFIG.defaults spread confirmed; saveState() full-serialize confirmed; cloud backup collectKeys() confirmed unaffected; existing categories array verified untouched
-Screenshots if UI changed: N/A — data model only, no UI
+Screenshots if UI changed: N/A â data model only, no UI
 Cache version before: ministry-tracker-v34-stage-a-notes-nav
 Cache version after: ministry-tracker-v35-stage-c-data-model
 Bugs fixed: none
 Known issues: none
-Mobile verification: N/A — no UI change
-Desktop verification: N/A — no UI change
-Light/dark verification: N/A — no UI change
-English/Spanish verification: N/A — no new i18n keys
+Mobile verification: N/A â no UI change
+Desktop verification: N/A â no UI change
+Light/dark verification: N/A â no UI change
+English/Spanish verification: N/A â no new i18n keys
 Export/import verification: state spread provides automatic || [] for new fields
 Cloud backup/restore verification: new fields in same ministry-tracker-v4 blob; automatically included
 Live GitHub Pages verification: code-implemented, not live-approved yet
-Remaining risks: none — data-model-only change with no side effects
+Remaining risks: none â data-model-only change with no side effects
 Updated MD checklist confirmation: all 6 Stage C checklist items marked complete
 Status: code-implemented, not live-approved yet
 ```
 
 ```txt
 Date: 2026-06-24
-Stage: Stage E — Notes Inside Category
+Stage: Stage E â Notes Inside Category
 Summary: Tap category card opens notes list view; + Add Note modal (title required, body optional); edit/delete per note with confirm dialog; 5 new functions: renderNotes (Stage E), openNotesCategory, renderNotesListView, openNoteModal, deleteMinistryNote; 10 i18n keys EN+ES; CACHE_VERSION v37-stage-e-notes; state vars currentNotesView + currentNotesCategoryId; ministryNotes safeguarded with || [] everywhere.
 Commit hash: 4603e50
 Files changed: js/app.js, sw.js (2 files)
@@ -1646,52 +1651,52 @@ Screenshots if UI changed: pending manual test
 Cache version before: ministry-tracker-v36-stage-d-categories
 Cache version after: ministry-tracker-v37-stage-e-notes
 Bugs fixed: removed notesComingSoon hint from category grid (Stage D placeholder)
-Known issues: category delete does not cascade-delete notes (intentional — notes survive category deletion for now)
+Known issues: category delete does not cascade-delete notes (intentional â notes survive category deletion for now)
 Mobile verification: pending
 Desktop verification: pending
 Light/dark verification: pending
 English/Spanish verification: 10 new keys in both EN and ES confirmed
 Export/import verification: ministryNotes uses || [] in all handlers; saveState() full JSON.stringify preserves all state
 Cloud backup/restore verification: no change to collectKeys() or backup flow
-Remaining risks: none critical — data safety guards in place
+Remaining risks: none critical â data safety guards in place
 Updated MD checklist confirmation: Stage E status changed to COMPLETE
 Status: code-implemented, not live-approved yet
 ```
 
 ```txt
 Date: 2026-06-25 (pre-coding preflight)
-Stage: Stage F — Preflight
+Stage: Stage F â Preflight
 Summary: Verified Stage E complete. HEAD: d28c01e (docs: Stage E complete). Code commit: 4603e50 (feat: Stage E notes inside category). MD confirmed Stage E COMPLETE. openNoteModal signature: openNoteModal(categoryId, noteId). Note shape: {id, categoryId, title, body, createdAt: timestamp, updatedAt: timestamp}. Calendar day cells: <button data-cal-day="YYYY-MM-DD">. adjustSelectedDate = global selected date. i18n: t(k) via I18N object. CACHE_VERSION: v37-stage-e-notes. Stage F redefined per build brief: Calendar Integration (NOT Reminder Foundation). Ready to code.
 Files at preflight: js/app.js (192324 bytes), sw.js (1957 bytes), index.html (45873 bytes).
 ```
 
 ```txt
 Date: 2026-06-25
-Stage: Stage F — Calendar Integration
-Summary: 10 changes applied across 3 files. (1) noteDates Set in renderCalendar for dot indicators. (2) cal-note-dot span in day cell template. (3) renderCalendarNotesPanel() called at end of renderCalendar. (4) openNoteModal signature extended with _calDate param. (5) New note createdAt uses _calDate when adding from calendar. (6/7) I18N EN+ES: calNotesForDay, calNoNotesForDay, calAddNote. (8) renderCalendarNotesPanel() function with CSS injection. (9) calNotesPanel div in index.html. (10) sw.js CACHE_VERSION v37→v38.
+Stage: Stage F â Calendar Integration
+Summary: 10 changes applied across 3 files. (1) noteDates Set in renderCalendar for dot indicators. (2) cal-note-dot span in day cell template. (3) renderCalendarNotesPanel() called at end of renderCalendar. (4) openNoteModal signature extended with _calDate param. (5) New note createdAt uses _calDate when adding from calendar. (6/7) I18N EN+ES: calNotesForDay, calNoNotesForDay, calAddNote. (8) renderCalendarNotesPanel() function with CSS injection. (9) calNotesPanel div in index.html. (10) sw.js CACHE_VERSION v37âv38.
 Commit hash (code): 93a86b6
 Files changed: js/app.js, sw.js, index.html (3 files)
 Tests run: static code review; all 9 verifications passed in browser; all 10 replace operations confirmed OK
-Cache version: v37-stage-e-notes → v38-stage-f-calendar
+Cache version: v37-stage-e-notes â v38-stage-f-calendar
 Bugs fixed: none (new feature)
 Known issues: Add-from-day defaults to first ministryNoteCategories entry as categoryId; future enhancement could add category picker
 Mobile verification: pending live review
 Desktop verification: pending live review
-Light mode: CSS uses var() tokens — should work
-Dark mode: CSS uses var() tokens — should work
-English: ✓ i18n keys added
-Spanish: ✓ i18n keys added
-Export/import unchanged: ✓ no changes to export/import logic
-Cloud backup unchanged: ✓ no changes to backup logic
+Light mode: CSS uses var() tokens â should work
+Dark mode: CSS uses var() tokens â should work
+English: â i18n keys added
+Spanish: â i18n keys added
+Export/import unchanged: â no changes to export/import logic
+Cloud backup unchanged: â no changes to backup logic
 Live GitHub Pages verification: pending (Pages deploys from HEAD automatically)
-Remaining risks: none structural — data-model unchanged, only new render layer
+Remaining risks: none structural â data-model unchanged, only new render layer
 Stage completed: YES
-Next stage: Stage G — Visual/Brand Alignment (or any next priority per build plan)
+Next stage: Stage G â Visual/Brand Alignment (or any next priority per build plan)
 ```
 
 ---
 
-## HOTFIX — Emergency Repair
+## HOTFIX â Emergency Repair
 
 **Date:** 2026-06-25  
 **Time:** 13:03 UTC  
@@ -1703,7 +1708,7 @@ Malformed regex in calendar notes panel sanitization (Stage F): `const sid = n.i
 Backslash before closing quote escapes it, creating an unterminated regex.
 
 ### Fix Applied
-**Option B — helper function approach** (lines 2019–2020 replaced with 3 lines):
+**Option B â helper function approach** (lines 2019â2020 replaced with 3 lines):
 ```js
 function sanitizeInlineArg(v) { return String(v || '').replace(/['"]/g, ''); }
 const sid = sanitizeInlineArg(n.id);
@@ -1711,18 +1716,18 @@ const scat = sanitizeInlineArg(n.categoryId);
 ```
 
 ### Files Changed
-- `js/app.js` — regex fix (lines 2019–2020 → 3 lines)
-- `sw.js` — cache bump `v39-stage-g-reminders` → `v39-hotfix-appjs-regex`
-- This file — hotfix log entry
+- `js/app.js` â regex fix (lines 2019â2020 â 3 lines)
+- `sw.js` â cache bump `v39-stage-g-reminders` â `v39-hotfix-appjs-regex`
+- This file â hotfix log entry
 
 
 ### Completion
 **Completed:** 2026-06-25 13:04 UTC  
 **Commit:** e0ffe9bc475f6c86d083c86c3623f474ad7a3e89  
-**Status:** DEPLOYED — Awaiting live verification  
+**Status:** DEPLOYED â Awaiting live verification  
 
 **Changes pushed in single commit:**
-- `js/app.js`: sanitizeInlineArg() helper inserted at line 2019 (2 broken lines → 3 clean lines)
+- `js/app.js`: sanitizeInlineArg() helper inserted at line 2019 (2 broken lines â 3 clean lines)
 - `sw.js`: CACHE_VERSION bumped from `v39-stage-g-reminders` to `v39-hotfix-appjs-regex`
 - `docs/stage-notes/...`: this log entry
 
@@ -1731,52 +1736,147 @@ const scat = sanitizeInlineArg(n.categoryId);
 
 ---
 
-## HOTFIX '2026-06-25' — Emergency Regex Repair
+## HOTFIX '2026-06-25' â Emergency Regex Repair
 
 **Date:** 2026-06-25 13:06 UTC
 **Status:** DEPLOYED
 
 ### Problem
-Production crash: SyntaxError — Unterminated regular expression literal (~line 1921, actual lines 2019-2020).
+Production crash: SyntaxError â Unterminated regular expression literal (~line 1921, actual lines 2019-2020).
 Malformed regex in calendar notes sanitization (Stage F).
 
 ### Fix
-Option B helper function — lines 2019-2020 replaced with 3 lines:
+Option B helper function â lines 2019-2020 replaced with 3 lines:
 - sanitizeInlineArg() helper
 - const sid = sanitizeInlineArg(n.id)
 - const scat = sanitizeInlineArg(n.categoryId)
 
 ### Files Changed
-- js/app.js — regex fix (2 lines → 3)
-- sw.js — cache bump v39-stage-g-reminders → v39-hotfix-appjs-regex
-- This file — hotfix log
+- js/app.js â regex fix (2 lines â 3)
+- sw.js â cache bump v39-stage-g-reminders â v39-hotfix-appjs-regex
+- This file â hotfix log
 
 ### Commit
 e0ffe9bc475f6c86d083c86c3623f474ad7a3e89 (hotfix code)
 89540405fbff9caee9ae4a8179b1f454400289f4 (MD update)
 
 
-### Completion — VERIFIED LIVE
+### Completion â VERIFIED LIVE
 **Completed:** 2026-06-25 13:16 UTC
-**Status:** RESOLVED ✓
+**Status:** RESOLVED â
 
 #### Commits
-1. `ac4d3c2fd45bd89a9f82d7525a1636607a24b51c` — hotfix regex: sanitizeInlineArg helper (lines 2019-2020), sw cache → v39-hotfix-appjs-regex, MD entry
-2. `23cb6b2e4fb7563bb34dcf487531884276cc61fe` — hotfix syntax: fix double-var at line 1836 (Stage G regression), sw cache → v39-hotfix-appjs-syntax
+1. `ac4d3c2fd45bd89a9f82d7525a1636607a24b51c` â hotfix regex: sanitizeInlineArg helper (lines 2019-2020), sw cache â v39-hotfix-appjs-regex, MD entry
+2. `23cb6b2e4fb7563bb34dcf487531884276cc61fe` â hotfix syntax: fix double-var at line 1836 (Stage G regression), sw cache â v39-hotfix-appjs-syntax
 
 #### Root causes fixed
-- PRIMARY: Malformed regex `/['"]/g` (backslash-escaped closing quote) at lines 2019-2020 → replaced with sanitizeInlineArg() helper
-- SECONDARY (discovered during fix): `var var noteCompl` double-declaration at line 1836 (Stage G regression) → removed duplicate keyword
+- PRIMARY: Malformed regex `/['"]/g` (backslash-escaped closing quote) at lines 2019-2020 â replaced with sanitizeInlineArg() helper
+- SECONDARY (discovered during fix): `var var noteCompl` double-declaration at line 1836 (Stage G regression) â removed duplicate keyword
 
 #### Cache
-`ministry-tracker-v39-stage-g-reminders` → `v39-hotfix-appjs-regex` → `v39-hotfix-appjs-syntax`
+`ministry-tracker-v39-stage-g-reminders` â `v39-hotfix-appjs-regex` â `v39-hotfix-appjs-syntax`
 
 #### Live verification (desktop)
-- Home tab ✓
-- Timer tab ✓
-- Calendar tab ✓
-- Notes & Reminders tab ✓
-- Reports tab ✓
-- No JS SyntaxErrors ✓
-- No error modals ✓
-- Zero console errors ✓
+- Home tab â
+- Timer tab â
+- Calendar tab â
+- Notes & Reminders tab â
+- Reports tab â
+- No JS SyntaxErrors â
+- No error modals â
+- Zero console errors â
+
+
+## STAGE I — Reminder Push Notifications / Notification Foundation
+
+**Status:** planned — do not start until Stage H is approved
+
+### Objective
+Implement real reminder notifications for Ministry Notes so a user can set a reminder date and time and receive an actual notification when the reminder is due.
+
+This stage must be separate from Stage H. Stage H must finish QA/live verification first.
+
+### Current reminder state before Stage I
+The app currently stores reminder-ready fields on Ministry Notes:
+- dueDate
+- dueTime
+- reminder
+- reminderAt
+- priority
+- status
+- completed
+- archived
+
+The app currently does NOT send real push notifications. Do not claim notifications are working until Stage I is implemented and verified.
+
+### Required scope
+- Inspect existing Firebase/KHub setup in Ministry Tracker
+- Compare with the approved notification pattern used in other KHub apps if available
+- Confirm whether Firebase Cloud Messaging is already configured for this project
+- Add notification permission flow
+- Add browser/device token registration
+- Store tokens under path: /khubApps/ministry-tracker/users/{uid}/notificationTokens/{tokenId}
+- Add foreground notification handling
+- Add background/service-worker notification handling
+- Design and document the reminder trigger mechanism
+- Confirm how reminders are sent at the correct date/time
+- Confirm mobile/PWA install behavior
+- Confirm iOS/browser limitations and fallback behavior
+- Confirm behavior when permission is denied
+- Confirm behavior when user changes reminder time
+- Confirm behavior when note is completed, archived, or deleted
+- Confirm behavior when user logs out or changes device
+
+### Required implementation decision
+Before coding Stage I, document which approach will be used:
+- **Option A** — Firebase Cloud Messaging with a backend/scheduled trigger
+- **Option B** — Local browser notifications only (while app/device/browser conditions allow)
+- **Option C** — Hybrid approach
+
+Do not start coding until the approach is documented and approved.
+
+### Guardrails
+- Do not fake notification success
+- Do not show "notifications enabled" unless permission, token registration, and delivery path are verified
+- Do not break existing service worker caching
+- Do not break offline/PWA behavior
+- Do not break cloud backup or export/import
+- Do not alter service categories, reports, timer, credit hours, or session logs
+- Do not mix Ministry Notes with existing service categories
+- Do not begin Stage I until Stage H is approved
+
+### Stop conditions
+STOP if:
+- Firebase config is missing or ambiguous
+- FCM setup is not available
+- Service worker changes break app caching
+- Notifications cannot be scheduled reliably
+- iOS/PWA support is uncertain and undocumented
+- Token storage path is unclear
+- Reminder data becomes inconsistent
+- Completed/deleted notes can still fire notifications
+- App claims notifications work without end-to-end proof
+
+### Required tests for Stage I
+- Notification permission prompt works
+- Permission denied state works
+- Permission granted state works
+- Token stored under correct user/app path
+- Reminder with date and time can be created
+- Reminder notification fires at expected time
+- Editing reminder time updates notification behavior
+- Completing a note prevents future notification
+- Archiving a note prevents/handles future notification
+- Deleting a note prevents future notification
+- Foreground notification behavior verified
+- Background/PWA notification behavior verified
+- Mobile verified
+- Desktop verified
+- Light/dark unaffected
+- EN/ES labels verified
+- Cloud backup unaffected
+- Export/import unaffected
+- No console errors
+- Cache version bumped if deployable files change
+
+**Stage I status: planned — pending Stage H approval**
