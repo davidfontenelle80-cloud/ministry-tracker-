@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v37-stage-e-notes';
+const CACHE_VERSION = 'ministry-tracker-v38-stage-f-calendar';
 
 const PRECACHE_URLS = [
   './',

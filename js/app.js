@@ -276,6 +276,9 @@ const I18N = {
     noteBodyPlaceholder: 'Note content...',
     noNotesInCategory: 'No notes yet. Tap + Add Note to get started.',
     confirmDeleteNote: 'Delete this note?',
+    calNotesForDay: 'Notes for this day',
+    calNoNotesForDay: 'No notes for this day.',
+    calAddNote: '+ Add Note',
   },
   es: {
     goodMorning: 'Buenos días', goodAfternoon: 'Buenas tardes', goodEvening: 'Buenas noches',
@@ -473,6 +476,9 @@ const I18N = {
     noteBodyPlaceholder: 'Contenido de la nota...',
     noNotesInCategory: 'Sin notas aún. Toca + Agregar nota para comenzar.',
     confirmDeleteNote: '¿Eliminar esta nota?',
+    calNotesForDay: 'Notas de este día',
+    calNoNotesForDay: 'Sin notas para este día.',
+    calAddNote: '+ Agregar nota',
   },
 };
 
@@ -1548,6 +1554,11 @@ function renderCalendar() {
   const offset = state.weekStartsMon ? (firstDow === 0 ? 6 : firstDow - 1) : firstDow;
   const totalDays = daysInMonth(yr, mo-1);
   const cells = [];
+  // Stage F — dates that have notes (dot indicators)
+  const noteDates = new Set((state.ministryNotes || []).map(n => {
+    const _d = new Date(n.createdAt);
+    return _d.getFullYear() + '-' + String(_d.getMonth()+1).padStart(2,'0') + '-' + String(_d.getDate()).padStart(2,'0');
+  }));
   for (let i = 0; i < offset; i++) cells.push('<div class="cal-cell empty"></div>');
   const today = todayStr();
   const dailyGoal = Math.round(state.dailyGoalHrs * 60);
@@ -1579,7 +1590,7 @@ function renderCalendar() {
 
     const actualLine = actual > 0 ? `<div class="cal-actual">${formatHM(actual)}</div>` : '';
     const plannedLine = planned > 0 ? `<div class="cal-planned">/ ${formatHM(planned)}</div>` : '';
-    cells.push(`<button class="${cls}" data-cal-day="${ds}"><div class="cal-num">${day}</div><div>${actualLine}${plannedLine}</div></button>`);
+    cells.push(`<button class="${cls}" data-cal-day="${ds}"><div class="cal-num">${day}</div><div>${actualLine}${plannedLine}</div>${noteDates.has(ds)?'<span class="cal-note-dot"></span>':''}</button>`);
   }
   grid.innerHTML = cells.join('');
   grid.querySelectorAll('[data-cal-day]').forEach(el => {
@@ -1611,6 +1622,7 @@ function renderCalendar() {
   else { dEl.textContent = formatHM(delta); dEl.className = 'font-mono font-bold text-sm text-coral'; }
 
   // Render the Adjust Time card with the selected day
+  renderCalendarNotesPanel();
   renderAdjustCard();
 }
 
@@ -1824,7 +1836,7 @@ function renderNotesListView(scr, cat) {
   });
 }
 
-function openNoteModal(categoryId, noteId) {
+function openNoteModal(categoryId, noteId, _calDate) {
   var note = noteId ? (state.ministryNotes || []).find(function(n) { return n.id === noteId; }) : null;
   var titleVal = note ? (note.title || '') : '';
   var bodyVal  = note ? (note.body  || '') : '';
@@ -1852,7 +1864,7 @@ function openNoteModal(categoryId, noteId) {
       if (!nt) { if (ti) ti.focus(); return; }
       if (!Array.isArray(state.ministryNotes)) state.ministryNotes = [];
       if (note) { note.title = nt; note.body = nb; note.updatedAt = Date.now(); }
-      else { state.ministryNotes.push({ id: 'mn-' + Date.now(), categoryId: categoryId, title: nt, body: nb, createdAt: Date.now(), updatedAt: Date.now() }); }
+      else { state.ministryNotes.push({ id: 'mn-' + Date.now(), categoryId: categoryId, title: nt, body: nb, createdAt: _calDate ? new Date(_calDate + 'T12:00:00').getTime() : Date.now(), updatedAt: Date.now() }); }
       saveState(); closeModal(); renderNotes();
     });
   }, 50);
@@ -1864,6 +1876,67 @@ function deleteMinistryNote(noteId) {
     saveState(); renderNotes();
   }, { confirmLabel: t('deleteNote'), danger: true });
 }
+/* ── Stage F: Calendar Notes Panel ──────────────────────────────────── */
+let _calNotesCssInjected = false;
+function _injectCalNotesCss() {
+  if (_calNotesCssInjected) return; _calNotesCssInjected = true;
+  const s = document.createElement('style');
+  s.textContent = [
+    '.cal-note-dot{display:block;width:5px;height:5px;border-radius:50%;background:var(--accent,#4f8ef7);margin:1px auto 0}',
+    '.cal-notes-panel{margin:.75rem 1rem .5rem;background:var(--card-bg,#fff);border-radius:12px;overflow:hidden;border:1px solid var(--border,#e2e8f0)}',
+    '.dark .cal-notes-panel{background:var(--card-bg,#1e293b);border-color:var(--border,#334155)}',
+    '.cal-notes-panel-hdr{font-size:.7rem;font-weight:700;color:var(--text-muted,#64748b);text-transform:uppercase;letter-spacing:.05em;padding:.6rem 1rem .4rem}',
+    '.cal-notes-empty{font-size:.875rem;color:var(--text-muted,#64748b);padding:.4rem 1rem .6rem}',
+    '.cal-notes-list{display:flex;flex-direction:column}',
+    '.cal-note-item{display:block;width:100%;text-align:left;background:none;border:none;border-top:1px solid var(--border,#e2e8f0);padding:.6rem 1rem;cursor:pointer;color:var(--text,#1e293b)}',
+    '.cal-note-item:active{background:var(--hover,#f1f5f9)}',
+    '.cal-note-item-title{display:block;font-size:.875rem;font-weight:500}',
+    '.cal-note-item-body{display:block;font-size:.75rem;color:var(--text-muted,#64748b);margin-top:2px}',
+    '.cal-add-note-btn{display:block;width:100%;text-align:center;background:none;border:none;border-top:1px solid var(--border,#e2e8f0);padding:.7rem 1rem;font-size:.875rem;font-weight:600;color:var(--accent,#4f8ef7);cursor:pointer}',
+    '.cal-add-note-btn:active{opacity:.7}'
+  ].join('');
+  document.head.appendChild(s);
+}
+function renderCalendarNotesPanel() {
+  _injectCalNotesCss();
+  const panel = document.getElementById('calNotesPanel');
+  if (!panel) return;
+  const ds = adjustSelectedDate;
+  if (!ds) { panel.innerHTML = ''; panel.classList.add('hidden'); return; }
+  const dayNotes = (state.ministryNotes || []).filter(n => {
+    const _d = new Date(n.createdAt);
+    const nds = _d.getFullYear() + '-' + String(_d.getMonth()+1).padStart(2,'0') + '-' + String(_d.getDate()).padStart(2,'0');
+    return nds === ds;
+  });
+  const parts = ds.split('-');
+  const dateLabel = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]))
+    .toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US', { month: 'long', day: 'numeric' });
+  let h = '<div class="cal-notes-panel">';
+  h += '<div class="cal-notes-panel-hdr">' + t('calNotesForDay') + ' — ' + dateLabel + '</div>';
+  if (dayNotes.length === 0) {
+    h += '<p class="cal-notes-empty">' + t('calNoNotesForDay') + '</p>';
+  } else {
+    h += '<div class="cal-notes-list">';
+    for (const n of dayNotes) {
+      const sid = n.id.replace(/['"\]/g,'');
+      const scat = (n.categoryId||'').replace(/['"\]/g,'');
+      const ttl = (n.title||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      const bdy = (n.body||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      const bSnip = bdy.length > 80 ? bdy.substring(0,80) + '…' : bdy;
+      h += '<button class="cal-note-item" onclick="openNoteModal(\'' + scat + '\',\'' + sid + '\')">';
+      h += '<span class="cal-note-item-title">' + (ttl || '(' + t('noteTitle') + ')') + '</span>';
+      if (bSnip) h += '<span class="cal-note-item-body">' + bSnip + '</span>';
+      h += '</button>';
+    }
+    h += '</div>';
+  }
+  const defCat = ((state.ministryNoteCategories||[])[0] || {}).id || '';
+  h += '<button class="cal-add-note-btn" onclick="openNoteModal(\'' + defCat + '\',null,\'' + ds + '\')">' + t('calAddNote') + '</button>';
+  h += '</div>';
+  panel.innerHTML = h;
+  panel.classList.remove('hidden');
+}
+
 
 /* ---------- CATEGORY MODAL (Add / Edit) ---------- */
 function openCategoryModal(existingCat) {
