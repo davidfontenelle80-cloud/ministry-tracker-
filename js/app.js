@@ -65,7 +65,9 @@ let currentReportMonth = monthKey(new Date());
 let logFilter = 'month';
 let logSearch = ''; // search query for Log notes
 let logHistoryMonth = monthKey(new Date()); // month shown in Log History (Reports)
-let logHistorySearch = ''; // search query for Log History
+let logHistorySearch = '';
+let currentNotesView = 'categories'; // 'categories' | 'notes'
+let currentNotesCategoryId = null; // search query for Log History
 let liveTickInterval = null;
 let lastInteraction = Date.now();
 let longPressTimer = null;
@@ -264,6 +266,16 @@ const I18N = {
     noCategories: 'No categories yet. Add your first one.',
     confirmDeleteCat: 'Delete this category?',
     catModalNameEsHint: '(same as above — bilingual editing coming in Stage G)',
+    notesBackBtn: '← Back',
+    mnAddNote: '+ Add Note',
+    editNote: 'Edit Note',
+    deleteNote: 'Delete Note',
+    noteTitle: 'Title',
+    noteBody: 'Note content',
+    noteTitlePlaceholder: 'Note title',
+    noteBodyPlaceholder: 'Note content...',
+    noNotesInCategory: 'No notes yet. Tap + Add Note to get started.',
+    confirmDeleteNote: 'Delete this note?',
   },
   es: {
     goodMorning: 'Buenos días', goodAfternoon: 'Buenas tardes', goodEvening: 'Buenas noches',
@@ -451,6 +463,16 @@ const I18N = {
     noCategories: 'Sin categorías. Agrega la primera.',
     confirmDeleteCat: '¿Eliminar esta categoría?',
     catModalNameEsHint: '(mismo que arriba — edición bilingüe llega en la Etapa G)',
+    notesBackBtn: '← Atrás',
+    mnAddNote: '+ Agregar nota',
+    editNote: 'Editar nota',
+    deleteNote: 'Eliminar nota',
+    noteTitle: 'Título',
+    noteBody: 'Contenido',
+    noteTitlePlaceholder: 'Título de la nota',
+    noteBodyPlaceholder: 'Contenido de la nota...',
+    noNotesInCategory: 'Sin notas aún. Toca + Agregar nota para comenzar.',
+    confirmDeleteNote: '¿Eliminar esta nota?',
   },
 };
 
@@ -1694,64 +1716,153 @@ function renderNotes() {
   const scr = document.getElementById('notesContent');
   if (!scr) return;
   const lang = state.lang || 'en';
-
-  // Migration guard: seed defaults on first render if array is empty
   if (!Array.isArray(state.ministryNoteCategories) || state.ministryNoteCategories.length === 0) {
     state.ministryNoteCategories = DEFAULT_MINISTRY_NOTE_CATEGORIES.map(c => ({
       id: c.id, name: { en: c.name.en, es: c.name.es }, icon: c.icon, color: c.color,
     }));
     saveState();
   }
-
+  if (currentNotesView === 'notes' && currentNotesCategoryId) {
+    var cat = state.ministryNoteCategories.find(function(c) { return c.id === currentNotesCategoryId; });
+    if (cat) { renderNotesListView(scr, cat); return; }
+    currentNotesView = 'categories'; currentNotesCategoryId = null;
+  }
   const cats = state.ministryNoteCategories;
   const n = cats.length;
   const countLabel = t('categoryCount').replace('{n}', n);
-
-  let gridHTML;
+  var gridHTML;
   if (n === 0) {
-    gridHTML = `<div class="card text-center" style="padding:40px 16px;">
-      <div class="text-faint text-sm mb-4">${t('noCategories')}</div>
-      <button class="btn btn-primary" onclick="openAddCategoryModal()">
-        <i class="fa-solid fa-plus"></i><span>${t('addCategory')}</span>
-      </button>
-    </div>`;
+    gridHTML = '<div class="card text-center" style="padding:40px 16px;">' +
+      '<div class="text-faint text-sm mb-4">' + t('noCategories') + '</div>' +
+      '<button class="btn btn-primary" data-add-cat>' +
+      '<i class="fa-solid fa-plus"></i><span>' + t('addCategory') + '</span></button></div>';
   } else {
-    const cards = cats.map(cat => {
-      const name = (cat.name && typeof cat.name === 'object')
-        ? (cat.name[lang] || cat.name.en || '')
-        : (cat.name || '');
-      const color = cat.color || 'var(--accent)';
-      const icon = cat.icon || '📝';
-      return `<div class="card" style="border-left:4px solid ${color}; display:flex; flex-direction:column; justify-content:space-between; min-height:110px;">
-        <div>
-          <div style="font-size:26px; line-height:1; margin-bottom:6px;">${escapeHtml(icon)}</div>
-          <div class="font-semibold text-sm">${escapeHtml(name)}</div>
-        </div>
-        <div class="row gap-1 mt-3" style="justify-content:flex-end;">
-          <button class="btn btn-secondary btn-icon" style="width:44px;height:44px;" aria-label="${t('editCategory')}" onclick="openEditCategoryModal('${cat.id}')">
-            <i class="fa-solid fa-pen" style="font-size:11px;"></i>
-          </button>
-          <button class="btn btn-secondary btn-icon" style="width:44px;height:44px;" aria-label="${t('deleteCategory')}" onclick="deleteMinistryNoteCategory('${cat.id}')">
-            <i class="fa-solid fa-trash" style="font-size:11px; color:var(--coral);"></i>
-          </button>
-        </div>
-      </div>`;
+    var cards = cats.map(function(cat) {
+      var name = (cat.name && typeof cat.name === 'object') ? (cat.name[lang] || cat.name.en || '') : (cat.name || '');
+      var color = cat.color || 'var(--accent)';
+      var icon = cat.icon || '📝';
+      var nc = (state.ministryNotes || []).filter(function(mn) { return mn.categoryId === cat.id; }).length;
+      return '<div class="card" data-cat-open="' + cat.id + '" style="border-left:4px solid ' + color +
+        '; display:flex; flex-direction:column; justify-content:space-between; min-height:110px; cursor:pointer;">' +
+        '<div><div style="font-size:26px; line-height:1; margin-bottom:6px;">' + escapeHtml(icon) + '</div>' +
+        '<div class="font-semibold text-sm">' + escapeHtml(name) + '</div>' +
+        (nc > 0 ? '<div class="text-tiny text-faint mt-1">' + nc + '</div>' : '') + '</div>' +
+        '<div class="row gap-1 mt-3" style="justify-content:flex-end;">' +
+        '<button class="btn btn-secondary btn-icon" data-cat-edit="' + cat.id + '" style="width:44px;height:44px;" aria-label="' + t('editCategory') + '">' +
+        '<i class="fa-solid fa-pen" style="font-size:11px;"></i></button>' +
+        '<button class="btn btn-secondary btn-icon" data-cat-del="' + cat.id + '" style="width:44px;height:44px;" aria-label="' + t('deleteCategory') + '">' +
+        '<i class="fa-solid fa-trash" style="font-size:11px; color:var(--coral);"></i></button>' +
+        '</div></div>';
     }).join('');
-    gridHTML = `<div class="grid grid-2">${cards}</div>`;
+    gridHTML = '<div class="grid grid-2">' + cards + '</div>';
   }
+  scr.innerHTML =
+    '<div class="card card-flat mb-4"><div class="text-sm text-dim">' + t('notesCategoriesHint') + '</div></div>' +
+    '<div class="row-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-dim">' + countLabel + '</span>' +
+    '<button class="btn btn-primary" data-add-cat style="font-size:13px;padding:7px 14px;">' +
+    '<i class="fa-solid fa-plus"></i><span>' + t('addCategory') + '</span></button></div>' +
+    gridHTML;
+  scr.querySelectorAll('[data-add-cat]').forEach(function(el) { el.addEventListener('click', openAddCategoryModal); });
+  scr.querySelectorAll('[data-cat-open]').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      if (!e.target.closest('[data-cat-edit],[data-cat-del]')) { openNotesCategory(el.dataset.catOpen); }
+    });
+  });
+  scr.querySelectorAll('[data-cat-edit]').forEach(function(el) {
+    el.addEventListener('click', function(e) { e.stopPropagation(); openEditCategoryModal(el.dataset.catEdit); });
+  });
+  scr.querySelectorAll('[data-cat-del]').forEach(function(el) {
+    el.addEventListener('click', function(e) { e.stopPropagation(); deleteMinistryNoteCategory(el.dataset.catDel); });
+  });
+}
 
-  scr.innerHTML = `
-    <div class="card card-flat mb-4">
-      <div class="text-sm text-dim">${t('notesCategoriesHint')}</div>
-      <div class="text-tiny text-faint mt-1">${t('notesComingSoon')}</div>
-    </div>
-    <div class="row-between mb-3">
-      <span class="text-xs font-bold uppercase tracking-wider text-dim">${countLabel}</span>
-      <button class="btn btn-primary" style="font-size:13px;padding:7px 14px;" onclick="openAddCategoryModal()">
-        <i class="fa-solid fa-plus"></i><span>${t('addCategory')}</span>
-      </button>
-    </div>
-    ${gridHTML}`;
+function openNotesCategory(categoryId) {
+  currentNotesCategoryId = categoryId;
+  currentNotesView = 'notes';
+  renderNotes();
+}
+
+function renderNotesListView(scr, cat) {
+  var lang = state.lang || 'en';
+  if (!Array.isArray(state.ministryNotes)) state.ministryNotes = [];
+  var notes = state.ministryNotes.filter(function(n) { return n.categoryId === cat.id; })
+    .sort(function(a, b) { return b.updatedAt - a.updatedAt; });
+  var catName = (cat.name && typeof cat.name === 'object') ? (cat.name[lang] || cat.name.en || '') : (cat.name || '');
+  var icon = cat.icon || '📝';
+  var noteCards = notes.length === 0
+    ? '<div class="card text-center" style="padding:40px 16px;"><div class="text-faint text-sm">' + t('noNotesInCategory') + '</div></div>'
+    : notes.map(function(note) {
+        var preview = (note.body || '').slice(0, 60) + ((note.body || '').length > 60 ? '…' : '');
+        var dateStr = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString() : '';
+        return '<div class="card mb-3">' +
+          '<div class="font-semibold text-sm mb-1">' + escapeHtml(note.title || '') + '</div>' +
+          (preview ? '<div class="text-sm text-dim mb-2">' + escapeHtml(preview) + '</div>' : '') +
+          '<div class="row-between" style="align-items:center;"><span class="text-tiny text-faint">' + escapeHtml(dateStr) + '</span>' +
+          '<div class="row gap-1">' +
+          '<button class="btn btn-secondary btn-icon" data-note-edit="' + note.id + '" data-note-cat="' + cat.id + '" style="width:36px;height:36px;" aria-label="' + t('editNote') + '">' +
+          '<i class="fa-solid fa-pen" style="font-size:11px;"></i></button>' +
+          '<button class="btn btn-secondary btn-icon" data-note-del="' + note.id + '" style="width:36px;height:36px;" aria-label="' + t('deleteNote') + '">' +
+          '<i class="fa-solid fa-trash" style="font-size:11px; color:var(--coral);"></i></button>' +
+          '</div></div></div>';
+      }).join('');
+  scr.innerHTML =
+    '<div class="row-between mb-4" style="align-items:center;">' +
+    '<button class="btn btn-secondary" data-mn-back style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('notesBackBtn')) + '</button>' +
+    '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:20px;">' + escapeHtml(icon) + '</span>' +
+    '<span class="font-semibold text-sm">' + escapeHtml(catName) + '</span></div>' +
+    '<button class="btn btn-primary" data-mn-add style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('mnAddNote')) + '</button></div>' +
+    noteCards;
+  var addBtn = scr.querySelector('[data-mn-add]');
+  if (addBtn) addBtn.addEventListener('click', function() { openNoteModal(cat.id, null); });
+  var backBtn = scr.querySelector('[data-mn-back]');
+  if (backBtn) backBtn.addEventListener('click', function() { currentNotesView = 'categories'; currentNotesCategoryId = null; renderNotes(); });
+  scr.querySelectorAll('[data-note-edit]').forEach(function(el) {
+    el.addEventListener('click', function() { openNoteModal(el.dataset.noteCat, el.dataset.noteEdit); });
+  });
+  scr.querySelectorAll('[data-note-del]').forEach(function(el) {
+    el.addEventListener('click', function() { deleteMinistryNote(el.dataset.noteDel); });
+  });
+}
+
+function openNoteModal(categoryId, noteId) {
+  var note = noteId ? (state.ministryNotes || []).find(function(n) { return n.id === noteId; }) : null;
+  var titleVal = note ? (note.title || '') : '';
+  var bodyVal  = note ? (note.body  || '') : '';
+  var heading = note ? t('editNote') : t('mnAddNote');
+  openModal(
+    '<div class="font-semibold mb-4">' + escapeHtml(heading) + '</div>' +
+    '<div class="mb-3"><label class="text-xs text-dim mb-1 block">' + escapeHtml(t('noteTitle')) + '</label>' +
+    '<input id="mnTitleInput" class="input" type="text" maxlength="100" placeholder="' + escapeHtml(t('noteTitlePlaceholder')) + '" style="width:100%;"></div>' +
+    '<div class="mb-4"><label class="text-xs text-dim mb-1 block">' + escapeHtml(t('noteBody')) + '</label>' +
+    '<textarea id="mnBodyInput" class="input" rows="4" placeholder="' + escapeHtml(t('noteBodyPlaceholder')) + '" style="width:100%;resize:vertical;"></textarea></div>' +
+    '<div class="row gap-2"><button class="btn btn-secondary flex-1" id="mnCancelBtn">' + escapeHtml(t('cancel')) + '</button>' +
+    '<button class="btn btn-primary flex-1" id="mnSaveBtn">' + escapeHtml(t('save')) + '</button></div>'
+  );
+  setTimeout(function() {
+    var ti = document.getElementById('mnTitleInput');
+    var bi = document.getElementById('mnBodyInput');
+    var sb = document.getElementById('mnSaveBtn');
+    var cb = document.getElementById('mnCancelBtn');
+    if (ti) { ti.value = titleVal; ti.focus(); }
+    if (bi) bi.value = bodyVal;
+    if (cb) cb.addEventListener('click', closeModal);
+    if (sb) sb.addEventListener('click', function() {
+      var nt = (ti || {}).value.trim();
+      var nb = (bi || {}).value.trim();
+      if (!nt) { if (ti) ti.focus(); return; }
+      if (!Array.isArray(state.ministryNotes)) state.ministryNotes = [];
+      if (note) { note.title = nt; note.body = nb; note.updatedAt = Date.now(); }
+      else { state.ministryNotes.push({ id: 'mn-' + Date.now(), categoryId: categoryId, title: nt, body: nb, createdAt: Date.now(), updatedAt: Date.now() }); }
+      saveState(); closeModal(); renderNotes();
+    });
+  }, 50);
+}
+
+function deleteMinistryNote(noteId) {
+  openConfirmModal(t('confirmDeleteNote'), function() {
+    state.ministryNotes = (state.ministryNotes || []).filter(function(n) { return n.id !== noteId; });
+    saveState(); renderNotes();
+  }, { confirmLabel: t('deleteNote'), danger: true });
 }
 
 /* ---------- CATEGORY MODAL (Add / Edit) ---------- */
