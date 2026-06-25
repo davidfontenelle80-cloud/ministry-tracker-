@@ -2,7 +2,7 @@
  * sw.js â KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v39-stage-g-reminders';
+const CACHE_VERSION = 'ministry-tracker-v39-hotfix-appjs-regex';
 
 const PRECACHE_URLS = [
   './',

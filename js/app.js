@@ -2016,8 +2016,9 @@ function renderCalendarNotesPanel() {
   } else {
     h += '<div class="cal-notes-list">';
     for (const n of dayNotes) {
-      const sid = n.id.replace(/['"\]/g,'');
-      const scat = (n.categoryId||'').replace(/['"\]/g,'');
+      function sanitizeInlineArg(v) { return String(v || '').replace(/['"]/g, ''); }
+      const sid = sanitizeInlineArg(n.id);
+      const scat = sanitizeInlineArg(n.categoryId);
       const ttl = (n.title||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
       const bdy = (n.body||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
       const bSnip = bdy.length > 80 ? bdy.substring(0,80) + '…' : bdy;

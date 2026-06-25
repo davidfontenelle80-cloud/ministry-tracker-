@@ -1727,3 +1727,30 @@ const scat = sanitizeInlineArg(n.categoryId);
 - `docs/stage-notes/...`: this log entry
 
 **Verification:** Live app check pending (GitHub Pages deploy ~1-3 min)
+
+
+---
+
+## HOTFIX '2026-06-25' — Emergency Regex Repair
+
+**Date:** 2026-06-25 13:06 UTC
+**Status:** DEPLOYED
+
+### Problem
+Production crash: SyntaxError — Unterminated regular expression literal (~line 1921, actual lines 2019-2020).
+Malformed regex in calendar notes sanitization (Stage F).
+
+### Fix
+Option B helper function — lines 2019-2020 replaced with 3 lines:
+- sanitizeInlineArg() helper
+- const sid = sanitizeInlineArg(n.id)
+- const scat = sanitizeInlineArg(n.categoryId)
+
+### Files Changed
+- js/app.js — regex fix (2 lines → 3)
+- sw.js — cache bump v39-stage-g-reminders → v39-hotfix-appjs-regex
+- This file — hotfix log
+
+### Commit
+e0ffe9bc475f6c86d083c86c3623f474ad7a3e89 (hotfix code)
+89540405fbff9caee9ae4a8179b1f454400289f4 (MD update)
