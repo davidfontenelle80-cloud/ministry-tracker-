@@ -7,7 +7,7 @@ boilerplate_repo: "davidfontenelle80-cloud/KHub-Boilerplate"
 stage: "Stage C — COMPLETE"
 status: "active implementation tracker"
 created: "2026-06-23"
-updated: "2026-06-24"
+updated: "2026-06-25"
 owner: "David"
 supervisor: "App Supervisor / Builder Sol"
 priority: "high"
@@ -399,7 +399,7 @@ Calendar must access the same Ministry Notes data.
 
 > **Implemented 2026-06-24:** Notes inside category (add/edit/delete, EN+ES). Tap a category card to open its notes list. Stage E Calendar Integration deferred — renamed Stage F+ per build plan.
 
-## STAGE F — Reminder Foundation
+## STAGE F — Calendar Integration
 
 ### First pass requirements
 
@@ -424,7 +424,9 @@ Later FCM push notification integration can connect to the existing approved KHu
 
 ### Stage F status
 
-`pending`
+`COMPLETE`
+
+> **Implemented 2026-06-25:** Calendar Integration (Stage F). Calendar day dot indicators for days with notes, day-selection notes panel, tap note to edit modal, add-note-from-day hook (_calDate), EN/ES i18n keys, cache v38-stage-f-calendar. Commit: 93a86b6.
 
 ## STAGE G — Visual/Brand Alignment
 
@@ -1585,4 +1587,35 @@ Cloud backup/restore verification: no change to collectKeys() or backup flow
 Remaining risks: none critical — data safety guards in place
 Updated MD checklist confirmation: Stage E status changed to COMPLETE
 Status: code-implemented, not live-approved yet
+```
+
+```txt
+Date: 2026-06-25 (pre-coding preflight)
+Stage: Stage F — Preflight
+Summary: Verified Stage E complete. HEAD: d28c01e (docs: Stage E complete). Code commit: 4603e50 (feat: Stage E notes inside category). MD confirmed Stage E COMPLETE. openNoteModal signature: openNoteModal(categoryId, noteId). Note shape: {id, categoryId, title, body, createdAt: timestamp, updatedAt: timestamp}. Calendar day cells: <button data-cal-day="YYYY-MM-DD">. adjustSelectedDate = global selected date. i18n: t(k) via I18N object. CACHE_VERSION: v37-stage-e-notes. Stage F redefined per build brief: Calendar Integration (NOT Reminder Foundation). Ready to code.
+Files at preflight: js/app.js (192324 bytes), sw.js (1957 bytes), index.html (45873 bytes).
+```
+
+```txt
+Date: 2026-06-25
+Stage: Stage F — Calendar Integration
+Summary: 10 changes applied across 3 files. (1) noteDates Set in renderCalendar for dot indicators. (2) cal-note-dot span in day cell template. (3) renderCalendarNotesPanel() called at end of renderCalendar. (4) openNoteModal signature extended with _calDate param. (5) New note createdAt uses _calDate when adding from calendar. (6/7) I18N EN+ES: calNotesForDay, calNoNotesForDay, calAddNote. (8) renderCalendarNotesPanel() function with CSS injection. (9) calNotesPanel div in index.html. (10) sw.js CACHE_VERSION v37→v38.
+Commit hash (code): 93a86b6
+Files changed: js/app.js, sw.js, index.html (3 files)
+Tests run: static code review; all 9 verifications passed in browser; all 10 replace operations confirmed OK
+Cache version: v37-stage-e-notes → v38-stage-f-calendar
+Bugs fixed: none (new feature)
+Known issues: Add-from-day defaults to first ministryNoteCategories entry as categoryId; future enhancement could add category picker
+Mobile verification: pending live review
+Desktop verification: pending live review
+Light mode: CSS uses var() tokens — should work
+Dark mode: CSS uses var() tokens — should work
+English: ✓ i18n keys added
+Spanish: ✓ i18n keys added
+Export/import unchanged: ✓ no changes to export/import logic
+Cloud backup unchanged: ✓ no changes to backup logic
+Live GitHub Pages verification: pending (Pages deploys from HEAD automatically)
+Remaining risks: none structural — data-model unchanged, only new render layer
+Stage completed: YES
+Next stage: Stage G — Visual/Brand Alignment (or any next priority per build plan)
 ```
