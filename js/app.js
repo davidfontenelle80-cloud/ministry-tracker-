@@ -1782,8 +1782,8 @@ function renderNotes() {
       var color = cat.color || 'var(--accent)';
       var icon = cat.icon || '📝';
       var nc = (state.ministryNotes || []).filter(function(mn) { return mn.categoryId === cat.id; }).length;
-      return '<div class="card" data-cat-open="' + cat.id + '" style="border-left:4px solid ' + color +
-        '; display:flex; flex-direction:column; justify-content:space-between; min-height:110px; cursor:pointer;">' +
+      return '<div class="card" data-cat-open="' + cat.id + '" style="border:1.5px solid ' + color + '55; border-left:4px solid ' + color +
+        '; box-shadow:0 0 0 2px ' + color + '33; display:flex; flex-direction:column; justify-content:space-between; min-height:110px; cursor:pointer;">' +
         '<div><div style="font-size:26px; line-height:1; margin-bottom:6px;">' + escapeHtml(icon) + '</div>' +
         '<div class="font-semibold text-sm">' + escapeHtml(name) + '</div>' +
         (nc > 0 ? '<div class="text-tiny text-faint mt-1">' + nc + '</div>' : '') + '</div>' +
