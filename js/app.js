@@ -276,6 +276,20 @@ const I18N = {
     noteBodyPlaceholder: 'Note content...',
     noNotesInCategory: 'No notes yet. Tap + Add Note to get started.',
     confirmDeleteNote: 'Delete this note?',
+        noteDueDate: 'Due date',
+    noteDueTime: 'Due time',
+    noteReminder: 'Reminder',
+    notePriority: 'Priority',
+    noteStatus: 'Status',
+    noteCompleted: 'Completed',
+    noteArchived: 'Archived',
+    noteCategory: 'Category',
+    priorityHigh: 'High',
+    priorityMedium: 'Medium',
+    priorityLow: 'Low',
+    statusOpen: 'Open',
+    statusInProgress: 'In Progress',
+    statusDone: 'Done',
     calNotesForDay: 'Notes for this day',
     calNoNotesForDay: 'No notes for this day.',
     calAddNote: '+ Add Note',
@@ -476,6 +490,20 @@ const I18N = {
     noteBodyPlaceholder: 'Contenido de la nota...',
     noNotesInCategory: 'Sin notas aún. Toca + Agregar nota para comenzar.',
     confirmDeleteNote: '¿Eliminar esta nota?',
+        noteDueDate: 'Fecha límite',
+    noteDueTime: 'Hora límite',
+    noteReminder: 'Recordatorio',
+    notePriority: 'Prioridad',
+    noteStatus: 'Estado',
+    noteCompleted: 'Completado',
+    noteArchived: 'Archivado',
+    noteCategory: 'Categoría',
+    priorityHigh: 'Alto',
+    priorityMedium: 'Medio',
+    priorityLow: 'Bajo',
+    statusOpen: 'Abierto',
+    statusInProgress: 'En progreso',
+    statusDone: 'Hecho',
     calNotesForDay: 'Notas de este día',
     calNoNotesForDay: 'Sin notas para este día.',
     calAddNote: '+ Agregar nota',
@@ -1805,9 +1833,18 @@ function renderNotesListView(scr, cat) {
     ? '<div class="card text-center" style="padding:40px 16px;"><div class="text-faint text-sm">' + t('noNotesInCategory') + '</div></div>'
     : notes.map(function(note) {
         var preview = (note.body || '').slice(0, 60) + ((note.body || '').length > 60 ? '…' : '');
-        var dateStr = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString() : '';
+        var var noteCompl = note.completed ? 'opacity:0.55;text-decoration:line-through' : '';
+                var noteBadges = '';
+                if(note.priority==='high') noteBadges+='<span style="background:var(--coral);color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">▲ '+(I18N[state.lang].priorityHigh||'High')+'</span>';
+                if(note.priority==='medium') noteBadges+='<span style="background:#f59e0b;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">◆ '+(I18N[state.lang].priorityMedium||'Medium')+'</span>';
+                if(note.priority==='low') noteBadges+='<span style="background:var(--accent);color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">▼ '+(I18N[state.lang].priorityLow||'Low')+'</span>';
+                if(note.status&&note.status!=='open'){var _sl={'in-progress':I18N[state.lang].statusInProgress||'In Progress','done':I18N[state.lang].statusDone||'Done'};noteBadges+='<span style="background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">'+(_sl[note.status]||note.status)+'</span>';}
+                if(note.dueDate){var _d=new Date(note.dueDate+'T00:00'),_ms=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],_ds=_ms[_d.getMonth()]+' '+_d.getDate()+(_d.getFullYear()!==new Date().getFullYear()?', '+_d.getFullYear():'');noteBadges+='<span style="background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">📅 '+_ds+'</span>';}
+                if(note.archived) noteBadges+='<span style="background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">'+(I18N[state.lang].noteArchived||'Archived')+'</span>';
+                var badgeRow=noteBadges?'<div style="margin-bottom:4px">'+noteBadges+'</div>':'';
+                var dateStr = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString() : '';
         return '<div class="card mb-3">' +
-          '<div class="font-semibold text-sm mb-1">' + escapeHtml(note.title || '') + '</div>' +
+          badgeRow + '<div class="font-semibold text-sm mb-1" style="'+noteCompl+'">' + escapeHtml(note.title || '') + '</div>' +
           (preview ? '<div class="text-sm text-dim mb-2">' + escapeHtml(preview) + '</div>' : '') +
           '<div class="row-between" style="align-items:center;"><span class="text-tiny text-faint">' + escapeHtml(dateStr) + '</span>' +
           '<div class="row gap-1">' +
@@ -1857,14 +1894,75 @@ function openNoteModal(categoryId, noteId, _calDate) {
     var cb = document.getElementById('mnCancelBtn');
     if (ti) { ti.value = titleVal; ti.focus(); }
     if (bi) bi.value = bodyVal;
+    // Stage G: inject extra note fields
+    (function(){
+      var t2=I18N[state.lang];
+      var cats=Array.isArray(state.ministryNoteCategories)&&state.ministryNoteCategories.length?state.ministryNoteCategories:DEFAULT_MINISTRY_NOTE_CATEGORIES;
+      var catOpts=cats.map(function(c){return '<option value="'+escapeHtml(c.id||'')+'"'+((note?note.categoryId:categoryId)===c.id?' selected':'')+'>'+escapeHtml((c.icon?c.icon+' ':'')+c.name)+'</option>';}).join('');
+      var xH='<div style="display:flex;flex-direction:column;gap:8px;padding:0 0 8px">'
+        +'<label style="font-size:0.75rem;color:var(--text-dim)">'+escapeHtml(t2.noteCategory||'Category')+'</label>'
+        +'<select id="mnCatSelect" style="background:var(--input-bg,var(--surface));border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm,6px);padding:10px;min-height:44px">'+catOpts+'</select>'
+        +'<label style="font-size:0.75rem;color:var(--text-dim)">'+escapeHtml(t2.notePriority||'Priority')+'</label>'
+        +'<select id="mnPrioritySelect" style="background:var(--input-bg,var(--surface));border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm,6px);padding:10px;min-height:44px">'
+        +'<option value="">—</option>'
+        +'<option value="high">'+escapeHtml(t2.priorityHigh||'High')+'</option>'
+        +'<option value="medium">'+escapeHtml(t2.priorityMedium||'Medium')+'</option>'
+        +'<option value="low">'+escapeHtml(t2.priorityLow||'Low')+'</option>'
+        +'</select>'
+        +'<label style="font-size:0.75rem;color:var(--text-dim)">'+escapeHtml(t2.noteStatus||'Status')+'</label>'
+        +'<select id="mnStatusSelect" style="background:var(--input-bg,var(--surface));border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm,6px);padding:10px;min-height:44px">'
+        +'<option value="">—</option>'
+        +'<option value="open">'+escapeHtml(t2.statusOpen||'Open')+'</option>'
+        +'<option value="in-progress">'+escapeHtml(t2.statusInProgress||'In Progress')+'</option>'
+        +'<option value="done">'+escapeHtml(t2.statusDone||'Done')+'</option>'
+        +'</select>'
+        +'<label style="font-size:0.75rem;color:var(--text-dim)">'+escapeHtml(t2.noteDueDate||'Due date')+'</label>'
+        +'<input type="date" id="mnDueDateInput" style="background:var(--input-bg,var(--surface));border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm,6px);padding:10px;min-height:44px">'
+        +'<div id="mnDueTimeRow" style="display:none;flex-direction:column;gap:6px">'
+        +'<label style="font-size:0.75rem;color:var(--text-dim)">'+escapeHtml(t2.noteDueTime||'Due time')+'</label>'
+        +'<input type="time" id="mnDueTimeInput" style="background:var(--input-bg,var(--surface));border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm,6px);padding:10px;min-height:44px"></div>'
+        +'<div style="display:flex;align-items:center;gap:10px;min-height:44px"><label style="font-size:0.75rem;color:var(--text-dim);flex:1">'+escapeHtml(t2.noteReminder||'Reminder')+'</label><input type="checkbox" id="mnReminderToggle" style="width:22px;height:22px"></div>'
+        +'<div style="display:flex;align-items:center;gap:10px;min-height:44px"><label style="font-size:0.75rem;color:var(--text-dim);flex:1">'+escapeHtml(t2.noteCompleted||'Completed')+'</label><input type="checkbox" id="mnCompletedToggle" style="width:22px;height:22px"></div>'
+        +'<div style="display:flex;align-items:center;gap:10px;min-height:44px"><label style="font-size:0.75rem;color:var(--text-dim);flex:1">'+escapeHtml(t2.noteArchived||'Archived')+'</label><input type="checkbox" id="mnArchivedToggle" style="width:22px;height:22px"></div>'
+        +'</div>';
+      var xDiv=document.createElement('div');xDiv.innerHTML=xH;
+      var btnRow=cb?cb.parentNode:null;
+      if(btnRow&&btnRow.parentNode)btnRow.parentNode.insertBefore(xDiv,btnRow);
+      var ddEl=document.getElementById('mnDueDateInput');
+      if(ddEl)ddEl.addEventListener('input',function(){var tr=document.getElementById('mnDueTimeRow');if(tr)tr.style.display=this.value?'flex':'none';});
+      if(note){
+        var csEl=document.getElementById('mnCatSelect');if(csEl&&note.categoryId)csEl.value=note.categoryId;
+        var prEl=document.getElementById('mnPrioritySelect');if(prEl&&note.priority)prEl.value=note.priority;
+        var stEl=document.getElementById('mnStatusSelect');if(stEl&&note.status)stEl.value=note.status;
+        if(ddEl&&note.dueDate){ddEl.value=note.dueDate;var tr2=document.getElementById('mnDueTimeRow');if(tr2)tr2.style.display='flex';}
+        var dtEl=document.getElementById('mnDueTimeInput');if(dtEl&&note.dueTime)dtEl.value=note.dueTime;
+        var rmEl=document.getElementById('mnReminderToggle');if(rmEl)rmEl.checked=!!note.reminder;
+        var cpEl=document.getElementById('mnCompletedToggle');if(cpEl)cpEl.checked=!!note.completed;
+        var arEl=document.getElementById('mnArchivedToggle');if(arEl)arEl.checked=!!note.archived;
+      }
+    }());
     if (cb) cb.addEventListener('click', closeModal);
     if (sb) sb.addEventListener('click', function() {
       var nt = (ti || {}).value.trim();
       var nb = (bi || {}).value.trim();
+          var ncatId=(document.getElementById('mnCatSelect')||{}).value||categoryId;
+          var ndueDate=(document.getElementById('mnDueDateInput')||{}).value||null;
+          var ndueTime=(document.getElementById('mnDueTimeInput')||{}).value||null;
+          var nreminder=document.getElementById('mnReminderToggle')?document.getElementById('mnReminderToggle').checked:false;
+          var nreminderAt=ndueDate&&nreminder?new Date(ndueDate+(ndueTime?'T'+ndueTime:'T00:00')).getTime():null;
+          var npriority=(document.getElementById('mnPrioritySelect')||{}).value||null;
+          var nstatus=(document.getElementById('mnStatusSelect')||{}).value||null;
+          var ncompleted=document.getElementById('mnCompletedToggle')?document.getElementById('mnCompletedToggle').checked:false;
+          var narchived=document.getElementById('mnArchivedToggle')?document.getElementById('mnArchivedToggle').checked:false;
       if (!nt) { if (ti) ti.focus(); return; }
       if (!Array.isArray(state.ministryNotes)) state.ministryNotes = [];
-      if (note) { note.title = nt; note.body = nb; note.updatedAt = Date.now(); }
-      else { state.ministryNotes.push({ id: 'mn-' + Date.now(), categoryId: categoryId, title: nt, body: nb, createdAt: _calDate ? new Date(_calDate + 'T12:00:00').getTime() : Date.now(), updatedAt: Date.now() }); }
+      if (note) { note.title = nt; note.body = nb; note.updatedAt = Date.now();
+            if(ncatId)note.categoryId=ncatId;
+            note.dueDate=ndueDate||null;note.dueTime=ndueTime||null;
+            note.reminder=!!nreminder;note.reminderAt=nreminderAt||null;
+            note.priority=npriority||null;note.status=nstatus||null;
+            note.completed=!!ncompleted;note.archived=!!narchived; }
+      else { state.ministryNotes.push({ id: 'mn-' + Date.now(), categoryId: ncatId||categoryId, title: nt, body: nb, createdAt: _calDate ? new Date(_calDate + 'T12:00:00').getTime() : Date.now(), updatedAt: Date.now(), dueDate:ndueDate||null, dueTime:ndueTime||null, reminder:!!nreminder, reminderAt:nreminderAt||null, priority:npriority||null, status:nstatus||null, completed:!!ncompleted, archived:!!narchived }); }
       saveState(); closeModal(); renderNotes();
     });
   }, 50);
