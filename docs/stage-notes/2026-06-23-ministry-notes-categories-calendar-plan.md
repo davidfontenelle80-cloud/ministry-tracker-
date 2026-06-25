@@ -484,7 +484,49 @@ Do not copy Note Clip's visual theme blindly unless it fits Ministry.
 
 ## Stage G status
 
-`in-progress`
+`complete`
+
+### Completion (2026-06-25)
+
+**Commits**:
+- MD preflight: `979b4def2248d91103f2b90411d3c9ca1b5e235d`
+- app.js feat: `053ef147c14aa97a7eaf71f1d7ee629681d78538`
+- sw.js bump: `a1274a8f089b09739335d49d8500df770b3390e7`
+
+**Files changed**:
+- `js/app.js` — 8 changes: i18n EN (14 keys), i18n ES (14 keys), badge vars, title div, DOM injection IIFE (category/priority/status/due date/reminder/completed/archived), save handler vars, update block, push block
+- `sw.js` — CACHE_NAME v38-stage-f-calendar → v39-stage-g-reminders
+
+**Changes summary**:
+- **Part 1 — Reminder fields**: `dueDate`, `dueTime`, `reminder`, `reminderAt`, `priority`, `status`, `completed`, `archived` added to note model and modal UI. All fields save via existing `saveState()`.
+- **Part 2 — Category fix**: Category `<select>` added to note modal. Pre-selects `note.categoryId` (edit mode) or `categoryId` parameter (add from context). `ncatId` used in both update and push blocks — Stage F calendar-add bug fixed.
+- **Part 3 — Visual polish**: Priority badges (red/amber/blue ▲◆▼), status chips, due-date badge (month abbr + year if not current), completed state (opacity 0.55 + strikethrough), archived badge. All colors via CSS variables.
+
+**Cache**: v38-stage-f-calendar → v39-stage-g-reminders
+
+**Tests to run after deploy**:
+- [ ] App loads, no console errors
+- [ ] Home, Timer, Calendar, Report all work
+- [ ] Add note from Calendar — category pre-selects correctly
+- [ ] Add note with priority High → red badge appears on card
+- [ ] Add note with priority Medium → amber badge
+- [ ] Add note with priority Low → blue badge
+- [ ] Add note with status In Progress → chip appears
+- [ ] Add note with due date → date badge appears on card
+- [ ] Mark note completed → card muted with strikethrough
+- [ ] Archive note → archived badge shows
+- [ ] Edit existing note → all new fields pre-fill correctly
+- [ ] Export/import unaffected (new fields silently ignored)
+- [ ] Cloud backup unaffected
+- [ ] EN and ES labels correct in modal
+- [ ] Dark mode — all badges use CSS variables correctly
+- [ ] Mobile layout — modal fields scroll, badges wrap cleanly
+
+**Known issues / risks**:
+- reminderAt is stored (timestamp) but no notification delivery (Stage H deferred)
+- No UI to filter by priority/status/archived yet (future stage)
+
+**Stage G**: COMPLETE
 
 ## STAGE H — QA / Live Verification
 
