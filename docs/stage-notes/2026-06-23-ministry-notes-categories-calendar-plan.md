@@ -1688,3 +1688,42 @@ Remaining risks: none structural — data-model unchanged, only new render layer
 Stage completed: YES
 Next stage: Stage G — Visual/Brand Alignment (or any next priority per build plan)
 ```
+
+---
+
+## HOTFIX — Emergency Repair
+
+**Date:** 2026-06-25  
+**Time:** 13:03 UTC  
+**Status:** IN PROGRESS  
+
+### Problem
+Production crash: `SyntaxError: Unterminated regular expression literal` at app.js ~line 1921.  
+Malformed regex in calendar notes panel sanitization (Stage F): `const sid = n.id.replace(/['"]/g,'')` and `const scat = (n.categoryId||'').replace(/['"]/g,'')`.  
+Backslash before closing quote escapes it, creating an unterminated regex.
+
+### Fix Applied
+**Option B — helper function approach** (lines 2019–2020 replaced with 3 lines):
+```js
+function sanitizeInlineArg(v) { return String(v || '').replace(/['"]/g, ''); }
+const sid = sanitizeInlineArg(n.id);
+const scat = sanitizeInlineArg(n.categoryId);
+```
+
+### Files Changed
+- `js/app.js` — regex fix (lines 2019–2020 → 3 lines)
+- `sw.js` — cache bump `v39-stage-g-reminders` → `v39-hotfix-appjs-regex`
+- This file — hotfix log entry
+
+
+### Completion
+**Completed:** 2026-06-25 13:04 UTC  
+**Commit:** e0ffe9bc475f6c86d083c86c3623f474ad7a3e89  
+**Status:** DEPLOYED — Awaiting live verification  
+
+**Changes pushed in single commit:**
+- `js/app.js`: sanitizeInlineArg() helper inserted at line 2019 (2 broken lines → 3 clean lines)
+- `sw.js`: CACHE_VERSION bumped from `v39-stage-g-reminders` to `v39-hotfix-appjs-regex`
+- `docs/stage-notes/...`: this log entry
+
+**Verification:** Live app check pending (GitHub Pages deploy ~1-3 min)
