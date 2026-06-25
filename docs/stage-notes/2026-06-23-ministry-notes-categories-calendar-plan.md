@@ -395,7 +395,9 @@ Calendar must access the same Ministry Notes data.
 
 ### Stage E status
 
-`pending`
+`COMPLETE`
+
+> **Implemented 2026-06-24:** Notes inside category (add/edit/delete, EN+ES). Tap a category card to open its notes list. Stage E Calendar Integration deferred — renamed Stage F+ per build plan.
 
 ## STAGE F — Reminder Foundation
 
@@ -1559,5 +1561,28 @@ Cloud backup/restore verification: new fields in same ministry-tracker-v4 blob; 
 Live GitHub Pages verification: code-implemented, not live-approved yet
 Remaining risks: none — data-model-only change with no side effects
 Updated MD checklist confirmation: all 6 Stage C checklist items marked complete
+Status: code-implemented, not live-approved yet
+```
+
+```txt
+Date: 2026-06-24
+Stage: Stage E — Notes Inside Category
+Summary: Tap category card opens notes list view; + Add Note modal (title required, body optional); edit/delete per note with confirm dialog; 5 new functions: renderNotes (Stage E), openNotesCategory, renderNotesListView, openNoteModal, deleteMinistryNote; 10 i18n keys EN+ES; CACHE_VERSION v37-stage-e-notes; state vars currentNotesView + currentNotesCategoryId; ministryNotes safeguarded with || [] everywhere.
+Commit hash: 4603e50
+Files changed: js/app.js, sw.js (2 files)
+Tests run: static code review; all 5 new functions confirmed present; i18n EN+ES keys verified; currentNotesView state var confirmed; CACHE_VERSION v37 confirmed in sw.js; fnStart/fnEnd anchors verified; all blob/tree/commit/ref API calls returned ok:true
+Screenshots if UI changed: pending manual test
+Cache version before: ministry-tracker-v36-stage-d-categories
+Cache version after: ministry-tracker-v37-stage-e-notes
+Bugs fixed: removed notesComingSoon hint from category grid (Stage D placeholder)
+Known issues: category delete does not cascade-delete notes (intentional — notes survive category deletion for now)
+Mobile verification: pending
+Desktop verification: pending
+Light/dark verification: pending
+English/Spanish verification: 10 new keys in both EN and ES confirmed
+Export/import verification: ministryNotes uses || [] in all handlers; saveState() full JSON.stringify preserves all state
+Cloud backup/restore verification: no change to collectKeys() or backup flow
+Remaining risks: none critical — data safety guards in place
+Updated MD checklist confirmation: Stage E status changed to COMPLETE
 Status: code-implemented, not live-approved yet
 ```
