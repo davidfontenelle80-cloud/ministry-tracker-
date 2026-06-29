@@ -2,7 +2,7 @@
  * sw.js â KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v40-stage-h-qa-polish';
+const CACHE_VERSION = 'ministry-tracker-v41-stage-i-web-push';
 
 const PRECACHE_URLS = [
   './',
@@ -23,6 +23,8 @@ const PRECACHE_URLS = [
   './js/components/card.js',
   './js/components/input.js',
   './js/perf.js',
+  './js/push-config.js',
+  './js/push.js',
   './js/app.js',
   './js/firebase/firebase-config.js',
   './js/firebase/cloud-backup.js',
@@ -67,4 +69,42 @@ self.addEventListener('fetch', event => {
 
 self.addEventListener('message', event => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = event.notification && event.notification.data && event.notification.data.url
+    ? event.notification.data.url
+    : '/ministry-tracker-/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if ('focus' in client && client.url.indexOf('/ministry-tracker-/') !== -1) return client.focus();
+      }
+      return clients.openWindow(url);
+    })
+  );
+});
+
+self.addEventListener('push', event => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (err) {
+    data = { title: 'Ministry Tracker', body: event.data ? event.data.text() : '' };
+  }
+  const title = data.title || 'Ministry Tracker';
+  const options = {
+    body: data.body || data.message || '',
+    icon: data.icon || './icons/icon-192.png',
+    badge: data.badge || './icons/icon-192.png',
+    tag: data.tag || data.sourceId || 'ministry-tracker-reminder',
+    data: {
+      url: data.url || '/ministry-tracker-/',
+      sourceType: data.sourceType || 'ministry-note',
+      sourceId: data.sourceId || ''
+    },
+    requireInteraction: !!data.requireInteraction
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
 });

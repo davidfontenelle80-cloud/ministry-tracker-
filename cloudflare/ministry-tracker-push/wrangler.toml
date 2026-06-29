@@ -1,0 +1,23 @@
+name = "ministry-tracker-push"
+main = "worker.js"
+compatibility_date = "2026-06-29"
+account_id = "3df617adc3ddf2b3ed89cedbbb917fab"
+preview_urls = false
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+
+[vars]
+ALLOWED_ORIGIN = "https://davidfontenelle80-cloud.github.io"
+VAPID_PUBLIC_KEY = "BK8suBo_HzxgEM7XP_A-CQF9R4bbspmdFZ54lhWxME0_tBVDcaJA_H9MdpicZSPV_dz_hCq9r4LcGOUq9SAJSJY"
+VAPID_SUBJECT = "mailto:davidfontenelle80@gmail.com"
+
+[[kv_namespaces]]
+binding = "PUSH_STORE"
+id = "559729167b3140e0add1c89ea1a1d477"
+
+[triggers]
+crons = ["* * * * *"]
