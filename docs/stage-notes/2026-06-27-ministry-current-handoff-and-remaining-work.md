@@ -41,7 +41,7 @@ Do not code until the MD and repo match.
 
 ### Stage I — Reminder Push Notifications / Notification Foundation
 
-Status: next active implementation stage.
+Status: approved for implementation.
 
 Do this before weather.
 
@@ -59,6 +59,19 @@ Required outcomes:
 - Export/import and cloud backup unaffected.
 - Cache bumped if deployable files change.
 - Live GitHub Pages verified.
+
+Documented Stage I architecture before coding:
+
+- Adapt the Talk Arrangements Stage 9B-B closed-app Web Push pattern to Ministry Tracker.
+- Use Cloudflare Worker, Cloudflare KV binding `PUSH_STORE`, and a one-minute cron trigger.
+- Use VAPID Web Push with public Worker URL/public VAPID key in frontend only.
+- Keep `VAPID_PRIVATE_KEY` as a Cloudflare secret only; never commit it.
+- Frontend creates and stores a browser `PushSubscription` through the backend.
+- Backend stores scheduled reminders and sends due reminders from cron.
+- Service worker handles `push` and `notificationclick`.
+- Do not use local-only `setTimeout` as the final solution.
+- Do not claim notifications work until real closed-app delivery is verified.
+- Cache before Stage I frontend changes: `ministry-tracker-v40-stage-h-qa-polish`.
 
 ### Stage J — Weather Planning Widget
 

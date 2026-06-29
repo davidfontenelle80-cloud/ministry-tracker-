@@ -1789,7 +1789,7 @@ e0ffe9bc475f6c86d083c86c3623f474ad7a3e89 (hotfix code)
 
 ## STAGE I — Reminder Push Notifications / Notification Foundation
 
-**Status:** planned — do not start until Stage H is approved
+**Status:** approved for implementation — architecture documented before coding
 
 ### Objective
 Implement real reminder notifications for Ministry Notes so a user can set a reminder date and time and receive an actual notification when the reminder is due.
@@ -1833,7 +1833,23 @@ Before coding Stage I, document which approach will be used:
 - **Option B** — Local browser notifications only (while app/device/browser conditions allow)
 - **Option C** — Hybrid approach
 
-Do not start coding until the approach is documented and approved.
+Chosen approach for Stage I:
+
+- Use the Talk Arrangements Stage 9B-B closed-app Web Push pattern, adapted to Ministry Tracker.
+- Use a Cloudflare Worker backend with Cloudflare KV binding `PUSH_STORE`.
+- Use a scheduled Cloudflare cron trigger every minute to process due reminders.
+- Use VAPID Web Push for real browser/PWA notifications.
+- Store only the public VAPID key and public Worker URL in frontend source.
+- Store `VAPID_PRIVATE_KEY` only as a Cloudflare Worker secret; never commit it.
+- Frontend creates a real browser `PushSubscription` and sends it to the Worker.
+- Backend stores subscriptions and scheduled reminder records, then sends due notifications from the cron handler.
+- Service worker handles both `push` and `notificationclick`.
+- Local-only `setTimeout` is not the final Stage I solution.
+- Do not claim notifications work until closed-app delivery is verified on a supported device/PWA path.
+
+Current cache before Stage I frontend changes: `ministry-tracker-v40-stage-h-qa-polish`.
+
+Do not start coding until the approach is documented and approved. Supervisor approval to begin Stage I implementation was given on 2026-06-29 after this architecture requirement was specified.
 
 ### Guardrails
 - Do not fake notification success
@@ -1879,4 +1895,4 @@ STOP if:
 - No console errors
 - Cache version bumped if deployable files change
 
-**Stage I status: planned — pending Stage H approval**
+**Stage I status: approved for implementation — Cloudflare KV/VAPID Web Push architecture selected**
