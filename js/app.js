@@ -1873,6 +1873,50 @@ function renderNotesListView(scr, cat) {
   });
 }
 
+function ministryNoteReminderFireAt(note) {
+  if (!note) return '';
+  if (note.reminderAt) return new Date(note.reminderAt).toISOString();
+  if (note.dueDate) return new Date(note.dueDate + (note.dueTime ? 'T' + note.dueTime : 'T00:00')).toISOString();
+  return '';
+}
+
+function ministryNoteNeedsPush(note) {
+  if (!note || !note.id || !note.reminder || note.completed || note.archived || note.status === 'done') return false;
+  const fireAt = ministryNoteReminderFireAt(note);
+  return !!(fireAt && !Number.isNaN(new Date(fireAt).getTime()));
+}
+
+function ministryNotePushBody(note) {
+  const bits = [];
+  if (note.body) bits.push(String(note.body).slice(0, 180));
+  if (note.dueDate) bits.push(note.dueTime ? note.dueDate + ' ' + note.dueTime : note.dueDate);
+  return bits.join(' - ') || 'Ministry note reminder';
+}
+
+function clearMinistryNotePush(noteId) {
+  if (!noteId || !window.MinistryPush || !window.MinistryPush.isConfigured || !window.MinistryPush.isConfigured()) return;
+  window.MinistryPush.clearReminder('ministry-note', noteId).catch(function(err) {
+    console.warn('[MinistryPush] reminder clear skipped:', err && err.message ? err.message : err);
+  });
+}
+
+function syncMinistryNotePush(note) {
+  if (!note || !window.MinistryPush || !window.MinistryPush.isConfigured || !window.MinistryPush.isConfigured()) return;
+  if (!ministryNoteNeedsPush(note)) {
+    clearMinistryNotePush(note.id);
+    return;
+  }
+  window.MinistryPush.syncReminder(
+    'ministry-note',
+    note.id,
+    note.title || 'Ministry Tracker Reminder',
+    ministryNotePushBody(note),
+    ministryNoteReminderFireAt(note)
+  ).catch(function(err) {
+    console.warn('[MinistryPush] reminder sync failed:', err && err.message ? err.message : err);
+  });
+}
+
 function openNoteModal(categoryId, noteId, _calDate) {
   var note = noteId ? (state.ministryNotes || []).find(function(n) { return n.id === noteId; }) : null;
   var titleVal = note ? (note.title || '') : '';
@@ -1956,22 +2000,26 @@ function openNoteModal(categoryId, noteId, _calDate) {
           var narchived=document.getElementById('mnArchivedToggle')?document.getElementById('mnArchivedToggle').checked:false;
       if (!nt) { if (ti) ti.focus(); return; }
       if (!Array.isArray(state.ministryNotes)) state.ministryNotes = [];
+      var savedNote;
       if (note) { note.title = nt; note.body = nb; note.updatedAt = Date.now();
             if(ncatId)note.categoryId=ncatId;
             note.dueDate=ndueDate||null;note.dueTime=ndueTime||null;
             note.reminder=!!nreminder;note.reminderAt=nreminderAt||null;
             note.priority=npriority||null;note.status=nstatus||null;
-            note.completed=!!ncompleted;note.archived=!!narchived; }
-      else { state.ministryNotes.push({ id: 'mn-' + Date.now(), categoryId: ncatId||categoryId, title: nt, body: nb, createdAt: _calDate ? new Date(_calDate + 'T12:00:00').getTime() : Date.now(), updatedAt: Date.now(), dueDate:ndueDate||null, dueTime:ndueTime||null, reminder:!!nreminder, reminderAt:nreminderAt||null, priority:npriority||null, status:nstatus||null, completed:!!ncompleted, archived:!!narchived }); }
+            note.completed=!!ncompleted;note.archived=!!narchived; savedNote = note; }
+      else { savedNote = { id: 'mn-' + Date.now(), categoryId: ncatId||categoryId, title: nt, body: nb, createdAt: _calDate ? new Date(_calDate + 'T12:00:00').getTime() : Date.now(), updatedAt: Date.now(), dueDate:ndueDate||null, dueTime:ndueTime||null, reminder:!!nreminder, reminderAt:nreminderAt||null, priority:npriority||null, status:nstatus||null, completed:!!ncompleted, archived:!!narchived }; state.ministryNotes.push(savedNote); }
       saveState(); closeModal(); renderNotes();
+      syncMinistryNotePush(savedNote);
     });
   }, 50);
 }
 
 function deleteMinistryNote(noteId) {
   openConfirmModal(t('confirmDeleteNote'), function() {
+    var removed = (state.ministryNotes || []).find(function(n) { return n.id === noteId; });
     state.ministryNotes = (state.ministryNotes || []).filter(function(n) { return n.id !== noteId; });
     saveState(); renderNotes();
+    clearMinistryNotePush(removed && removed.id);
   }, { confirmLabel: t('deleteNote'), danger: true });
 }
 /* ── Stage F: Calendar Notes Panel ──────────────────────────────────── */

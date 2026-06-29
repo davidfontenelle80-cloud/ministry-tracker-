@@ -73,6 +73,17 @@ Documented Stage I architecture before coding:
 - Do not claim notifications work until real closed-app delivery is verified.
 - Cache before Stage I frontend changes: `ministry-tracker-v40-stage-h-qa-polish`.
 
+Stage I deployment/device verification attempt on 2026-06-29:
+
+- Worker URL: `https://ministry-tracker-push.davidfontenelle80.workers.dev`.
+- Worker deployment/version ID: `a9654632-efa0-4382-a839-9119b5385032`.
+- KV namespace: `ministry-tracker-push-store` (`559729167b3140e0add1c89ea1a1d477`).
+- `/api/health` passed with `hasStore=true`, `hasVapidPublicKey=true`, `hasVapidPrivateKey=true`, and `hasVapidSubject=true`.
+- Backend smoke tests passed for non-real subscribe, reminder upsert, and reminder delete.
+- Live GitHub Pages frontend is not yet serving the Stage I WIP files: `js/push-config.js` and `js/push.js` return 404, and live `sw.js` is not `ministry-tracker-v41-stage-i-web-push`.
+- Real browser subscription, test push, scheduled reminder, closed-app notification, notification click, mobile, desktop, console, and tab regression checks remain unverified.
+- Current deployment status: `backend-deployed, not live-approved`.
+
 ### Stage J — Weather Planning Widget
 
 Status: planned only.
