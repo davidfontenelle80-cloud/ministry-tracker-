@@ -1896,3 +1896,75 @@ STOP if:
 - Cache version bumped if deployable files change
 
 **Stage I status: approved for implementation — Cloudflare KV/VAPID Web Push architecture selected**
+
+### Stage I deployment/device verification attempt — 2026-06-29
+
+Status: `backend-deployed, not live-approved`
+
+Worker deployment:
+
+- Worker URL: `https://ministry-tracker-push.davidfontenelle80.workers.dev`
+- Worker deployment/version ID: `a9654632-efa0-4382-a839-9119b5385032`
+- KV namespace: `ministry-tracker-push-store`
+- KV namespace ID: `559729167b3140e0add1c89ea1a1d477`
+- Cache in WIP source: `ministry-tracker-v41-stage-i-web-push`
+
+Health result:
+
+```json
+{
+  "ok": true,
+  "app": "ministry-tracker",
+  "hasStore": true,
+  "hasVapidPublicKey": true,
+  "hasVapidPrivateKey": true,
+  "hasVapidSubject": true,
+  "webPushDeliveryImplemented": true
+}
+```
+
+Tests completed:
+
+- Wrangler auth confirmed for `davidfontenelle80@gmail.com`.
+- `VAPID_PRIVATE_KEY` uploaded as Cloudflare Worker secret without printing or committing it.
+- Worker deployed.
+- `GET /api/health` passed.
+- `POST /api/subscribe` passed with a non-real smoke subscription.
+- `POST /api/reminders` passed with a non-real smoke subscription.
+- `DELETE /api/reminders/:sourceType/:sourceId` passed with a non-real smoke subscription.
+- Live GitHub Pages frontend asset check completed.
+
+Tests not completed:
+
+- Real browser `PushSubscription`.
+- `POST /api/test-push` with a real subscription.
+- Test push notification arrival.
+- Scheduled reminder firing.
+- Closed-app / phone-locked notification.
+- `notificationclick` open/focus behavior.
+- Mobile verification.
+- Desktop browser UI verification.
+- Console verification.
+- EN/ES and light/dark live verification for Stage I.
+- Reports, Timer, Calendar, and Notes live regression checks for Stage I.
+
+Failure / blocker:
+
+- The live GitHub Pages app at `https://davidfontenelle80-cloud.github.io/ministry-tracker-/` is not serving the Stage I WIP frontend.
+- `js/push-config.js` returns `404`.
+- `js/push.js` returns `404`.
+- Live `sw.js` is not `ministry-tracker-v41-stage-i-web-push`.
+- Therefore the live frontend cannot create a real Stage I `PushSubscription` yet.
+
+Closed-app verification result: not verified.
+
+Notification click result: not verified.
+
+Mobile / desktop verification: not verified.
+
+Remaining risks:
+
+- Stage I cannot be live-approved until the WIP frontend is available on the tested live surface, then real subscription, test push, scheduled reminder, closed-app notification, and notification click are verified.
+- Do not claim Stage I complete from backend smoke tests alone.
+
+Deployment status: `backend-deployed, not live-approved`.
