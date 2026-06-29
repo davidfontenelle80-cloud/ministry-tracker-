@@ -2021,3 +2021,36 @@ Required next action:
 - After the note modal opens, rerun the Stage I real subscription, test push, scheduled reminder, closed-app, and notification-click verification.
 
 Deployment status remains: `backend-deployed, frontend-live, not live-approved`.
+
+### Notes modal blocker fix for Stage I live verification — 2026-06-29
+
+Status: source fix in progress for live Notes & Reminders blocker.
+
+Root cause:
+
+- Ministry Notes had a global `openNoteModal(categoryId, noteId, _calDate)` function.
+- The Timer feature later declared another global `openNoteModal()` function.
+- Because function declarations are hoisted, Notes and Calendar calls resolved to the Timer modal function.
+- When no timer was active, the Timer modal returned immediately, so `+ Add Note` appeared dead and Stage I real reminder testing could not continue.
+
+Fix approach:
+
+- Renamed the Ministry Notes modal path to `openMinistryNoteModal(...)`.
+- Updated Notes category add/edit and Calendar note add/edit hooks to use `openMinistryNoteModal(...)`.
+- Kept the Timer `openNoteModal()` function unchanged for the timer note workflow.
+- Added All Notes access, note search, active/all/completed/archived filter controls, clickable note cards, and category picker selected-state behavior adapted from the read-only Note Clip Notes workflow.
+- Preserved Ministry `ministryNotes` records and reminder fields: `dueDate`, `dueTime`, `reminder`, `reminderAt`, `priority`, `status`, `completed`, `archived`.
+
+Reference inspected read-only:
+
+- Note Clip `js/notes.js`: `buildCategoryGrid`, `buildNotesGrid`, `_openNoteModal`, `_saveNote`, `_categoryIconPickerHtml`, `_selectCatIcon`, `_openCatModal`.
+- Note Clip `js/calendar.js`: calendar-to-note open behavior.
+
+Cache before: `ministry-tracker-v41-stage-i-web-push`.
+
+Cache after: `ministry-tracker-v42-notes-modal-fix`.
+
+Deployment / Stage I status:
+
+- Worker remains deployed and healthy; Cloudflare was not redeployed for this fix.
+- Stage I remains `backend-deployed, frontend-live, not live-approved` until the v42 frontend is live and real PushSubscription, test push, scheduled reminder, closed-app notification, and notification click are verified.

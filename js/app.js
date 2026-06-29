@@ -66,8 +66,10 @@ let logFilter = 'month';
 let logSearch = ''; // search query for Log notes
 let logHistoryMonth = monthKey(new Date()); // month shown in Log History (Reports)
 let logHistorySearch = '';
-let currentNotesView = 'categories'; // 'categories' | 'notes'
-let currentNotesCategoryId = null; // search query for Log History
+let currentNotesView = 'categories'; // 'categories' | 'notes' | 'all'
+let currentNotesCategoryId = null;
+let currentNotesSearch = '';
+let currentNotesFilter = 'active';
 let liveTickInterval = null;
 let lastInteraction = Date.now();
 let longPressTimer = null;
@@ -275,6 +277,15 @@ const I18N = {
     noteTitlePlaceholder: 'Note title',
     noteBodyPlaceholder: 'Note content...',
     noNotesInCategory: 'No notes yet. Tap + Add Note to get started.',
+    allNotes: 'All Notes',
+    notesSearchPlaceholder: 'Search notes...',
+    notesFilterActive: 'Active',
+    notesFilterAll: 'All',
+    notesFilterCompleted: 'Completed',
+    notesFilterArchived: 'Archived',
+    noNotesFound: 'No notes match your search or filter.',
+    categoryIconSelected: 'Selected icon',
+    categoryIconCustom: 'Custom emoji',
     confirmDeleteNote: 'Delete this note?',
         noteDueDate: 'Due date',
     noteDueTime: 'Due time',
@@ -526,7 +537,57 @@ const CAT_PRESET_COLORS = [
   '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#ef4444', '#64748b',
 ];
 
-function t(k) { return (I18N[state.lang || 'en'] || I18N.en)[k] ?? k; }
+const CAT_PRESET_ICONS = [
+  '\uD83D\uDD04', '\uD83D\uDCD6', '\uD83D\uDC64', '\u260E\uFE0F',
+  '\uD83D\uDCAC', '\uD83D\uDDFA\uFE0F', '\uD83D\uDCC5', '\uD83D\uDE4F',
+  '\uD83D\uDCDD', '\uD83C\uDFE0', '\uD83D\uDCCD', '\u2B50'
+];
+
+const I18N_FALLBACKS = {
+  en: {},
+  es: {
+    allNotes: 'Todas las notas',
+    notesSearchPlaceholder: 'Buscar notas...',
+    notesFilterActive: 'Activas',
+    notesFilterAll: 'Todas',
+    notesFilterCompleted: 'Completadas',
+    notesFilterArchived: 'Archivadas',
+    noNotesFound: 'No hay notas que coincidan con la busqueda o el filtro.',
+    categoryIconSelected: 'Icono seleccionado',
+    categoryIconCustom: 'Emoji personalizado',
+  },
+};
+
+function t(k) {
+  const lang = state.lang || 'en';
+  return (I18N[lang] || I18N.en)[k] ?? (I18N_FALLBACKS[lang] || {})[k] ?? I18N.en[k] ?? k;
+}
+
+function ministryCategoryName(cat) {
+  if (!cat) return '';
+  const lang = state.lang || 'en';
+  if (cat.name && typeof cat.name === 'object') return cat.name[lang] || cat.name.en || cat.name.es || '';
+  return cat.name || '';
+}
+
+function ministryNoteDefaultCategoryId() {
+  return currentNotesCategoryId || ((state.ministryNoteCategories || [])[0] || {}).id || '';
+}
+
+function ministryNoteMatchesSearch(note) {
+  const q = (currentNotesSearch || '').trim().toLowerCase();
+  if (!q) return true;
+  return String(note.title || '').toLowerCase().includes(q) ||
+    String(note.body || '').toLowerCase().includes(q);
+}
+
+function ministryNoteMatchesFilter(note) {
+  if (currentNotesFilter === 'all') return true;
+  if (currentNotesFilter === 'completed') return !!note.completed || note.status === 'done';
+  if (currentNotesFilter === 'archived') return !!note.archived;
+  return !note.completed && !note.archived && note.status !== 'done';
+}
+
 function categoryLabel(catId) {
   const cat = (state.categories || []).find(c => c.id === catId);
   if (!cat) return catId;
@@ -1767,6 +1828,10 @@ function renderNotes() {
     if (cat) { renderNotesListView(scr, cat); return; }
     currentNotesView = 'categories'; currentNotesCategoryId = null;
   }
+  if (currentNotesView === 'all') {
+    renderNotesListView(scr, null);
+    return;
+  }
   const cats = state.ministryNoteCategories;
   const n = cats.length;
   const countLabel = t('categoryCount').replace('{n}', n);
@@ -1778,7 +1843,7 @@ function renderNotes() {
       '<i class="fa-solid fa-plus"></i><span>' + t('addCategory') + '</span></button></div>';
   } else {
     var cards = cats.map(function(cat) {
-      var name = (cat.name && typeof cat.name === 'object') ? (cat.name[lang] || cat.name.en || '') : (cat.name || '');
+      var name = ministryCategoryName(cat);
       var color = cat.color || 'var(--accent)';
       var icon = cat.icon || '📝';
       var nc = (state.ministryNotes || []).filter(function(mn) { return mn.categoryId === cat.id; }).length;
@@ -1798,11 +1863,15 @@ function renderNotes() {
   }
   scr.innerHTML =
     '<div class="card card-flat mb-4"><div class="text-sm text-dim">' + t('notesCategoriesHint') + '</div></div>' +
-    '<div class="row-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-dim">' + countLabel + '</span>' +
+    '<div class="row-between mb-3" style="gap:8px;align-items:center;flex-wrap:wrap;"><span class="text-xs font-bold uppercase tracking-wider text-dim">' + countLabel + '</span>' +
+    '<div class="row gap-2" style="flex-wrap:wrap;justify-content:flex-end;">' +
+    '<button class="btn btn-secondary" data-all-notes style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('allNotes')) + '</button>' +
     '<button class="btn btn-primary" data-add-cat style="font-size:13px;padding:7px 14px;">' +
-    '<i class="fa-solid fa-plus"></i><span>' + t('addCategory') + '</span></button></div>' +
+    '<i class="fa-solid fa-plus"></i><span>' + t('addCategory') + '</span></button></div></div>' +
     gridHTML;
   scr.querySelectorAll('[data-add-cat]').forEach(function(el) { el.addEventListener('click', openAddCategoryModal); });
+  var allNotesBtn = scr.querySelector('[data-all-notes]');
+  if (allNotesBtn) allNotesBtn.addEventListener('click', function() { currentNotesView = 'all'; currentNotesCategoryId = null; renderNotes(); });
   scr.querySelectorAll('[data-cat-open]').forEach(function(el) {
     el.addEventListener('click', function(e) {
       if (!e.target.closest('[data-cat-edit],[data-cat-del]')) { openNotesCategory(el.dataset.catOpen); }
@@ -1823,14 +1892,18 @@ function openNotesCategory(categoryId) {
 }
 
 function renderNotesListView(scr, cat) {
-  var lang = state.lang || 'en';
   if (!Array.isArray(state.ministryNotes)) state.ministryNotes = [];
-  var notes = state.ministryNotes.filter(function(n) { return n.categoryId === cat.id; })
+  var isAllNotesView = !cat;
+  if (!cat) cat = { id: '', name: t('allNotes'), icon: '\uD83D\uDCDD' };
+  var notes = state.ministryNotes.filter(function(n) { return isAllNotesView || n.categoryId === cat.id; })
+    .filter(ministryNoteMatchesFilter)
+    .filter(ministryNoteMatchesSearch)
     .sort(function(a, b) { return b.updatedAt - a.updatedAt; });
-  var catName = (cat.name && typeof cat.name === 'object') ? (cat.name[lang] || cat.name.en || '') : (cat.name || '');
+  var catName = isAllNotesView ? t('allNotes') : ministryCategoryName(cat);
   var icon = cat.icon || '📝';
+  var noNotesMessage = (currentNotesSearch || currentNotesFilter !== 'active') ? t('noNotesFound') : t('noNotesInCategory');
   var noteCards = notes.length === 0
-    ? '<div class="card text-center" style="padding:40px 16px;"><div class="text-faint text-sm">' + t('noNotesInCategory') + '</div></div>'
+    ? '<div class="card text-center" style="padding:40px 16px;"><div class="text-faint text-sm">' + escapeHtml(noNotesMessage) + '</div></div>'
     : notes.map(function(note) {
         var preview = (note.body || '').slice(0, 60) + ((note.body || '').length > 60 ? '…' : '');
         var noteCompl = note.completed ? 'opacity:0.55;text-decoration:line-through' : '';
@@ -1843,7 +1916,7 @@ function renderNotesListView(scr, cat) {
                 if(note.archived) noteBadges+='<span style="background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">'+(I18N[state.lang].noteArchived||'Archived')+'</span>';
                 var badgeRow=noteBadges?'<div style="margin-bottom:4px">'+noteBadges+'</div>':'';
                 var dateStr = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString() : '';
-        return '<div class="card mb-3">' +
+        return '<div class="card mb-3" data-note-card="' + escapeHtml(note.id) + '" style="cursor:pointer;">' +
           badgeRow + '<div class="font-semibold text-sm mb-1" style="'+noteCompl+'">' + escapeHtml(note.title || '') + '</div>' +
           (preview ? '<div class="text-sm text-dim mb-2">' + escapeHtml(preview) + '</div>' : '') +
           '<div class="row-between" style="align-items:center;"><span class="text-tiny text-faint">' + escapeHtml(dateStr) + '</span>' +
@@ -1854,19 +1927,37 @@ function renderNotesListView(scr, cat) {
           '<i class="fa-solid fa-trash" style="font-size:11px; color:var(--coral);"></i></button>' +
           '</div></div></div>';
       }).join('');
+  var notesToolbar = '<div class="card card-flat mb-3" style="padding:12px;">' +
+    '<div class="row gap-2" style="align-items:center;flex-wrap:wrap;">' +
+    '<input id="mnNotesSearch" class="input" type="search" value="' + escapeHtml(currentNotesSearch || '') + '" placeholder="' + escapeHtml(t('notesSearchPlaceholder')) + '" style="flex:1 1 170px;min-width:0;">' +
+    '<select id="mnNotesFilter" class="input" style="flex:0 0 150px;min-height:40px;">' +
+    '<option value="active"' + (currentNotesFilter === 'active' ? ' selected' : '') + '>' + escapeHtml(t('notesFilterActive')) + '</option>' +
+    '<option value="all"' + (currentNotesFilter === 'all' ? ' selected' : '') + '>' + escapeHtml(t('notesFilterAll')) + '</option>' +
+    '<option value="completed"' + (currentNotesFilter === 'completed' ? ' selected' : '') + '>' + escapeHtml(t('notesFilterCompleted')) + '</option>' +
+    '<option value="archived"' + (currentNotesFilter === 'archived' ? ' selected' : '') + '>' + escapeHtml(t('notesFilterArchived')) + '</option>' +
+    '</select></div></div>';
   scr.innerHTML =
     '<div class="row-between mb-4" style="align-items:center;">' +
     '<button class="btn btn-secondary" data-mn-back style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('notesBackBtn')) + '</button>' +
     '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:20px;">' + escapeHtml(icon) + '</span>' +
     '<span class="font-semibold text-sm">' + escapeHtml(catName) + '</span></div>' +
     '<button class="btn btn-primary" data-mn-add style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('mnAddNote')) + '</button></div>' +
-    noteCards;
+    notesToolbar + noteCards;
   var addBtn = scr.querySelector('[data-mn-add]');
-  if (addBtn) addBtn.addEventListener('click', function() { openNoteModal(cat.id, null); });
+  if (addBtn) addBtn.addEventListener('click', function() { openMinistryNoteModal(isAllNotesView ? ministryNoteDefaultCategoryId() : cat.id, null); });
   var backBtn = scr.querySelector('[data-mn-back]');
   if (backBtn) backBtn.addEventListener('click', function() { currentNotesView = 'categories'; currentNotesCategoryId = null; renderNotes(); });
+  var searchEl = scr.querySelector('#mnNotesSearch');
+  if (searchEl) searchEl.addEventListener('input', function() { currentNotesSearch = searchEl.value || ''; renderNotes(); });
+  var filterEl = scr.querySelector('#mnNotesFilter');
+  if (filterEl) filterEl.addEventListener('change', function() { currentNotesFilter = filterEl.value || 'active'; renderNotes(); });
+  scr.querySelectorAll('[data-note-card]').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      if (!e.target.closest('[data-note-edit],[data-note-del]')) openMinistryNoteModal('', el.dataset.noteCard);
+    });
+  });
   scr.querySelectorAll('[data-note-edit]').forEach(function(el) {
-    el.addEventListener('click', function() { openNoteModal(el.dataset.noteCat, el.dataset.noteEdit); });
+    el.addEventListener('click', function() { openMinistryNoteModal(el.dataset.noteCat, el.dataset.noteEdit); });
   });
   scr.querySelectorAll('[data-note-del]').forEach(function(el) {
     el.addEventListener('click', function() { deleteMinistryNote(el.dataset.noteDel); });
@@ -1917,7 +2008,7 @@ function syncMinistryNotePush(note) {
   });
 }
 
-function openNoteModal(categoryId, noteId, _calDate) {
+function openMinistryNoteModal(categoryId, noteId, _calDate) {
   var note = noteId ? (state.ministryNotes || []).find(function(n) { return n.id === noteId; }) : null;
   var titleVal = note ? (note.title || '') : '';
   var bodyVal  = note ? (note.body  || '') : '';
@@ -1942,7 +2033,7 @@ function openNoteModal(categoryId, noteId, _calDate) {
     (function(){
       var t2=I18N[state.lang];
       var cats=Array.isArray(state.ministryNoteCategories)&&state.ministryNoteCategories.length?state.ministryNoteCategories:DEFAULT_MINISTRY_NOTE_CATEGORIES;
-      var catOpts=cats.map(function(c){return '<option value="'+escapeHtml(c.id||'')+'"'+((note?note.categoryId:categoryId)===c.id?' selected':'')+'>'+escapeHtml((c.icon?c.icon+' ':'')+c.name)+'</option>';}).join('');
+      var catOpts=cats.map(function(c){return '<option value="'+escapeHtml(c.id||'')+'"'+((note?note.categoryId:categoryId)===c.id?' selected':'')+'>'+escapeHtml((c.icon?c.icon+' ':'')+ministryCategoryName(c))+'</option>';}).join('');
       var xH='<div style="display:flex;flex-direction:column;gap:8px;padding:0 0 8px">'
         +'<label style="font-size:0.75rem;color:var(--text-dim)">'+escapeHtml(t2.noteCategory||'Category')+'</label>'
         +'<select id="mnCatSelect" style="background:var(--input-bg,var(--surface));border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm,6px);padding:10px;min-height:44px">'+catOpts+'</select>'
@@ -2070,7 +2161,7 @@ function renderCalendarNotesPanel() {
       const ttl = (n.title||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
       const bdy = (n.body||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
       const bSnip = bdy.length > 80 ? bdy.substring(0,80) + '…' : bdy;
-      h += '<button class="cal-note-item" onclick="openNoteModal(\'' + scat + '\',\'' + sid + '\')">';
+      h += '<button class="cal-note-item" onclick="openMinistryNoteModal(\'' + scat + '\',\'' + sid + '\')">';
       h += '<span class="cal-note-item-title">' + (ttl || '(' + t('noteTitle') + ')') + '</span>';
       if (bSnip) h += '<span class="cal-note-item-body">' + bSnip + '</span>';
       h += '</button>';
@@ -2078,7 +2169,7 @@ function renderCalendarNotesPanel() {
     h += '</div>';
   }
   const defCat = ((state.ministryNoteCategories||[])[0] || {}).id || '';
-  h += '<button class="cal-add-note-btn" onclick="openNoteModal(\'' + defCat + '\',null,\'' + ds + '\')">' + t('calAddNote') + '</button>';
+  h += '<button class="cal-add-note-btn" onclick="openMinistryNoteModal(\'' + defCat + '\',null,\'' + ds + '\')">' + t('calAddNote') + '</button>';
   h += '</div>';
   panel.innerHTML = h;
   panel.classList.remove('hidden');
@@ -2105,6 +2196,13 @@ function openCategoryModal(existingCat) {
              border:3px solid ${sel ? 'var(--text)' : 'transparent'};flex-shrink:0;"
       onclick="selectCatSwatch('${c}')"></button>`;
   }).join('');
+  const iconButtons = CAT_PRESET_ICONS.map(icon => {
+    const sel = icon === currentIcon;
+    return `<button type="button" class="cat-icon-choice" data-cat-icon="${escapeHtml(icon)}" aria-pressed="${sel ? 'true' : 'false'}"
+      style="width:42px;height:42px;border-radius:8px;border:2px solid ${sel ? 'var(--accent)' : 'var(--border)'};
+             background:var(--surface);color:var(--text);font-size:20px;display:flex;align-items:center;justify-content:center;"
+      onclick="selectCatIcon('${escapeHtml(icon)}')">${escapeHtml(icon)}</button>`;
+  }).join('');
 
   openModal(`
     <div class="row-between items-center mb-4">
@@ -2122,6 +2220,15 @@ function openCategoryModal(existingCat) {
         <label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="catModalIcon">${t('categoryIcon')}</label>
         <input type="text" id="catModalIcon" class="input" value="${escapeHtml(currentIcon)}" placeholder="📝" maxlength="4"
           style="font-size:24px;text-align:center;width:64px;padding:6px 4px;">
+        <div class="card card-flat mt-2 mb-2" style="padding:10px;display:flex;align-items:center;gap:10px;">
+          <div id="catIconPreview" style="width:42px;height:42px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:22px;">${escapeHtml(currentIcon)}</div>
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-dim">${escapeHtml(t('categoryIconSelected'))}</div>
+            <div class="text-sm text-dim">${escapeHtml(t('categoryIconCustom'))}</div>
+          </div>
+        </div>
+        <div class="row gap-2 mb-2" style="flex-wrap:wrap;align-items:center;">${iconButtons}</div>
+        <input type="text" id="catModalCustomIcon" class="input" value="" placeholder="${escapeHtml(t('categoryIconCustom'))}" maxlength="8" style="width:100%;max-width:180px;">
       </div>
       <div>
         <label class="text-xs font-bold uppercase tracking-wider text-dim block mb-2">${t('categoryColor')}</label>
@@ -2146,6 +2253,13 @@ function openCategoryModal(existingCat) {
       document.querySelectorAll('.cat-swatch').forEach(s => {
         s.style.borderColor = s.dataset.swatchColor === colorInput.value ? 'var(--text)' : 'transparent';
       });
+    });
+  }
+  const customIconInput = document.getElementById('catModalCustomIcon');
+  if (customIconInput) {
+    customIconInput.addEventListener('input', () => {
+      const v = customIconInput.value.trim();
+      if (v) selectCatIcon(v);
     });
   }
 
@@ -2177,6 +2291,19 @@ function selectCatSwatch(color) {
   if (inp) inp.value = color;
   document.querySelectorAll('.cat-swatch').forEach(s => {
     s.style.borderColor = s.dataset.swatchColor === color ? 'var(--text)' : 'transparent';
+  });
+}
+
+function selectCatIcon(icon) {
+  const clean = String(icon || '').trim();
+  const inp = document.getElementById('catModalIcon');
+  const preview = document.getElementById('catIconPreview');
+  if (inp) inp.value = clean;
+  if (preview) preview.textContent = clean;
+  document.querySelectorAll('.cat-icon-choice').forEach(btn => {
+    const selected = btn.dataset.catIcon === clean;
+    btn.style.borderColor = selected ? 'var(--accent)' : 'var(--border)';
+    btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
   });
 }
 
