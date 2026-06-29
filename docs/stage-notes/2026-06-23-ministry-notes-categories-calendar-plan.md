@@ -1968,3 +1968,56 @@ Remaining risks:
 - Do not claim Stage I complete from backend smoke tests alone.
 
 Deployment status: `backend-deployed, not live-approved`.
+
+### Stage I live frontend verification attempt after merge — 2026-06-29
+
+Status: `backend-deployed, frontend-live, not live-approved`
+
+Merge / live frontend:
+
+- Stage I WIP branch was merged to `main`.
+- GitHub Pages now serves `js/push-config.js`.
+- GitHub Pages now serves `js/push.js`.
+- Live `sw.js` contains `ministry-tracker-v41-stage-i-web-push`.
+- Live `index.html` includes the Stage I push scripts.
+
+Worker:
+
+- Worker URL: `https://ministry-tracker-push.davidfontenelle80.workers.dev`
+- Worker deployment/version ID: `a9654632-efa0-4382-a839-9119b5385032`
+- KV namespace: `ministry-tracker-push-store`
+- KV namespace ID: `559729167b3140e0add1c89ea1a1d477`
+- `/api/health` passed with all required flags true.
+
+Live app checks completed:
+
+- App loads from GitHub Pages.
+- Service worker registers.
+- Service worker refreshes to v41.
+- Console errors: none observed during live browser check.
+- Home tab opens.
+- Timer tab opens.
+- Calendar tab opens.
+- Reports tab opens.
+- Notes & Reminders tab opens.
+- Light/dark and EN/ES were not fully verified in this pass.
+
+Blocking failure:
+
+- In the live Notes & Reminders screen, the `+ Add Note` button did not open the note modal.
+- Because the real app flow could not open a note modal, a real reminder could not be created from the live app.
+- Notification permission prompt was not reached.
+- Real browser `PushSubscription` was not created.
+- Real `POST /api/subscribe` from the browser was not verified.
+- Real `POST /api/test-push` was not verified.
+- Scheduled reminder firing was not verified.
+- Closed-app / phone-locked notification was not verified.
+- `notificationclick` open/focus behavior was not verified.
+- Mobile device verification was not completed.
+
+Required next action:
+
+- Fix the live Notes & Reminders `+ Add Note` modal blocker without starting Stage J.
+- After the note modal opens, rerun the Stage I real subscription, test push, scheduled reminder, closed-app, and notification-click verification.
+
+Deployment status remains: `backend-deployed, frontend-live, not live-approved`.

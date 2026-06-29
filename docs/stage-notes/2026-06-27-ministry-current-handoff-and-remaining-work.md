@@ -84,6 +84,15 @@ Stage I deployment/device verification attempt on 2026-06-29:
 - Real browser subscription, test push, scheduled reminder, closed-app notification, notification click, mobile, desktop, console, and tab regression checks remain unverified.
 - Current deployment status: `backend-deployed, not live-approved`.
 
+Stage I live frontend verification attempt after merge on 2026-06-29:
+
+- GitHub Pages now serves the Stage I frontend files and live `sw.js` is `ministry-tracker-v41-stage-i-web-push`.
+- App loads, service worker registers, and no console errors were observed.
+- Home, Timer, Calendar, Notes & Reminders, and Reports opened in the live browser check.
+- Blocking failure: in Notes & Reminders, `+ Add Note` did not open the note modal.
+- Because the real note/reminder flow could not start, notification permission, real `PushSubscription`, real subscribe, test push, scheduled reminder, closed-app notification, and notification-click verification were not completed.
+- Current deployment status: `backend-deployed, frontend-live, not live-approved`.
+
 ### Stage J — Weather Planning Widget
 
 Status: planned only.
