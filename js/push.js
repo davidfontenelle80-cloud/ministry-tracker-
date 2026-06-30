@@ -68,6 +68,12 @@
     } catch (e) {}
   }
 
+  function pushErrorResult(action, err) {
+    var message = err && err.message ? err.message : String(err || 'Push request failed.');
+    log(action + ':handled-failure', { message: message, name: err && err.name ? err.name : '' });
+    return { ok: false, handled: true, action: action, error: message };
+  }
+
   function jsonFetch(url, options) {
     options = options || {};
     options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
@@ -177,6 +183,8 @@
           fireAt: fireAt
         })
       });
+    }).catch(function (err) {
+      return pushErrorResult('reminder:sync', err);
     });
   }
 
@@ -187,7 +195,9 @@
     var url = c.workerUrl + '/api/reminders/' + encodeURIComponent(sourceType) + '/' + encodeURIComponent(sourceId);
     url += '?subscriptionId=' + encodeURIComponent(id);
     log('reminder:clear', { sourceType: sourceType, sourceId: sourceId, subscriptionId: id });
-    return jsonFetch(url, { method: 'DELETE' });
+    return jsonFetch(url, { method: 'DELETE' }).catch(function (err) {
+      return pushErrorResult('reminder:clear', err);
+    });
   }
 
   function sendTestPush() {
