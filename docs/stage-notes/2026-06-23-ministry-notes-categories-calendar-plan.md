@@ -2279,3 +2279,61 @@ Required next action:
 - Complete notification permission grant/reset in a real user-controlled Chrome session or on the target installed PWA/device.
 - Rerun the visible `Test Push` diagnostic after permission resolves.
 - Continue Stage I approval only after a real `subscription:` KV key, real `reminder:` KV key, delivered test push, scheduled reminder delivery, and notification tap open/focus are verified.
+
+### v44 IndexedDB / Cloud Backup hotfix - 2026-06-30
+
+Status: `backend-deployed, frontend-live, not live-approved`
+
+Reported live iPhone error:
+
+- Message: `Attempt to get records from database without an in-progress transaction`.
+- Error label: `JS-ERROR-promise`.
+- Surface: Notes & Reminders after v43 push diagnostics.
+
+Root cause:
+
+- Ministry Tracker app state, notes, reminders, service logs, export, and import are stored through localStorage, not app-owned IndexedDB transactions.
+- The only IndexedDB-backed path in the current app is Firebase/Auth/Firestore used by Cloud Backup.
+- A browser/Firebase IndexedDB transaction reset could surface as an unhandled promise rejection and the global error boundary treated it as a fatal app error.
+- The v44 fix keeps this storage-layer failure inside the cloud-backup boundary and classifies the known IndexedDB transaction reset as recoverable instead of crashing Notes.
+
+Files changed:
+
+- `js/firebase/cloud-backup.js`
+- `js/error-boundary.js`
+- `js/app.js`
+- `sw.js`
+- this tracker MD
+
+Cache before: `ministry-tracker-v43-push-sync-fix`.
+
+Cache after: `ministry-tracker-v44-indexeddb-hotfix`.
+
+Implementation notes:
+
+- Added a Cloud Backup guard for the exact IndexedDB transaction-reset error and related IndexedDB transaction failures.
+- Wrapped Firebase auth-state callbacks so recoverable browser storage resets are logged as cloud backup skips, not thrown into the app.
+- Guarded Cloud Backup save/restore failures so explicit cloud actions fail with a safe user-facing message instead of an internal storage error.
+- Updated the global error boundary to suppress this known recoverable IndexedDB transaction reset from app-wide crash UI.
+- Changed app cloud-operation logging from `console.error` to `console.warn` so handled cloud backup failures do not appear as fatal console errors.
+- No storage keys, data model, notes schema, service log schema, backup JSON format, or cloud collection paths were changed.
+
+Tests run:
+
+- `node --check js/app.js`: passed.
+- `node --check js/firebase/cloud-backup.js`: passed.
+- `node --check js/error-boundary.js`: passed.
+- `node --check sw.js`: passed.
+
+Data safety:
+
+- No data reset, migration, storage-key rename, or schema rewrite was performed.
+- Existing Ministry Notes, reminders, service logs, categories, backups, and cloud backup documents are preserved.
+- Import was not exercised with live user data during this hotfix.
+- Cloud Save/Restore was not exercised live during this hotfix because it can affect real user cloud data.
+
+Remaining risks:
+
+- The original iPhone IndexedDB reset is platform/browser-state dependent and must be rechecked on the affected device after v44 is live.
+- If Firebase/Auth repeatedly loses browser storage access on iOS, Cloud Backup may be temporarily unavailable, but local app data should remain usable.
+- Stage I push remains blocked from live approval until the app is stable and real push subscription/reminder delivery verification can resume.

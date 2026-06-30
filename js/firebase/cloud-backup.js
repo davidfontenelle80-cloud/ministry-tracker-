@@ -31,6 +31,30 @@
     return err;
   }
 
+  function isRecoverableIndexedDbError(e) {
+    var msg = String((e && (e.message || e.code || e.name)) || e || '').toLowerCase();
+    return msg.indexOf('attempt to get records from database without an in-progress transaction') !== -1
+      || (msg.indexOf('indexeddb') !== -1 && msg.indexOf('transaction') !== -1);
+  }
+
+  function warnRecoverable(context, e) {
+    console.warn('[CloudBackup] ' + context + ' skipped after browser storage transaction reset:', e);
+  }
+
+  function guardRecoverable(context, fallback) {
+    return function (e) {
+      if (isRecoverableIndexedDbError(e)) {
+        warnRecoverable(context, e);
+        return typeof fallback === 'function' ? fallback(e) : fallback;
+      }
+      throw e;
+    };
+  }
+
+  function cloudStorageUnavailable() {
+    return Promise.reject(new Error('cloud-storage-unavailable'));
+  }
+
   function ensureReady(requireUser) {
     if (!window.KHub || !KHub.Firebase || !KHub.Firebase.db || !KHub.Firebase.auth) {
       return Promise.reject(new Error('Firebase not ready'));
@@ -115,7 +139,11 @@
 
   function getLatestSnapshot(appId) {
     return latestRef(appId).get().catch(function (e) {
-      console.warn('[CloudBackup] latest read skipped:', e);
+      if (isRecoverableIndexedDbError(e)) {
+        warnRecoverable('latest read', e);
+      } else {
+        console.warn('[CloudBackup] latest read skipped:', e);
+      }
       return null;
     });
   }
@@ -226,7 +254,23 @@
     onChange: function (cb) {
       var a = auth();
       if (!a) return function () {};
-      return a.onAuthStateChanged(cb);
+      return a.onAuthStateChanged(function (user) {
+        try {
+          var result = cb(user);
+          if (result && typeof result.catch === 'function') {
+            result.catch(guardRecoverable('auth state callback', null));
+          }
+        } catch (e) {
+          if (isRecoverableIndexedDbError(e)) warnRecoverable('auth state callback', e);
+          else throw e;
+        }
+      }, function (e) {
+        if (isRecoverableIndexedDbError(e)) {
+          warnRecoverable('auth state read', e);
+          return;
+        }
+        console.warn('[CloudBackup] auth state read failed:', e);
+      });
     },
     signIn: function (email, password) {
       var notReady = ensureReady(false);
@@ -273,7 +317,7 @@
       }).then(function () {
         markSaved(appId, iso);
         return iso;
-      });
+      }).catch(guardRecoverable('save', cloudStorageUnavailable));
     },
 
     restore: function (appId, exactKeys, scanPrefix, onSuccess) {
@@ -290,7 +334,7 @@
         markSaved(appId, savedAtISO(data));
         if (typeof onSuccess === 'function') onSuccess(data);
         return data;
-      });
+      }).catch(guardRecoverable('restore', cloudStorageUnavailable));
     },
 
     restoreLatestIfNewer: function (appId, exactKeys, scanPrefix, onSuccess) {

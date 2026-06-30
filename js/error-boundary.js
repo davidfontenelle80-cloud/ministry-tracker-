@@ -30,8 +30,15 @@
       .slice(0, 80) || 'unknown';
   }
 
+  function isRecoverableIndexedDbTransactionError(value) {
+    const m = asText(value).toLowerCase();
+    return m.includes('attempt to get records from database without an in-progress transaction')
+      || (m.includes('indexeddb') && m.includes('transaction'));
+  }
+
   function classify(message) {
     const m = String(message || '').toLowerCase();
+    if (isRecoverableIndexedDbTransactionError(message)) return 'STORAGE';
     if (m.includes('permission') || m.includes('firestore')) return 'CLOUD-RULES';
     if (m.includes('auth') || m.includes('password') || m.includes('email')) return 'AUTH';
     if (m.includes('quota') || m.includes('network') || m.includes('fetch')) return 'NETWORK';
@@ -187,6 +194,11 @@
 
   window.addEventListener('unhandledrejection', event => {
     const reason = event.reason;
+    if (isRecoverableIndexedDbTransactionError(reason)) {
+      event.preventDefault();
+      console.warn('[KHub] Non-fatal browser storage transaction reset:', reason);
+      return;
+    }
     console.error('[KHub] Unhandled rejection:', reason);
     show(asText(reason), null, {
       kind: classify(asText(reason)),
