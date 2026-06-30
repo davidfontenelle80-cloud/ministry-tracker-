@@ -2,7 +2,7 @@
  * sw.js â KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v45-notes-polish';
+const CACHE_VERSION = 'ministry-tracker-v46-notification-route-fix';
 
 const PRECACHE_URLS = [
   './',
@@ -29,6 +29,27 @@ const PRECACHE_URLS = [
   './js/firebase/firebase-config.js',
   './js/firebase/cloud-backup.js',
 ];
+
+function notificationTargetUrl(data = {}) {
+  const base = new URL(data.url || '/ministry-tracker-/', self.location.origin);
+  const sourceType = data.sourceType || 'ministry-note';
+  const sourceId = data.sourceId || '';
+  base.searchParams.set('screen', 'notes');
+  base.searchParams.set('sourceType', sourceType);
+  if (sourceId) base.searchParams.set('sourceId', sourceId);
+  base.hash = 'notification';
+  return base.href;
+}
+
+function notificationRouteMessage(data = {}) {
+  return {
+    type: 'NOTIFICATION_CLICK_ROUTE',
+    screen: 'notes',
+    sourceType: data.sourceType || 'ministry-note',
+    sourceId: data.sourceId || '',
+    url: notificationTargetUrl(data),
+  };
+}
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -73,15 +94,19 @@ self.addEventListener('message', event => {
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const url = event.notification && event.notification.data && event.notification.data.url
-    ? event.notification.data.url
-    : '/ministry-tracker-/';
+  const data = (event.notification && event.notification.data) || {};
+  const targetUrl = notificationTargetUrl(data);
+  const routeMessage = notificationRouteMessage(data);
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
       for (const client of clientList) {
-        if ('focus' in client && client.url.indexOf('/ministry-tracker-/') !== -1) return client.focus();
+        if ('focus' in client && client.url.indexOf('/ministry-tracker-/') !== -1) {
+          client.postMessage(routeMessage);
+          return client.focus();
+        }
       }
-      return clients.openWindow(url);
+      return clients.openWindow(targetUrl);
     })
   );
 });
