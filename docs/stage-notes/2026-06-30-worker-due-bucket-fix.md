@@ -51,3 +51,30 @@ Next required action:
 ## Stage I status
 
 Keep Stage I as `backend-deployed, frontend-live, not live-approved` until the redeployed Worker passes Test Push and scheduled reminder verification.
+
+## 2026-06-30 follow-up audit — David reported save/no scheduled delivery
+
+Result: BLOCKED on live Worker verification/deployment from this GitHub-only session.
+
+Verified in repo:
+
+- `js/push-config.js` points the frontend to `https://ministry-tracker-push.davidfontenelle80.workers.dev`.
+- `index.html` loads `js/push-config.js`, then `js/push.js`, then `js/app.js`.
+- `js/app.js` still calls `syncMinistryNotePush(savedNote)` after saving a note with reminder data.
+- `syncMinistryNotePush()` calls `window.MinistryPush.syncReminder('ministry-note', note.id, title, body, fireAt)`.
+- `js/push.js` posts to `${workerUrl}/api/reminders` after ensuring/refreshing subscription.
+- `cloudflare/ministry-tracker-push/worker.js` on `main` contains the due-bucket implementation from commit `be4fefc`.
+- No GitHub Actions workflow runs were found for commit `be4fefc`, so this repo commit did not prove a Cloudflare Worker deployment happened.
+
+First failing/unverified step:
+
+- Live deployed Worker state. The source repo is fixed, but deployment parity could not be proven from GitHub. If `/api/health` on the live Worker does not return `dueBucketScheduler: true`, the Worker is stale and reminders will still fail or behave like the old KV-list version.
+
+Required next action:
+
+1. Deploy the Worker from `cloudflare/ministry-tracker-push/worker.js` on `main` using Wrangler/Cloudflare.
+2. Confirm live `/api/health` returns `dueBucketScheduler: true`.
+3. Re-save a reminder after deploy so the new `due:{YYYY-MM-DDTHH:MM}` bucket is created.
+4. Verify scheduled delivery, tap routing, edit, and delete.
+
+No frontend code repair was made during this audit because the repo frontend call chain matches the expected Stage I pipeline.
