@@ -70,6 +70,7 @@ let currentNotesView = 'categories'; // 'categories' | 'notes' | 'all'
 let currentNotesCategoryId = null;
 let currentNotesSearch = '';
 let currentNotesFilter = 'active';
+let currentNotesSort = 'updated';
 let liveTickInterval = null;
 let lastInteraction = Date.now();
 let longPressTimer = null;
@@ -283,7 +284,25 @@ const I18N = {
     notesFilterAll: 'All',
     notesFilterCompleted: 'Completed',
     notesFilterArchived: 'Archived',
+    notesFilterOpen: 'Open',
+    notesFilterInProgress: 'In progress',
+    notesFilterDone: 'Done',
+    notesSortUpdated: 'Newest',
+    notesSortDue: 'Due date',
+    notesSortPriority: 'Priority',
+    notesSortTitle: 'Title',
     noNotesFound: 'No notes match your search or filter.',
+    noNotesSearch: 'No matching notes. Try another search or filter.',
+    notesEmptyTitle: 'No notes here yet',
+    notesEmptyHint: 'Add a note for a return visit, appointment, territory detail, or personal reminder.',
+    noteUntitled: 'Untitled note',
+    noteNoBody: 'No note details yet.',
+    noteNoCategory: 'No category',
+    noteReminderOn: 'Reminder on',
+    noteDueBadge: 'Due',
+    keepNotesNoCategory: 'Keep notes in All Notes',
+    deleteCategoryAndNotes: 'Delete category and notes',
+    confirmDeleteCatWithNotes: 'This category has {n} notes. What should happen to them?',
     categoryIconSelected: 'Selected icon',
     categoryIconCustom: 'Custom emoji',
     testPush: 'Test Push',
@@ -559,7 +578,25 @@ const I18N_FALLBACKS = {
     notesFilterAll: 'Todas',
     notesFilterCompleted: 'Completadas',
     notesFilterArchived: 'Archivadas',
+    notesFilterOpen: 'Abiertas',
+    notesFilterInProgress: 'En progreso',
+    notesFilterDone: 'Hechas',
+    notesSortUpdated: 'Mas recientes',
+    notesSortDue: 'Fecha limite',
+    notesSortPriority: 'Prioridad',
+    notesSortTitle: 'Titulo',
     noNotesFound: 'No hay notas que coincidan con la busqueda o el filtro.',
+    noNotesSearch: 'No hay notas que coincidan. Prueba otra busqueda o filtro.',
+    notesEmptyTitle: 'Aun no hay notas aqui',
+    notesEmptyHint: 'Agrega una nota para una revisita, cita, territorio o recordatorio personal.',
+    noteUntitled: 'Nota sin titulo',
+    noteNoBody: 'Sin detalles todavia.',
+    noteNoCategory: 'Sin categoria',
+    noteReminderOn: 'Recordatorio activo',
+    noteDueBadge: 'Fecha',
+    keepNotesNoCategory: 'Conservar notas en Todas',
+    deleteCategoryAndNotes: 'Eliminar categoria y notas',
+    confirmDeleteCatWithNotes: 'Esta categoria tiene {n} notas. Que debe pasar con ellas?',
     categoryIconSelected: 'Icono seleccionado',
     categoryIconCustom: 'Emoji personalizado',
     testPush: 'Probar push',
@@ -592,14 +629,121 @@ function ministryNoteMatchesSearch(note) {
   const q = (currentNotesSearch || '').trim().toLowerCase();
   if (!q) return true;
   return String(note.title || '').toLowerCase().includes(q) ||
-    String(note.body || '').toLowerCase().includes(q);
+    String(note.body || '').toLowerCase().includes(q) ||
+    String(ministryCategoryName(ministryNoteCategory(note.categoryId)) || '').toLowerCase().includes(q);
 }
 
 function ministryNoteMatchesFilter(note) {
   if (currentNotesFilter === 'all') return true;
   if (currentNotesFilter === 'completed') return !!note.completed || note.status === 'done';
   if (currentNotesFilter === 'archived') return !!note.archived;
+  if (currentNotesFilter === 'open') return !note.archived && !note.completed && (!note.status || note.status === 'open');
+  if (currentNotesFilter === 'in-progress') return !note.archived && !note.completed && note.status === 'in-progress';
+  if (currentNotesFilter === 'done') return !!note.completed || note.status === 'done';
   return !note.completed && !note.archived && note.status !== 'done';
+}
+
+function ministryNoteCategory(catId) {
+  return (state.ministryNoteCategories || []).find(function(c) { return c.id === catId; }) || null;
+}
+
+function ministryNotePrimaryDate(note) {
+  if (!note) return '';
+  if (note.dueDate) return note.dueDate;
+  if (!note.createdAt) return '';
+  const d = new Date(note.createdAt);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function ministryNoteOccursOnDate(note, dateStr) {
+  if (!note || !dateStr) return false;
+  return note.dueDate === dateStr || ministryNotePrimaryDate(note) === dateStr;
+}
+
+function ministryNoteDateLabel(dateStr) {
+  if (!dateStr) return '';
+  const parts = String(dateStr).split('-').map(Number);
+  if (parts.length !== 3) return dateStr;
+  return new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric' });
+}
+
+function ministryNoteStatusLabel(note) {
+  if (!note) return '';
+  if (note.archived) return t('notesFilterArchived');
+  if (note.completed || note.status === 'done') return t('notesFilterDone');
+  if (note.status === 'in-progress') return t('statusInProgress');
+  if (note.status === 'open') return t('statusOpen');
+  return '';
+}
+
+function ministryNotePriorityRank(note) {
+  const rank = { high: 0, medium: 1, low: 2 };
+  return Object.prototype.hasOwnProperty.call(rank, note && note.priority) ? rank[note.priority] : 3;
+}
+
+function sortMinistryNotes(notes) {
+  const arr = (notes || []).slice();
+  if (currentNotesSort === 'due') {
+    arr.sort(function(a, b) {
+      const ad = a.dueDate || '9999-12-31';
+      const bd = b.dueDate || '9999-12-31';
+      if (ad !== bd) return ad.localeCompare(bd);
+      return (b.updatedAt || 0) - (a.updatedAt || 0);
+    });
+    return arr;
+  }
+  if (currentNotesSort === 'priority') {
+    arr.sort(function(a, b) {
+      const pr = ministryNotePriorityRank(a) - ministryNotePriorityRank(b);
+      return pr || ((b.updatedAt || 0) - (a.updatedAt || 0));
+    });
+    return arr;
+  }
+  if (currentNotesSort === 'title') {
+    arr.sort(function(a, b) {
+      return String(a.title || '').localeCompare(String(b.title || ''), state.lang === 'es' ? 'es' : 'en') || ((b.updatedAt || 0) - (a.updatedAt || 0));
+    });
+    return arr;
+  }
+  arr.sort(function(a, b) { return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0); });
+  return arr;
+}
+
+function injectMinistryNotesPolishCss() {
+  if (document.getElementById('ministryNotesPolishCss')) return;
+  const style = document.createElement('style');
+  style.id = 'ministryNotesPolishCss';
+  style.textContent = [
+    '.mn-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}',
+    '.mn-toolbar-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}',
+    '.mn-category-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}',
+    '.mn-category-card{position:relative;min-height:132px;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card-bg,var(--surface));box-shadow:0 8px 20px rgba(0,0,0,.06);cursor:pointer;overflow:hidden;transition:transform .16s ease,border-color .16s ease}',
+    '.mn-category-card:active,.mn-note-card:active{transform:scale(.99)}',
+    '.mn-category-card::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--mn-color,var(--accent))}',
+    '.mn-category-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--mn-color,var(--accent)) 16%,transparent);font-size:23px}',
+    '.mn-card-actions{display:flex;gap:6px}',
+    '.mn-empty{padding:30px 18px;text-align:center;border:1px dashed var(--border);border-radius:12px;background:var(--surface);color:var(--text-dim)}',
+    '.mn-empty-icon{width:54px;height:54px;border-radius:14px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;background:var(--surface-2,var(--surface));font-size:25px}',
+    '.mn-list-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}',
+    '.mn-list-title{display:flex;align-items:center;gap:9px;min-width:0}',
+    '.mn-list-title-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--border);font-size:20px}',
+    '.mn-notes-controls{display:grid;grid-template-columns:minmax(0,1fr) 150px 130px;gap:8px;margin-bottom:12px}',
+    '.mn-note-grid{display:grid;grid-template-columns:1fr;gap:10px}',
+    '.mn-note-card{padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card-bg,var(--surface));box-shadow:0 8px 20px rgba(0,0,0,.05);cursor:pointer}',
+    '.mn-note-card.done{opacity:.72}.mn-note-card.archived{opacity:.6}',
+    '.mn-note-title{font-weight:800;font-size:.95rem;line-height:1.25;color:var(--text)}',
+    '.mn-note-body{font-size:.86rem;line-height:1.45;color:var(--text-dim);margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+    '.mn-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}',
+    '.mn-badge{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:999px;padding:2px 7px;font-size:.68rem;font-weight:750;color:var(--text-dim);background:var(--surface)}',
+    '.mn-badge.priority-high{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.35);color:var(--coral,#ef4444)}',
+    '.mn-badge.priority-medium{background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.35);color:#d97706}',
+    '.mn-badge.priority-low{background:rgba(16,185,129,.14);border-color:rgba(16,185,129,.35);color:var(--accent,#10b981)}',
+    '.mn-note-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;color:var(--text-faint,var(--text-dim));font-size:.72rem}',
+    '.mn-modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}',
+    '.mn-toggle-row{display:flex;align-items:center;gap:10px;min-height:44px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--surface)}',
+    '@media (max-width:560px){.mn-category-grid{grid-template-columns:1fr}.mn-notes-controls{grid-template-columns:1fr}.mn-list-head{align-items:flex-start}.mn-toolbar-actions{width:100%;justify-content:stretch}.mn-toolbar-actions .btn{flex:1}.mn-modal-grid{grid-template-columns:1fr}.mn-note-meta{align-items:flex-start;flex-direction:column}}'
+  ].join('\n');
+  document.head.appendChild(style);
 }
 
 function categoryLabel(catId) {
@@ -1658,10 +1802,12 @@ function renderCalendar() {
   const totalDays = daysInMonth(yr, mo-1);
   const cells = [];
   // Stage F — dates that have notes (dot indicators)
-  const noteDates = new Set((state.ministryNotes || []).map(n => {
-    const _d = new Date(n.createdAt);
-    return _d.getFullYear() + '-' + String(_d.getMonth()+1).padStart(2,'0') + '-' + String(_d.getDate()).padStart(2,'0');
-  }));
+  const noteDates = new Set();
+  (state.ministryNotes || []).forEach(n => {
+    if (n.dueDate) noteDates.add(n.dueDate);
+    const created = ministryNotePrimaryDate(n);
+    if (created) noteDates.add(created);
+  });
   for (let i = 0; i < offset; i++) cells.push('<div class="cal-cell empty"></div>');
   const today = todayStr();
   const dailyGoal = Math.round(state.dailyGoalHrs * 60);
@@ -1830,6 +1976,7 @@ function renderLog() {
 function renderNotes() {
   const scr = document.getElementById('notesContent');
   if (!scr) return;
+  injectMinistryNotesPolishCss();
   const lang = state.lang || 'en';
   if (!Array.isArray(state.ministryNoteCategories) || state.ministryNoteCategories.length === 0) {
     state.ministryNoteCategories = DEFAULT_MINISTRY_NOTE_CATEGORIES.map(c => ({
@@ -1875,6 +2022,31 @@ function renderNotes() {
     }).join('');
     gridHTML = '<div class="grid grid-2">' + cards + '</div>';
   }
+  gridHTML = n === 0
+    ? '<div class="mn-empty"><div class="mn-empty-icon"><i class="fa-regular fa-note-sticky"></i></div>' +
+      '<div class="font-bold mb-1">' + escapeHtml(t('noCategories')) + '</div>' +
+      '<div class="text-sm mb-4">' + escapeHtml(t('notesEmptyHint')) + '</div>' +
+      '<button class="btn btn-primary" data-add-cat><i class="fa-solid fa-plus"></i><span>' + escapeHtml(t('addCategory')) + '</span></button></div>'
+    : '<div class="mn-category-grid">' + cats.map(function(cat) {
+      var name = ministryCategoryName(cat);
+      var color = cat.color || 'var(--accent)';
+      var icon = cat.icon || '\uD83D\uDCDD';
+      var catNotes = (state.ministryNotes || []).filter(function(mn) { return mn.categoryId === cat.id; });
+      var activeCount = catNotes.filter(ministryNoteMatchesFilter).length;
+      var dueCount = catNotes.filter(function(note) { return !!note.dueDate && !note.completed && !note.archived; }).length;
+      return '<div class="mn-category-card" data-cat-open="' + escapeHtml(cat.id) + '" style="--mn-color:' + escapeHtml(color) + '">' +
+        '<div class="row-between" style="align-items:flex-start;gap:10px;">' +
+        '<div class="mn-category-icon">' + escapeHtml(icon) + '</div>' +
+        '<div class="mn-card-actions">' +
+        '<button class="btn btn-secondary btn-icon" data-cat-edit="' + escapeHtml(cat.id) + '" style="width:40px;height:40px;" aria-label="' + escapeHtml(t('editCategory')) + '"><i class="fa-solid fa-pen" style="font-size:11px;"></i></button>' +
+        '<button class="btn btn-secondary btn-icon" data-cat-del="' + escapeHtml(cat.id) + '" style="width:40px;height:40px;" aria-label="' + escapeHtml(t('deleteCategory')) + '"><i class="fa-solid fa-trash" style="font-size:11px;color:var(--coral);"></i></button>' +
+        '</div></div>' +
+        '<div class="font-bold text-base mt-3">' + escapeHtml(name) + '</div>' +
+        '<div class="text-sm text-dim mt-1">' + catNotes.length + ' ' + escapeHtml(t('allNotes').toLowerCase()) + '</div>' +
+        '<div class="mn-badges"><span class="mn-badge">' + activeCount + ' ' + escapeHtml(t('notesFilterActive')) + '</span>' +
+        (dueCount ? '<span class="mn-badge"><i class="fa-regular fa-clock"></i>' + dueCount + '</span>' : '') +
+        '</div></div>';
+    }).join('') + '</div>';
   scr.innerHTML =
     '<div class="card card-flat mb-4"><div class="text-sm text-dim">' + t('notesCategoriesHint') + '</div></div>' +
     '<div class="row-between mb-3" style="gap:8px;align-items:center;flex-wrap:wrap;"><span class="text-xs font-bold uppercase tracking-wider text-dim">' + countLabel + '</span>' +
@@ -1915,8 +2087,8 @@ function renderNotesListView(scr, cat) {
   if (!cat) cat = { id: '', name: t('allNotes'), icon: '\uD83D\uDCDD' };
   var notes = state.ministryNotes.filter(function(n) { return isAllNotesView || n.categoryId === cat.id; })
     .filter(ministryNoteMatchesFilter)
-    .filter(ministryNoteMatchesSearch)
-    .sort(function(a, b) { return b.updatedAt - a.updatedAt; });
+    .filter(ministryNoteMatchesSearch);
+  notes = sortMinistryNotes(notes);
   var catName = isAllNotesView ? t('allNotes') : ministryCategoryName(cat);
   var icon = cat.icon || '📝';
   var noNotesMessage = (currentNotesSearch || currentNotesFilter !== 'active') ? t('noNotesFound') : t('noNotesInCategory');
@@ -1954,6 +2126,52 @@ function renderNotesListView(scr, cat) {
     '<option value="completed"' + (currentNotesFilter === 'completed' ? ' selected' : '') + '>' + escapeHtml(t('notesFilterCompleted')) + '</option>' +
     '<option value="archived"' + (currentNotesFilter === 'archived' ? ' selected' : '') + '>' + escapeHtml(t('notesFilterArchived')) + '</option>' +
     '</select></div></div>';
+  notesToolbar = '<div class="mn-notes-controls">' +
+    '<input id="mnNotesSearch" class="input" type="search" value="' + escapeHtml(currentNotesSearch || '') + '" placeholder="' + escapeHtml(t('notesSearchPlaceholder')) + '">' +
+    '<select id="mnNotesFilter" class="input" style="min-height:44px;">' +
+    '<option value="active"' + (currentNotesFilter === 'active' ? ' selected' : '') + '>' + escapeHtml(t('notesFilterActive')) + '</option>' +
+    '<option value="open"' + (currentNotesFilter === 'open' ? ' selected' : '') + '>' + escapeHtml(t('notesFilterOpen')) + '</option>' +
+    '<option value="in-progress"' + (currentNotesFilter === 'in-progress' ? ' selected' : '') + '>' + escapeHtml(t('notesFilterInProgress')) + '</option>' +
+    '<option value="done"' + (currentNotesFilter === 'done' ? ' selected' : '') + '>' + escapeHtml(t('notesFilterDone')) + '</option>' +
+    '<option value="all"' + (currentNotesFilter === 'all' ? ' selected' : '') + '>' + escapeHtml(t('notesFilterAll')) + '</option>' +
+    '<option value="completed"' + (currentNotesFilter === 'completed' ? ' selected' : '') + '>' + escapeHtml(t('notesFilterCompleted')) + '</option>' +
+    '<option value="archived"' + (currentNotesFilter === 'archived' ? ' selected' : '') + '>' + escapeHtml(t('notesFilterArchived')) + '</option>' +
+    '</select>' +
+    '<select id="mnNotesSort" class="input" style="min-height:44px;">' +
+    '<option value="updated"' + (currentNotesSort === 'updated' ? ' selected' : '') + '>' + escapeHtml(t('notesSortUpdated')) + '</option>' +
+    '<option value="due"' + (currentNotesSort === 'due' ? ' selected' : '') + '>' + escapeHtml(t('notesSortDue')) + '</option>' +
+    '<option value="priority"' + (currentNotesSort === 'priority' ? ' selected' : '') + '>' + escapeHtml(t('notesSortPriority')) + '</option>' +
+    '<option value="title"' + (currentNotesSort === 'title' ? ' selected' : '') + '>' + escapeHtml(t('notesSortTitle')) + '</option>' +
+    '</select></div>';
+  noteCards = notes.length === 0
+    ? '<div class="mn-empty"><div class="mn-empty-icon"><i class="fa-regular fa-note-sticky"></i></div>' +
+      '<div class="font-bold mb-1">' + escapeHtml((currentNotesSearch || currentNotesFilter !== 'active') ? t('noNotesSearch') : t('notesEmptyTitle')) + '</div>' +
+      '<div class="text-sm">' + escapeHtml((currentNotesSearch || currentNotesFilter !== 'active') ? t('noNotesFound') : t('notesEmptyHint')) + '</div></div>'
+    : '<div class="mn-note-grid">' + notes.map(function(note) {
+      var catInfo = ministryNoteCategory(note.categoryId);
+      var title = note.title || t('noteUntitled');
+      var preview = note.body || t('noteNoBody');
+      var cardClass = 'mn-note-card' + ((note.completed || note.status === 'done') ? ' done' : '') + (note.archived ? ' archived' : '');
+      var statusLabel = ministryNoteStatusLabel(note);
+      var dueLabel = note.dueDate ? ministryNoteDateLabel(note.dueDate) + (note.dueTime ? ' ' + note.dueTime : '') : '';
+      var updatedLabel = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US') : '';
+      var priorityLabel = note.priority ? (note.priority === 'high' ? t('priorityHigh') : note.priority === 'medium' ? t('priorityMedium') : t('priorityLow')) : '';
+      var badges = '';
+      if (priorityLabel) badges += '<span class="mn-badge priority-' + escapeHtml(note.priority) + '">' + escapeHtml(priorityLabel) + '</span>';
+      if (statusLabel) badges += '<span class="mn-badge">' + escapeHtml(statusLabel) + '</span>';
+      if (dueLabel) badges += '<span class="mn-badge"><i class="fa-regular fa-calendar"></i>' + escapeHtml(t('noteDueBadge')) + ' ' + escapeHtml(dueLabel) + '</span>';
+      if (note.reminder) badges += '<span class="mn-badge"><i class="fa-regular fa-bell"></i>' + escapeHtml(t('noteReminderOn')) + '</span>';
+      badges += '<span class="mn-badge">' + (catInfo ? escapeHtml((catInfo.icon || '') + ' ' + ministryCategoryName(catInfo)) : escapeHtml(t('noteNoCategory'))) + '</span>';
+      return '<div class="' + cardClass + '" data-note-card="' + escapeHtml(note.id) + '">' +
+        '<div class="row-between" style="align-items:flex-start;gap:10px;">' +
+        '<div style="min-width:0;"><div class="mn-note-title">' + escapeHtml(title) + '</div>' +
+        '<div class="mn-note-body">' + escapeHtml(preview) + '</div></div>' +
+        '<div class="mn-card-actions">' +
+        '<button class="btn btn-secondary btn-icon" data-note-edit="' + escapeHtml(note.id) + '" data-note-cat="' + escapeHtml(note.categoryId || '') + '" style="width:40px;height:40px;" aria-label="' + escapeHtml(t('editNote')) + '"><i class="fa-solid fa-pen" style="font-size:11px;"></i></button>' +
+        '<button class="btn btn-secondary btn-icon" data-note-del="' + escapeHtml(note.id) + '" style="width:40px;height:40px;" aria-label="' + escapeHtml(t('deleteNote')) + '"><i class="fa-solid fa-trash" style="font-size:11px;color:var(--coral);"></i></button>' +
+        '</div></div><div class="mn-badges">' + badges + '</div>' +
+        '<div class="mn-note-meta"><span>' + escapeHtml(updatedLabel) + '</span><span>' + escapeHtml(catName) + '</span></div></div>';
+    }).join('') + '</div>';
   scr.innerHTML =
     '<div class="row-between mb-4" style="align-items:center;">' +
     '<button class="btn btn-secondary" data-mn-back style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('notesBackBtn')) + '</button>' +
@@ -1963,7 +2181,7 @@ function renderNotesListView(scr, cat) {
     '<button class="btn btn-primary" data-mn-add style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('mnAddNote')) + '</button></div>' +
     notesToolbar + noteCards;
   var addBtn = scr.querySelector('[data-mn-add]');
-  if (addBtn) addBtn.addEventListener('click', function() { openMinistryNoteModal(isAllNotesView ? ministryNoteDefaultCategoryId() : cat.id, null); });
+  if (addBtn) addBtn.addEventListener('click', function() { openMinistryNoteModal(isAllNotesView ? '' : cat.id, null); });
   var backBtn = scr.querySelector('[data-mn-back]');
   if (backBtn) backBtn.addEventListener('click', function() { currentNotesView = 'categories'; currentNotesCategoryId = null; renderNotes(); });
   scr.querySelectorAll('[data-push-test]').forEach(function(el) {
@@ -1973,6 +2191,8 @@ function renderNotesListView(scr, cat) {
   if (searchEl) searchEl.addEventListener('input', function() { currentNotesSearch = searchEl.value || ''; renderNotes(); });
   var filterEl = scr.querySelector('#mnNotesFilter');
   if (filterEl) filterEl.addEventListener('change', function() { currentNotesFilter = filterEl.value || 'active'; renderNotes(); });
+  var sortEl = scr.querySelector('#mnNotesSort');
+  if (sortEl) sortEl.addEventListener('change', function() { currentNotesSort = sortEl.value || 'updated'; renderNotes(); });
   scr.querySelectorAll('[data-note-card]').forEach(function(el) {
     el.addEventListener('click', function(e) {
       if (!e.target.closest('[data-note-edit],[data-note-del]')) openMinistryNoteModal('', el.dataset.noteCard);
@@ -2083,6 +2303,105 @@ window.MinistryPushDebugApp = {
 };
 
 function openMinistryNoteModal(categoryId, noteId, _calDate) {
+  var note = noteId ? (state.ministryNotes || []).find(function(n) { return n.id === noteId; }) : null;
+  var selectedCategoryId = note ? (note.categoryId || '') : (categoryId != null ? categoryId : ministryNoteDefaultCategoryId());
+  var cats = Array.isArray(state.ministryNoteCategories) && state.ministryNoteCategories.length ? state.ministryNoteCategories : DEFAULT_MINISTRY_NOTE_CATEGORIES;
+  var catOpts = '<option value="">' + escapeHtml(t('noteNoCategory')) + '</option>' + cats.map(function(c) {
+    return '<option value="' + escapeHtml(c.id || '') + '"' + (selectedCategoryId === c.id ? ' selected' : '') + '>' + escapeHtml((c.icon ? c.icon + ' ' : '') + ministryCategoryName(c)) + '</option>';
+  }).join('');
+  var priorityOpts = [
+    ['', '--'],
+    ['high', t('priorityHigh')],
+    ['medium', t('priorityMedium')],
+    ['low', t('priorityLow')]
+  ].map(function(p) { return '<option value="' + p[0] + '"' + ((note && note.priority === p[0]) ? ' selected' : '') + '>' + escapeHtml(p[1]) + '</option>'; }).join('');
+  var statusOpts = [
+    ['', '--'],
+    ['open', t('statusOpen')],
+    ['in-progress', t('statusInProgress')],
+    ['done', t('statusDone')]
+  ].map(function(s) { return '<option value="' + s[0] + '"' + ((note && note.status === s[0]) ? ' selected' : '') + '>' + escapeHtml(s[1]) + '</option>'; }).join('');
+  openModal(
+    '<div class="row-between items-center mb-3"><div class="font-bold text-xl">' + escapeHtml(note ? t('editNote') : t('mnAddNote')) + '</div>' +
+    '<button class="btn btn-secondary btn-icon" data-close-modal style="width:38px;height:38px;" aria-label="' + escapeHtml(t('cancel')) + '"><i class="fa-solid fa-xmark"></i></button></div>' +
+    '<div class="stack-3">' +
+    '<div><label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="mnTitleInput">' + escapeHtml(t('noteTitle')) + '</label>' +
+    '<input id="mnTitleInput" class="input" type="text" maxlength="100" placeholder="' + escapeHtml(t('noteTitlePlaceholder')) + '" value="' + escapeHtml(note ? note.title || '' : '') + '"></div>' +
+    '<div><label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="mnBodyInput">' + escapeHtml(t('noteBody')) + '</label>' +
+    '<textarea id="mnBodyInput" class="input" rows="5" placeholder="' + escapeHtml(t('noteBodyPlaceholder')) + '" style="resize:vertical;">' + escapeHtml(note ? note.body || '' : '') + '</textarea></div>' +
+    '<div><label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="mnCatSelect">' + escapeHtml(t('noteCategory')) + '</label><select id="mnCatSelect" class="input">' + catOpts + '</select></div>' +
+    '<div class="mn-modal-grid"><div><label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="mnPrioritySelect">' + escapeHtml(t('notePriority')) + '</label><select id="mnPrioritySelect" class="input">' + priorityOpts + '</select></div>' +
+    '<div><label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="mnStatusSelect">' + escapeHtml(t('noteStatus')) + '</label><select id="mnStatusSelect" class="input">' + statusOpts + '</select></div></div>' +
+    '<div class="mn-modal-grid"><div><label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="mnDueDateInput">' + escapeHtml(t('noteDueDate')) + '</label><input type="date" id="mnDueDateInput" class="input" value="' + escapeHtml((note && note.dueDate) || _calDate || '') + '"></div>' +
+    '<div><label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="mnDueTimeInput">' + escapeHtml(t('noteDueTime')) + '</label><input type="time" id="mnDueTimeInput" class="input" value="' + escapeHtml((note && note.dueTime) || '') + '"></div></div>' +
+    '<div class="mn-modal-grid">' +
+    '<label class="mn-toggle-row"><span class="text-sm font-semibold" style="flex:1;">' + escapeHtml(t('noteReminder')) + '</span><input type="checkbox" id="mnReminderToggle" style="width:22px;height:22px;"' + (note && note.reminder ? ' checked' : '') + '></label>' +
+    '<label class="mn-toggle-row"><span class="text-sm font-semibold" style="flex:1;">' + escapeHtml(t('noteCompleted')) + '</span><input type="checkbox" id="mnCompletedToggle" style="width:22px;height:22px;"' + (note && note.completed ? ' checked' : '') + '></label>' +
+    '<label class="mn-toggle-row"><span class="text-sm font-semibold" style="flex:1;">' + escapeHtml(t('noteArchived')) + '</span><input type="checkbox" id="mnArchivedToggle" style="width:22px;height:22px;"' + (note && note.archived ? ' checked' : '') + '></label>' +
+    '</div></div>' +
+    '<div class="row gap-2 mt-4" style="align-items:center;flex-wrap:wrap;">' +
+    (note ? '<button class="btn btn-secondary" id="mnQuickDoneBtn" style="flex:1 1 auto;">' + escapeHtml(note.completed || note.status === 'done' ? t('statusOpen') : t('notesFilterDone')) + '</button>' : '') +
+    (note ? '<button class="btn btn-secondary" id="mnQuickArchiveBtn" style="flex:1 1 auto;">' + escapeHtml(note.archived ? t('notesFilterActive') : t('notesFilterArchived')) + '</button>' : '') +
+    '<button class="btn btn-secondary" id="mnCancelBtn" style="flex:1 1 auto;">' + escapeHtml(t('cancel')) + '</button>' +
+    '<button class="btn btn-primary" id="mnSaveBtn" style="flex:1 1 auto;">' + escapeHtml(t('save')) + '</button></div>'
+  );
+  setTimeout(function() {
+    var ti = document.getElementById('mnTitleInput');
+    var bi = document.getElementById('mnBodyInput');
+    var sb = document.getElementById('mnSaveBtn');
+    var cb = document.getElementById('mnCancelBtn');
+    document.querySelectorAll('[data-close-modal]').forEach(function(b) { b.onclick = closeModal; });
+    if (cb) cb.addEventListener('click', closeModal);
+    if (ti) ti.focus();
+    var doneBtn = document.getElementById('mnQuickDoneBtn');
+    if (doneBtn && note) doneBtn.addEventListener('click', function() {
+      note.completed = !(note.completed || note.status === 'done');
+      note.status = note.completed ? 'done' : 'open';
+      note.updatedAt = Date.now();
+      saveState(); closeModal(); renderNotes(); renderCalendar(); syncMinistryNotePush(note);
+    });
+    var archiveBtn = document.getElementById('mnQuickArchiveBtn');
+    if (archiveBtn && note) archiveBtn.addEventListener('click', function() {
+      note.archived = !note.archived;
+      note.updatedAt = Date.now();
+      saveState(); closeModal(); renderNotes(); renderCalendar(); syncMinistryNotePush(note);
+    });
+    if (sb) sb.addEventListener('click', function() {
+      var nt = ((ti && ti.value) || '').trim();
+      var nb = ((bi && bi.value) || '').trim();
+      if (!nt && !nb) { if (ti) ti.focus(); return; }
+      if (!Array.isArray(state.ministryNotes)) state.ministryNotes = [];
+      var ncatId = (document.getElementById('mnCatSelect') || {}).value || null;
+      var ndueDate = (document.getElementById('mnDueDateInput') || {}).value || null;
+      var ndueTime = (document.getElementById('mnDueTimeInput') || {}).value || null;
+      var nreminder = document.getElementById('mnReminderToggle') ? document.getElementById('mnReminderToggle').checked : false;
+      var nreminderAt = ndueDate && nreminder ? new Date(ndueDate + (ndueTime ? 'T' + ndueTime : 'T00:00')).getTime() : null;
+      var npriority = (document.getElementById('mnPrioritySelect') || {}).value || null;
+      var nstatus = (document.getElementById('mnStatusSelect') || {}).value || null;
+      var ncompleted = document.getElementById('mnCompletedToggle') ? document.getElementById('mnCompletedToggle').checked : false;
+      var narchived = document.getElementById('mnArchivedToggle') ? document.getElementById('mnArchivedToggle').checked : false;
+      var savedNote;
+      if (note) {
+        note.title = nt || nb.slice(0, 60) || t('noteUntitled');
+        note.body = nb;
+        note.categoryId = ncatId;
+        note.dueDate = ndueDate; note.dueTime = ndueTime;
+        note.reminder = !!nreminder; note.reminderAt = nreminderAt || null;
+        note.priority = npriority; note.status = ncompleted ? 'done' : nstatus;
+        note.completed = !!ncompleted; note.archived = !!narchived; note.updatedAt = Date.now();
+        savedNote = note;
+      } else {
+        savedNote = { id: 'mn-' + Date.now(), categoryId: ncatId, title: nt || nb.slice(0, 60) || t('noteUntitled'), body: nb,
+          createdAt: _calDate ? new Date(_calDate + 'T12:00:00').getTime() : Date.now(), updatedAt: Date.now(),
+          dueDate: ndueDate, dueTime: ndueTime, reminder: !!nreminder, reminderAt: nreminderAt || null,
+          priority: npriority, status: ncompleted ? 'done' : nstatus, completed: !!ncompleted, archived: !!narchived };
+        state.ministryNotes.push(savedNote);
+      }
+      saveState(); closeModal(); renderNotes(); renderCalendar();
+      syncMinistryNotePush(savedNote);
+    });
+  }, 50);
+  return;
   var note = noteId ? (state.ministryNotes || []).find(function(n) { return n.id === noteId; }) : null;
   var titleVal = note ? (note.title || '') : '';
   var bodyVal  = note ? (note.body  || '') : '';
@@ -2214,11 +2533,7 @@ function renderCalendarNotesPanel() {
   if (!panel) return;
   const ds = adjustSelectedDate;
   if (!ds) { panel.innerHTML = ''; panel.classList.add('hidden'); return; }
-  const dayNotes = (state.ministryNotes || []).filter(n => {
-    const _d = new Date(n.createdAt);
-    const nds = _d.getFullYear() + '-' + String(_d.getMonth()+1).padStart(2,'0') + '-' + String(_d.getDate()).padStart(2,'0');
-    return nds === ds;
-  });
+  const dayNotes = sortMinistryNotes((state.ministryNotes || []).filter(n => ministryNoteOccursOnDate(n, ds)));
   const parts = ds.split('-');
   const dateLabel = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]))
     .toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US', { month: 'long', day: 'numeric' });
@@ -2394,6 +2709,31 @@ function deleteMinistryNoteCategory(id) {
   const lang = state.lang || 'en';
   const name = (cat.name && typeof cat.name === 'object')
     ? (cat.name[lang] || cat.name.en || '') : (cat.name || '');
+  const noteCount = (state.ministryNotes || []).filter(n => n.categoryId === id).length;
+  if (noteCount > 0) {
+    openModal(`
+      <div class="font-bold text-xl mb-2">${escapeHtml(t('deleteCategory'))}</div>
+      <div class="text-sm text-dim mb-4">${escapeHtml(t('confirmDeleteCatWithNotes').replace('{n}', noteCount))}</div>
+      <div class="stack-2">
+        <button class="btn btn-secondary w-full" id="catDeleteKeepNotes">${escapeHtml(t('keepNotesNoCategory'))}</button>
+        <button class="btn btn-danger w-full" id="catDeleteWithNotes">${escapeHtml(t('deleteCategoryAndNotes'))}</button>
+        <button class="btn btn-secondary w-full" data-close-modal>${escapeHtml(t('cancel'))}</button>
+      </div>`);
+    document.querySelectorAll('[data-close-modal]').forEach(b => b.onclick = closeModal);
+    document.getElementById('catDeleteKeepNotes').onclick = () => {
+      state.ministryNotes.forEach(n => { if (n.categoryId === id) { n.categoryId = null; n.updatedAt = Date.now(); } });
+      state.ministryNoteCategories = state.ministryNoteCategories.filter(c => c.id !== id);
+      if (currentNotesCategoryId === id) { currentNotesView = 'categories'; currentNotesCategoryId = null; }
+      saveState(); closeModal(); renderNotes(); renderCalendar(); toast(t('delete'));
+    };
+    document.getElementById('catDeleteWithNotes').onclick = () => {
+      state.ministryNotes = (state.ministryNotes || []).filter(n => n.categoryId !== id);
+      state.ministryNoteCategories = state.ministryNoteCategories.filter(c => c.id !== id);
+      if (currentNotesCategoryId === id) { currentNotesView = 'categories'; currentNotesCategoryId = null; }
+      saveState(); closeModal(); renderNotes(); renderCalendar(); toast(t('delete'));
+    };
+    return;
+  }
   openConfirmModal(
     t('confirmDeleteCat') + ' ' + name,
     () => {

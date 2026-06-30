@@ -2337,3 +2337,60 @@ Remaining risks:
 - The original iPhone IndexedDB reset is platform/browser-state dependent and must be rechecked on the affected device after v44 is live.
 - If Firebase/Auth repeatedly loses browser storage access on iOS, Cloud Backup may be temporarily unavailable, but local app data should remain usable.
 - Stage I push remains blocked from live approval until the app is stable and real push subscription/reminder delivery verification can resume.
+
+### v45 Notes polish - 2026-06-30
+
+Status: `backend-deployed, frontend-live, not live-approved (verification pending)`
+
+Scope:
+
+- Completed the next Notes polish pass using Note Clip as a read-only behavioral reference.
+- Stage I push verification remains paused; this pass did not continue Cloudflare/KV/browser push approval work.
+- Stage J weather was not started.
+
+Cache before: `ministry-tracker-v44-indexeddb-hotfix`.
+
+Cache after: `ministry-tracker-v45-notes-polish`.
+
+Files changed:
+
+- `js/app.js`
+- `sw.js`
+- this tracker MD
+
+Features completed:
+
+- Reworked Notes category cards with stronger touch targets, note counts, active counts, due badges, edit/delete controls, and better empty states.
+- Preserved category navigation, All Notes, selected-category view, and back navigation.
+- Added safer category deletion choices: keep notes in All Notes, or delete the category and its notes.
+- Reworked note list cards with title/body preview, category badge, priority badge, status badge, due/reminder badges, updated date, completed/archived styling, and better mobile spacing.
+- Added richer note search by title, body, and category name.
+- Added status filters for active, open, in progress, done, all, completed, and archived notes.
+- Added sorting by updated date, due date, priority, and title.
+- Rebuilt the note modal with category selection, priority, status, due date, due time, reminder toggle, completed toggle, archived toggle, and edit-mode quick done/archive actions.
+- All Notes add flow now opens with no category selected; selected-category add flow auto-applies that category.
+- Calendar indicators and selected-date note panel now include notes by due date as well as created date.
+- Calendar note add/edit continues to use the same `ministryNotes` records and preserves the selected date for calendar-created notes.
+- English and Spanish strings were added for the new filters, sorting labels, badges, empty states, and delete-category choices.
+
+Tests run:
+
+- `node --check js/app.js`: passed.
+- `node --check sw.js`: passed.
+- `git diff --check`: passed except expected Windows line-ending normalization warnings.
+
+Verification notes:
+
+- Source-level verification confirms only frontend files and this tracker MD changed.
+- Cloudflare Worker, push backend, KV, VAPID configuration, Talk Arrangements, Note Clip, service logging logic, and Stage J weather files were not modified.
+- Live GitHub Pages, mobile, desktop, console, and visual verification were not completed in this run because the local browser/server path required an escalated tool call that was rejected by the app usage-limit gate.
+
+Remaining Notes work:
+
+- Live-device verification is still required after this commit is pushed: Home, Timer, Calendar, Notes, Reports, note add/edit/delete, category navigation, category add/edit/delete, All Notes, search/filter/sort, calendar add/edit, light/dark mode, English/Spanish, and mobile/desktop layouts.
+- Duplicate note was not implemented because the inspected Note Clip implementation did not expose a duplicate-note action.
+- Stage I remains `backend-deployed, frontend-live, not live-approved (verification pending)` until real push subscription, KV records, delivered push, scheduled reminder delivery, and notification click are verified in a real browser/device flow.
+
+Commit:
+
+- Pending in this local worktree until commit/push is available.
