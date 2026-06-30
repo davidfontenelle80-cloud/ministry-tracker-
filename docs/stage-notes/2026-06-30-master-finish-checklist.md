@@ -8,9 +8,9 @@ Purpose: reduce future CoWork/Codex token use by keeping one prioritized impleme
 
 - Repo: `davidfontenelle80-cloud/ministry-tracker-`
 - Branch: `main`
-- Current live/pending stage family: Stage I push + Notes polish
-- Current cache before pending v47 work: `ministry-tracker-v46-notification-route-fix`
-- Pending local work reported by worker: `v47-theme-flash-fix`, staged locally but not committed/pushed at time of report.
+- Current live/pending stage family: Stage I push verification + Notes polish
+- Current live cache: `ministry-tracker-v47-theme-flash-fix`
+- v47 theme flash fix: live-approved by David.
 - Stage J Weather: planned only; not started.
 
 ## Hard status rules
@@ -18,38 +18,26 @@ Purpose: reduce future CoWork/Codex token use by keeping one prioritized impleme
 - Stage I must remain `backend-deployed, frontend-live, not live-approved` until real device notification tap routing and reminder lifecycle are verified.
 - Do not change Stage I to live-approved from source inspection alone.
 - Do not touch Cloudflare Worker, KV, VAPID, or secrets unless a Stage I verification failure proves a backend issue.
-- Do not start Stage J Weather until v47 theme flash fix and Stage I routing/lifecycle verification are recorded or Supervisor explicitly authorizes weather to proceed in parallel.
+- Do not start Stage J Weather until Stage I routing/lifecycle verification is recorded or Supervisor explicitly authorizes weather to proceed in parallel.
 - Note Clip is read-only unless David explicitly asks for Note Clip changes.
 - Talk Arrangements must not be modified.
 
-## Priority 0 — Commit/push v47 theme flash fix
+## Priority 0 — v47 theme flash fix
 
-Status: reported as coded and staged locally, not committed due usage-limit gate.
+Status: complete / live-approved by David.
 
-Required steps:
+Completed:
 
-1. Verify repo status and staged files.
-2. Confirm staged files are only:
-   - `index.html`
-   - `js/theme.js`
-   - `sw.js`
-   - `docs/stage-notes/2026-06-23-ministry-notes-categories-calendar-plan.md`
-3. Run:
-   - `node --check js/app.js`
-   - `node --check js/theme.js`
-   - `node --check sw.js`
-4. Commit and push to `main`.
-5. Confirm GitHub Pages serves `ministry-tracker-v47-theme-flash-fix`.
-6. Verify app opens without dark/light/dark flash.
-7. Verify theme toggle still supports dark, light, and auto if present.
-8. Record commit hash and live verification in the tracker MD.
+- GitHub Pages serves `ministry-tracker-v47-theme-flash-fix`.
+- David confirmed the app opens without the dark/light/dark flash.
+- Theme handling remains tied to the saved `ministry-tracker-v4.theme` state.
 
 Expected cache:
 
 - Before: `ministry-tracker-v46-notification-route-fix`
 - After: `ministry-tracker-v47-theme-flash-fix`
 
-Do not proceed with deeper polish until v47 is committed or the staged changes are intentionally abandoned.
+Proceed with Stage I push verification before deeper Notes polish or Stage J work.
 
 ## Priority 1 — Stage I final verification
 
@@ -65,7 +53,7 @@ Already proven:
 
 Still required:
 
-1. Verify live cache is v46 or newer.
+1. Verify live cache is v47.
 2. Create a reminder note with a near-future time.
 3. Close/swipe-close app.
 4. Let the notification arrive.

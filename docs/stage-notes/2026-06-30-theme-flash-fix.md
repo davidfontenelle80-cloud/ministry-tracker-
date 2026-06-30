@@ -2,7 +2,7 @@
 
 Date: 2026-06-30
 
-Status: code-implemented, pending live device verification.
+Status: live-approved by David.
 
 ## Root cause
 
@@ -31,11 +31,9 @@ The app uses `ministry-tracker-v4.theme` as the real theme preference, but `js/t
 
 ## Verification required
 
-- Confirm GitHub Pages serves `ministry-tracker-v47-theme-flash-fix`.
-- Open the app cold on iPhone/PWA and desktop.
-- Confirm no dark/light/dark flash.
-- Confirm dark, light, and auto theme settings still work.
-- Confirm Home, Timer, Calendar, Notes, and Reports still open.
+- GitHub Pages serves `ministry-tracker-v47-theme-flash-fix`.
+- David confirmed the startup dark/light/dark flash is resolved on the live app.
+- Existing dark/light/auto theme behavior remains owned by `app.js` and the saved `ministry-tracker-v4.theme` state.
 
 ## Remaining Stage I status
 
