@@ -2394,3 +2394,44 @@ Remaining Notes work:
 Commit:
 
 - Pending in this local worktree until commit/push is available.
+
+### v46 Notification route fix - 2026-06-30
+
+Status: `backend-deployed, frontend-live, not live-approved (verification pending)`
+
+Commits:
+
+- `493d601` - `fix: route ministry notification clicks`
+- `f352f80` - `fix: handle notification route messages`
+
+Cache before: `ministry-tracker-v45-notes-polish`.
+
+Cache after: `ministry-tracker-v46-notification-route-fix`.
+
+Files changed:
+
+- `sw.js`
+- `js/sw-register.js`
+
+Implementation notes:
+
+- `sw.js` now builds a notification target URL for Notes using `screen=notes`, `sourceType`, and `sourceId`.
+- `sw.js` posts `NOTIFICATION_CLICK_ROUTE` to an existing Ministry Tracker client before focusing it.
+- `sw.js` opens a routed Ministry Tracker URL when no existing app client is available.
+- `js/sw-register.js` now parses notification-route query parameters on app load.
+- `js/sw-register.js` listens for `NOTIFICATION_CLICK_ROUTE`, switches to Notes, and opens the matching Ministry note modal when a `sourceId` is present.
+
+Verification required:
+
+- `node --check sw.js`
+- `node --check js/sw-register.js`
+- `node --check js/app.js`
+- Live GitHub Pages cache must serve `ministry-tracker-v46-notification-route-fix`.
+- A real scheduled notification tap must open/focus Notes instead of Home.
+- If the notification payload includes a note id, the matching Ministry note modal must open, or the Notes screen must at least focus when the note id cannot be found.
+- Console must remain clean.
+
+Remaining risks:
+
+- Real notification tap routing still depends on a live push/reminder notification, which remains blocked from full Stage I approval until browser permission, KV subscription/reminder records, delivery, and notification click are verified.
+- Stage I remains `backend-deployed, frontend-live, not live-approved (verification pending)`.
