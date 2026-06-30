@@ -286,6 +286,13 @@ const I18N = {
     noNotesFound: 'No notes match your search or filter.',
     categoryIconSelected: 'Selected icon',
     categoryIconCustom: 'Custom emoji',
+    testPush: 'Test Push',
+    pushNotReady: 'Push is not ready yet.',
+    pushTestSent: 'Test push sent.',
+    pushTestFailed: 'Test push failed.',
+    reminderSyncStarted: 'Reminder sync started.',
+    reminderSyncSaved: 'Reminder synced.',
+    reminderSyncFailed: 'Reminder sync failed.',
     confirmDeleteNote: 'Delete this note?',
         noteDueDate: 'Due date',
     noteDueTime: 'Due time',
@@ -555,6 +562,13 @@ const I18N_FALLBACKS = {
     noNotesFound: 'No hay notas que coincidan con la busqueda o el filtro.',
     categoryIconSelected: 'Icono seleccionado',
     categoryIconCustom: 'Emoji personalizado',
+    testPush: 'Probar push',
+    pushNotReady: 'Push aun no esta listo.',
+    pushTestSent: 'Prueba push enviada.',
+    pushTestFailed: 'Fallo la prueba push.',
+    reminderSyncStarted: 'Sincronizando recordatorio.',
+    reminderSyncSaved: 'Recordatorio sincronizado.',
+    reminderSyncFailed: 'Fallo la sincronizacion.',
   },
 };
 
@@ -1866,12 +1880,16 @@ function renderNotes() {
     '<div class="row-between mb-3" style="gap:8px;align-items:center;flex-wrap:wrap;"><span class="text-xs font-bold uppercase tracking-wider text-dim">' + countLabel + '</span>' +
     '<div class="row gap-2" style="flex-wrap:wrap;justify-content:flex-end;">' +
     '<button class="btn btn-secondary" data-all-notes style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('allNotes')) + '</button>' +
+    '<button class="btn btn-secondary" data-push-test style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('testPush')) + '</button>' +
     '<button class="btn btn-primary" data-add-cat style="font-size:13px;padding:7px 14px;">' +
     '<i class="fa-solid fa-plus"></i><span>' + t('addCategory') + '</span></button></div></div>' +
     gridHTML;
   scr.querySelectorAll('[data-add-cat]').forEach(function(el) { el.addEventListener('click', openAddCategoryModal); });
   var allNotesBtn = scr.querySelector('[data-all-notes]');
   if (allNotesBtn) allNotesBtn.addEventListener('click', function() { currentNotesView = 'all'; currentNotesCategoryId = null; renderNotes(); });
+  scr.querySelectorAll('[data-push-test]').forEach(function(el) {
+    el.addEventListener('click', function() { runMinistryPushDiagnostic(el); });
+  });
   scr.querySelectorAll('[data-cat-open]').forEach(function(el) {
     el.addEventListener('click', function(e) {
       if (!e.target.closest('[data-cat-edit],[data-cat-del]')) { openNotesCategory(el.dataset.catOpen); }
@@ -1941,12 +1959,16 @@ function renderNotesListView(scr, cat) {
     '<button class="btn btn-secondary" data-mn-back style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('notesBackBtn')) + '</button>' +
     '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:20px;">' + escapeHtml(icon) + '</span>' +
     '<span class="font-semibold text-sm">' + escapeHtml(catName) + '</span></div>' +
+    '<button class="btn btn-secondary" data-push-test style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('testPush')) + '</button>' +
     '<button class="btn btn-primary" data-mn-add style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('mnAddNote')) + '</button></div>' +
     notesToolbar + noteCards;
   var addBtn = scr.querySelector('[data-mn-add]');
   if (addBtn) addBtn.addEventListener('click', function() { openMinistryNoteModal(isAllNotesView ? ministryNoteDefaultCategoryId() : cat.id, null); });
   var backBtn = scr.querySelector('[data-mn-back]');
   if (backBtn) backBtn.addEventListener('click', function() { currentNotesView = 'categories'; currentNotesCategoryId = null; renderNotes(); });
+  scr.querySelectorAll('[data-push-test]').forEach(function(el) {
+    el.addEventListener('click', function() { runMinistryPushDiagnostic(el); });
+  });
   var searchEl = scr.querySelector('#mnNotesSearch');
   if (searchEl) searchEl.addEventListener('input', function() { currentNotesSearch = searchEl.value || ''; renderNotes(); });
   var filterEl = scr.querySelector('#mnNotesFilter');
@@ -1985,28 +2007,80 @@ function ministryNotePushBody(note) {
 }
 
 function clearMinistryNotePush(noteId) {
-  if (!noteId || !window.MinistryPush || !window.MinistryPush.isConfigured || !window.MinistryPush.isConfigured()) return;
-  window.MinistryPush.clearReminder('ministry-note', noteId).catch(function(err) {
+  if (!noteId) return Promise.resolve({ ok: true, skipped: 'missing-note-id' });
+  if (!window.MinistryPush || !window.MinistryPush.isConfigured || !window.MinistryPush.isConfigured()) {
+    console.warn('[MinistryPush] clear skipped: push client unavailable or unconfigured.');
+    return Promise.resolve({ ok: true, skipped: 'push-unavailable' });
+  }
+  return window.MinistryPush.clearReminder('ministry-note', noteId).catch(function(err) {
     console.warn('[MinistryPush] reminder clear skipped:', err && err.message ? err.message : err);
+    throw err;
   });
 }
 
 function syncMinistryNotePush(note) {
-  if (!note || !window.MinistryPush || !window.MinistryPush.isConfigured || !window.MinistryPush.isConfigured()) return;
-  if (!ministryNoteNeedsPush(note)) {
-    clearMinistryNotePush(note.id);
-    return;
+  if (!note) return Promise.resolve({ ok: true, skipped: 'missing-note' });
+  if (!window.MinistryPush || !window.MinistryPush.isConfigured || !window.MinistryPush.isConfigured()) {
+    console.warn('[MinistryPush] reminder sync skipped: push client unavailable or unconfigured.');
+    toast(t('pushNotReady'));
+    return Promise.resolve({ ok: false, skipped: 'push-unavailable' });
   }
-  window.MinistryPush.syncReminder(
+  if (!ministryNoteNeedsPush(note)) {
+    return clearMinistryNotePush(note.id);
+  }
+  console.info('[MinistryPush] reminder sync requested', {
+    sourceType: 'ministry-note',
+    sourceId: note.id,
+    fireAt: ministryNoteReminderFireAt(note)
+  });
+  toast(t('reminderSyncStarted'));
+  const syncPromise = window.MinistryPush.syncReminder(
     'ministry-note',
     note.id,
     note.title || 'Ministry Tracker Reminder',
     ministryNotePushBody(note),
     ministryNoteReminderFireAt(note)
-  ).catch(function(err) {
+  ).then(function(result) {
+    console.info('[MinistryPush] reminder sync saved', result);
+    toast(t('reminderSyncSaved'));
+    return result;
+  }).catch(function(err) {
     console.warn('[MinistryPush] reminder sync failed:', err && err.message ? err.message : err);
+    toast(t('reminderSyncFailed') + ' ' + (err && err.message ? err.message : ''));
+    throw err;
   });
+  window.__ministryLastPushSync = syncPromise;
+  return syncPromise;
 }
+
+function runMinistryPushDiagnostic(btn) {
+  if (!window.MinistryPush || !window.MinistryPush.sendTestPush) {
+    console.warn('[MinistryPush] test skipped: push client unavailable.');
+    toast(t('pushNotReady'));
+    return Promise.resolve({ ok: false, skipped: 'push-unavailable' });
+  }
+  const original = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = t('testPush') + '...'; }
+  const testPromise = window.MinistryPush.sendTestPush().then(function(result) {
+    console.info('[MinistryPush] test push sent', result);
+    toast(t('pushTestSent'));
+    return result;
+  }).catch(function(err) {
+    console.warn('[MinistryPush] test push failed:', err && err.message ? err.message : err);
+    toast(t('pushTestFailed') + ' ' + (err && err.message ? err.message : ''));
+    throw err;
+  }).finally(function() {
+    if (btn) { btn.disabled = false; btn.innerHTML = original || escapeHtml(t('testPush')); }
+  });
+  window.__ministryLastPushTest = testPromise;
+  return testPromise;
+}
+
+window.MinistryPushDebugApp = {
+  testPush: function() { return runMinistryPushDiagnostic(null); },
+  lastSync: function() { return window.__ministryLastPushSync || null; },
+  lastTest: function() { return window.__ministryLastPushTest || null; }
+};
 
 function openMinistryNoteModal(categoryId, noteId, _calDate) {
   var note = noteId ? (state.ministryNotes || []).find(function(n) { return n.id === noteId; }) : null;

@@ -202,4 +202,11 @@
     clearReminder: clearReminder,
     sendTestPush: sendTestPush
   };
+
+  window.MinistryPushDebug = {
+    diagnose: diagnose,
+    subscribe: subscribe,
+    testPush: sendTestPush,
+    getSubscriptionId: getSubscriptionId
+  };
 })();
