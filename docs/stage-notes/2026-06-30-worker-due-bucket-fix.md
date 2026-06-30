@@ -2,7 +2,7 @@
 
 Date: 2026-06-30
 
-Status: repo fix committed, Worker redeploy still required before live verification.
+Status: repo fix committed, Worker deployed, physical live verification still required.
 
 ## Problem
 
@@ -27,18 +27,22 @@ The Worker now:
 
 - `cloudflare/ministry-tracker-push/worker.js`
 
-## Deployment required
+## Deployment state
 
-This repo commit alone does not redeploy the Cloudflare Worker unless the deployment pipeline handles it separately.
+This repo commit alone did not prove deployment, but David's current verified backend state now records the due-bucket Worker as deployed.
+
+Current verified backend:
+
+- Cloudflare deployment/version ID: `7f546288-85e3-46d8-9bc2-c5f9564fbd7b`.
+- `/api/health` passed with all required flags and `dueBucketScheduler: true`.
 
 Next required action:
 
-1. Deploy `cloudflare/ministry-tracker-push/worker.js` to Cloudflare.
-2. Confirm `/api/health` returns all required flags and `dueBucketScheduler: true`.
-3. Test Push again.
-4. Re-save or edit a reminder so it creates the new due-minute bucket.
-5. Verify scheduled reminder fires.
-6. Verify tap routing, edit, and delete lifecycle.
+1. Open the live Ministry Tracker PWA on David's iPhone.
+2. Re-save or edit a reminder so it creates the new due-minute bucket.
+3. Confirm the reminder sync/saved message appears.
+4. Verify scheduled reminder fires.
+5. Verify tap routing, edit, and delete lifecycle.
 
 ## Guardrails
 
@@ -50,11 +54,17 @@ Next required action:
 
 ## Stage I status
 
-Keep Stage I as `backend-deployed, frontend-live, not live-approved` until the redeployed Worker passes Test Push and scheduled reminder verification.
+Keep Stage I as `backend-deployed, frontend-live, not live-approved` until the deployed Worker passes scheduled reminder delivery, notification tap routing, and reminder edit/delete verification on the real iPhone/PWA path.
 
 ## 2026-06-30 follow-up audit — David reported save/no scheduled delivery
 
-Result: BLOCKED on live Worker verification/deployment from this GitHub-only session.
+Result at time of audit: BLOCKED on live Worker verification/deployment from this GitHub-only session.
+
+Superseded by current verified backend state:
+
+- Cloudflare deployment/version ID: `7f546288-85e3-46d8-9bc2-c5f9564fbd7b`.
+- `/api/health` passed with `dueBucketScheduler: true`.
+- Remaining blocker is physical live iPhone/PWA reminder lifecycle verification.
 
 Verified in repo:
 
@@ -66,15 +76,17 @@ Verified in repo:
 - `cloudflare/ministry-tracker-push/worker.js` on `main` contains the due-bucket implementation from commit `be4fefc`.
 - No GitHub Actions workflow runs were found for commit `be4fefc`, so this repo commit did not prove a Cloudflare Worker deployment happened.
 
-First failing/unverified step:
+First failing/unverified step at time of audit:
 
 - Live deployed Worker state. The source repo is fixed, but deployment parity could not be proven from GitHub. If `/api/health` on the live Worker does not return `dueBucketScheduler: true`, the Worker is stale and reminders will still fail or behave like the old KV-list version.
 
-Required next action:
+Current required next action after backend deployment was verified:
 
-1. Deploy the Worker from `cloudflare/ministry-tracker-push/worker.js` on `main` using Wrangler/Cloudflare.
-2. Confirm live `/api/health` returns `dueBucketScheduler: true`.
-3. Re-save a reminder after deploy so the new `due:{YYYY-MM-DDTHH:MM}` bucket is created.
-4. Verify scheduled delivery, tap routing, edit, and delete.
+1. Re-save a reminder in the live iPhone/PWA flow so the new `due:{YYYY-MM-DDTHH:MM}` bucket is created.
+2. Confirm the reminder sync/saved message appears.
+3. Verify scheduled delivery.
+4. Tap the notification and verify it routes to the correct note.
+5. Edit the reminder to a new time and verify the edited reminder fires.
+6. Delete or disable the reminder and confirm no later notification fires.
 
 No frontend code repair was made during this audit because the repo frontend call chain matches the expected Stage I pipeline.
