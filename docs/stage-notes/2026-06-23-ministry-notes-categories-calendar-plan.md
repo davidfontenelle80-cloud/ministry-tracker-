@@ -2433,5 +2433,6 @@ Verification required:
 
 Remaining risks:
 
-- Real notification tap routing still depends on a live push/reminder notification, which remains blocked from full Stage I approval until browser permission, KV subscription/reminder records, delivery, and notification click are verified.
-- Stage I remains `backend-deployed, frontend-live, not live-approved (verification pending)`.
+- Closed-app push delivery has since been proven on the target device path; notification tap routing still needs one real reminder notification tap against the live v46 frontend.
+- If the tap opens/focuses Notes and opens the matching note when `sourceId` is present, Stage I can be recorded as approved with reminder edit/delete verification still remaining.
+- Stage I remains `backend-deployed, frontend-live, not live-approved (verification pending)` until the v46 notification tap result is recorded.
