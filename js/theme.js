@@ -1,24 +1,32 @@
 /**
- * theme.js -- KHub Boilerplate
- * Dark is the default. Light is the toggle.
- * On first visit with no saved preference, dark is applied.
- * Respects OS preference only if the user has not manually chosen.
- * Updates <meta name="theme-color"> live on every theme change.
+ * theme.js -- Ministry Tracker theme bootstrap
+ *
+ * Keep this aligned with app.js state.theme so startup does not flash
+ * dark -> light -> dark. Older KHub theme keys are ignored because this
+ * app stores its real preference inside ministry-tracker-v4.
  */
 (function () {
   'use strict';
 
-  const STORAGE_KEY  = 'khub_theme';
-  const OVERRIDE_KEY = 'khub_theme_override';
-  const META_COLORS  = { dark: '#0b0d12', light: '#eef1f5' };
+  const APP_STATE_KEY = 'ministry-tracker-v4';
+  const META_COLORS = { dark: '#07080C', light: '#FFFFFF' };
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+  function readAppThemePreference() {
+    try {
+      const raw = localStorage.getItem(APP_STATE_KEY);
+      if (!raw) return 'auto';
+      const parsed = JSON.parse(raw);
+      return parsed && ['auto', 'light', 'dark'].includes(parsed.theme) ? parsed.theme : 'auto';
+    } catch (e) {
+      return 'auto';
+    }
+  }
 
-  function getInitialTheme() {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return saved;
-    // Dark default unless OS explicitly prefers light
-    return mediaQuery.matches ? 'light' : 'dark';
+  function resolveTheme(preference) {
+    if (preference === 'dark') return 'dark';
+    if (preference === 'light') return 'light';
+    return mediaQuery.matches ? 'dark' : 'light';
   }
 
   function updateMetaColor(theme) {
@@ -31,59 +39,40 @@
     meta.content = META_COLORS[theme] || META_COLORS.dark;
   }
 
-  function apply(theme) {
-    if (theme === 'dark') {
-      document.documentElement.removeAttribute('data-theme');
-    } else {
-      document.documentElement.setAttribute('data-theme', theme);
-    }
-    localStorage.setItem(STORAGE_KEY, theme);
-    updateMetaColor(theme);
+  function apply(preference) {
+    const requested = ['auto', 'light', 'dark'].includes(preference) ? preference : readAppThemePreference();
+    const resolved = resolveTheme(requested);
+    document.documentElement.setAttribute('data-theme', resolved);
+    updateMetaColor(resolved);
 
-    const btn = document.getElementById('theme-toggle');
-    if (btn) {
-      const isDark = theme === 'dark';
-      btn.textContent = isDark ? '☀️' : '🌙';
-      const label = isDark
-        ? (window.KHub?.I18n?.t('themeToggleLight') || 'Switch to light mode')
-        : (window.KHub?.I18n?.t('themeToggleDark')  || 'Switch to dark mode');
-      btn.setAttribute('aria-label', label);
+    const icon = document.getElementById('themeIcon');
+    if (icon) {
+      if (requested === 'auto') icon.className = 'fa-solid fa-circle-half-stroke';
+      else icon.className = resolved === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
     }
 
-    if (window.KHub?.emit) window.KHub.emit('theme:change', theme);
+    if (window.KHub?.emit) window.KHub.emit('theme:change', { preference: requested, resolved });
   }
 
-  function toggle() {
-    localStorage.setItem(OVERRIDE_KEY, 'true');
-    const current = localStorage.getItem(STORAGE_KEY) || 'dark';
-    apply(current === 'dark' ? 'light' : 'dark');
+  function applyFromAppState() {
+    apply(readAppThemePreference());
   }
 
-  // Follow OS changes only if user has not manually overridden
-  mediaQuery.addEventListener('change', e => {
-    if (!localStorage.getItem(OVERRIDE_KEY)) {
-      apply(e.matches ? 'light' : 'dark');
-    }
+  mediaQuery.addEventListener('change', () => {
+    if (readAppThemePreference() === 'auto') applyFromAppState();
   });
 
-  // Apply immediately before DOMContentLoaded to prevent flash
-  apply(getInitialTheme());
+  // Apply as soon as this script loads, using the app's real state key.
+  applyFromAppState();
 
   window.KHub = window.KHub || {};
   window.KHub.Theme = {
     apply,
-    toggle,
+    applyFromAppState,
     get current() {
       return document.documentElement.getAttribute('data-theme') || 'dark';
     },
-    reset() {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(OVERRIDE_KEY);
-      apply(mediaQuery.matches ? 'light' : 'dark');
-    },
   };
 
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('theme-toggle')?.addEventListener('click', toggle);
-  });
+  document.addEventListener('DOMContentLoaded', applyFromAppState);
 })();
