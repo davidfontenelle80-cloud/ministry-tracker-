@@ -103,15 +103,27 @@
     });
   }
 
+  function requestNotificationPermissionWithTimeout() {
+    if (Notification.permission === 'granted') return Promise.resolve('granted');
+    if (Notification.permission === 'denied') return Promise.resolve('denied');
+    log('subscribe:request-permission', { permission: Notification.permission });
+    return Promise.race([
+      Notification.requestPermission(),
+      new Promise(function (_, reject) {
+        setTimeout(function () {
+          reject(new Error('Notification permission prompt did not resolve.'));
+        }, 45000);
+      })
+    ]);
+  }
+
   function subscribe() {
     var c = requireConfigured();
     if (!('serviceWorker' in navigator)) return Promise.reject(new Error('Service workers are not supported.'));
     if (!('PushManager' in window)) return Promise.reject(new Error('PushManager is not supported.'));
     if (!('Notification' in window)) return Promise.reject(new Error('Notifications are not supported.'));
 
-    var permissionFlow = Notification.permission === 'granted'
-      ? Promise.resolve('granted')
-      : Notification.requestPermission();
+    var permissionFlow = requestNotificationPermissionWithTimeout();
 
     return permissionFlow.then(function (permission) {
       if (permission !== 'granted') throw new Error('Notification permission was not granted.');
