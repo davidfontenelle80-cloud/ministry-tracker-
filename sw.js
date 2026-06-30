@@ -2,7 +2,7 @@
  * sw.js â KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v46-notification-route-fix';
+const CACHE_VERSION = 'ministry-tracker-v47-theme-flash-fix';
 
 const PRECACHE_URLS = [
   './',
