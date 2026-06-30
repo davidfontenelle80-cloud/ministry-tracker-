@@ -2530,3 +2530,30 @@ Guardrails:
 - Do not touch Cloudflare secrets, VAPID keys, Firebase rules, Note Clip, Talk Arrangements, or Stage J Weather.
 - Do not redeploy Cloudflare unless the scheduled-reminder failure is proven to require a Worker fix.
 - If frontend files change, bump cache from `ministry-tracker-v47-theme-flash-fix` to `ministry-tracker-v48-reminder-sync-fix`.
+
+Root cause found:
+
+- Test Push can work with direct `subscription:` KV reads, but scheduled reminder cron depended on `PUSH_STORE.list({ prefix: 'reminder:' })` every minute.
+- Cloudflare returned a KV list API free-usage-limit error during verification, matching the scheduled-reminder failure mode.
+- The Worker scheduler was updated to avoid KV namespace list scans by indexing reminders into deterministic due-minute bucket keys.
+
+Worker change:
+
+- `handleUpsertReminder()` now stores a `dueBucket` and writes the reminder key into `due:{minute}`.
+- `handleDeleteReminder()` removes the reminder key from its due bucket before deleting the reminder.
+- `processDueReminders()` now reads recent deterministic due buckets instead of listing all `reminder:` keys.
+- Failed sends are re-bucketed for a one-minute retry; successful or invalid reminders are removed from the due bucket.
+
+Deployment:
+
+- Worker changed: yes.
+- Cloudflare deployment/version ID: `7f546288-85e3-46d8-9bc2-c5f9564fbd7b`.
+- Worker URL: `https://ministry-tracker-push.davidfontenelle80.workers.dev`.
+- `/api/health` passed after deployment with `hasStore`, `hasVapidPublicKey`, `hasVapidPrivateKey`, `hasVapidSubject`, and `dueBucketScheduler` all true.
+
+Verification boundary:
+
+- `node --check js/app.js`, `node --check sw.js`, and `node --check cloudflare/ministry-tracker-push/worker.js` passed.
+- Remote KV key listing is blocked by Cloudflare free usage limit for that operation today.
+- Chrome live-app testing against the GitHub Pages origin is blocked by browser security policy in this session.
+- Test Push, Save Reminder sync/saved message, scheduled reminder delivery, notification tap, edit, and delete still require David to re-save a reminder after this Worker deployment in the real iPhone/PWA flow.
