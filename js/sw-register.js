@@ -21,6 +21,83 @@
   function off(event, fn) { _listeners[event] = (_listeners[event] || []).filter(f => f !== fn); }
   function emit(event, data) { (_listeners[event] || []).forEach(fn => { try { fn(data); } catch (e) { console.error('[KHub] Event error:', e); } }); }
 
+  // ── Notification route handling ────────────────────────────
+  const NOTIFICATION_ROUTE_KEY = 'khub_pending_notification_route';
+
+  function routeFromLocation() {
+    try {
+      const u = new URL(window.location.href);
+      if (u.searchParams.get('screen') !== 'notes') return null;
+      return {
+        type: 'NOTIFICATION_CLICK_ROUTE',
+        screen: 'notes',
+        sourceType: u.searchParams.get('sourceType') || 'ministry-note',
+        sourceId: u.searchParams.get('sourceId') || '',
+        url: u.href,
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function rememberNotificationRoute(route) {
+    if (!route || route.screen !== 'notes') return;
+    try { sessionStorage.setItem(NOTIFICATION_ROUTE_KEY, JSON.stringify(route)); } catch (e) {}
+  }
+
+  function readPendingNotificationRoute() {
+    const fromUrl = routeFromLocation();
+    if (fromUrl) return fromUrl;
+    try {
+      const raw = sessionStorage.getItem(NOTIFICATION_ROUTE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function clearPendingNotificationRoute() {
+    try { sessionStorage.removeItem(NOTIFICATION_ROUTE_KEY); } catch (e) {}
+    try {
+      const u = new URL(window.location.href);
+      if (u.searchParams.get('screen') === 'notes') {
+        u.searchParams.delete('screen');
+        u.searchParams.delete('sourceType');
+        u.searchParams.delete('sourceId');
+        if (u.hash === '#notification') u.hash = '';
+        history.replaceState(null, '', u.pathname + u.search + u.hash);
+      }
+    } catch (e) {}
+  }
+
+  function applyNotificationRoute(route, attempt = 0) {
+    if (!route || route.screen !== 'notes') return false;
+    if (typeof window.switchScreen !== 'function') {
+      if (attempt < 20) setTimeout(() => applyNotificationRoute(route, attempt + 1), 150);
+      return false;
+    }
+    try {
+      window.switchScreen('notes');
+      if (route.sourceType === 'ministry-note' && route.sourceId && typeof window.openMinistryNoteModal === 'function') {
+        setTimeout(() => window.openMinistryNoteModal('', route.sourceId), 250);
+      }
+      clearPendingNotificationRoute();
+      emit('notification:route', route);
+      return true;
+    } catch (e) {
+      console.warn('[KHub.SW] Notification route failed:', e);
+      if (attempt < 20) setTimeout(() => applyNotificationRoute(route, attempt + 1), 150);
+      return false;
+    }
+  }
+
+  function schedulePendingNotificationRoute() {
+    const route = readPendingNotificationRoute();
+    if (!route) return;
+    rememberNotificationRoute(route);
+    setTimeout(() => applyNotificationRoute(route), 350);
+  }
+
   // ── Safe-state detection ───────────────────────────────────
   // "Safe" = no user interaction that would be disrupted by a reload.
   // Extend this list as your app grows (e.g. unsaved form data checks).
@@ -100,6 +177,11 @@
           console.log('[KHub.SW] SW activated — reloading page.');
           SW._reloading = true;
           location.reload();
+          return;
+        }
+        if (event.data?.type === 'NOTIFICATION_CLICK_ROUTE') {
+          rememberNotificationRoute(event.data);
+          applyNotificationRoute(event.data);
         }
       });
 
@@ -176,6 +258,8 @@
     SW.register();
 
     emit('app:ready');
+    schedulePendingNotificationRoute();
+    window.addEventListener('load', schedulePendingNotificationRoute);
     console.log('[KHub] App ready.');
   }
 
