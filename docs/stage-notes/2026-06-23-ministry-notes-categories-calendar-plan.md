@@ -2195,3 +2195,87 @@ Required next action:
 - Push local commit `896e871` when the environment allows network Git operations.
 - Re-test live v43 after `896e871` is deployed so unresolved notification permission produces an explicit timeout/failure instead of a permanent pending state.
 - If notification permission still cannot resolve in Chrome automation, complete the permission grant manually in Chrome or on the target device/PWA, then rerun Test Push and verify `subscription:` / `reminder:` KV creation.
+
+### Stage I push permission verification after v43 timeout deploy - 2026-06-30
+
+Status: `backend-deployed, frontend-live, not live-approved`
+
+Repository / deploy state:
+
+- Local commits pushed to `origin/main`: `896e871` and `d6afcbc`.
+- Live service worker cache verified: `ministry-tracker-v43-push-sync-fix`.
+- Live `js/push.js` verified to include the `Notification permission prompt did not resolve.` timeout fix.
+- Live `js/app.js` verified to include the visible Notes `Test Push` diagnostic flow.
+- Cloudflare Worker was not redeployed.
+- Worker URL: `https://ministry-tracker-push.davidfontenelle80.workers.dev`.
+- Worker deployment/version: `a9654632-efa0-4382-a839-9119b5385032`.
+- KV namespace: `ministry-tracker-push-store`.
+- KV namespace ID: `559729167b3140e0add1c89ea1a1d477`.
+
+Health result:
+
+```json
+{
+  "ok": true,
+  "app": "ministry-tracker",
+  "hasStore": true,
+  "hasVapidPublicKey": true,
+  "hasVapidPrivateKey": true,
+  "hasVapidSubject": true,
+  "webPushDeliveryImplemented": true
+}
+```
+
+Live Chrome verification:
+
+- App loaded from GitHub Pages over HTTPS.
+- Service worker registration logged with scope `https://davidfontenelle80-cloud.github.io/ministry-tracker-/`.
+- Notes & Reminders opened.
+- `Test Push` button was visible.
+- Clicking `Test Push` changed the button to `Probar push...`.
+- Console logged `[MinistryPush] subscribe:request-permission`, proving the frontend handler reached `Notification.requestPermission()`.
+- After 45 seconds, the app displayed the explicit error `Notification permission prompt did not resolve.`
+- Error label surfaced by the app: `CLOUD-RULES-promise`.
+- Console warning: `[MinistryPush] test push failed: Notification permission prompt did not resolve.`
+- Console error boundary also logged the same timeout as an unhandled rejection from `js/push.js`.
+- Chrome did not show a visible notification permission bubble in the captured app viewport.
+- Attempting to inspect `chrome://settings/content/siteDetails?...` was blocked by the browser automation security policy, so Chrome site notification settings could not be confirmed from this session.
+
+Permission state:
+
+- Before click: not directly readable through the available Chrome bridge because the read-only page context did not expose `navigator` / `Notification`.
+- After click: the app reached the permission request and timed out with no browser resolution.
+- Root cause for this run: browser notification permission did not resolve in the controlled Chrome session, so `PushManager.subscribe()` was not reached and no backend subscription/reminder sync could occur.
+
+KV verification:
+
+- KV `subscription:` prefix after live Test Push: `[]`.
+- KV `reminder:` prefix after live Test Push: `[]`.
+- Therefore no real browser `PushSubscription` was created and no backend reminder record was created.
+
+Push verification result:
+
+- Real PushSubscription: not created.
+- Subscribe API from real browser: not reached / not verified.
+- Reminder API from real browser: not reached / not verified.
+- Test push: failed before subscription because notification permission did not resolve.
+- Scheduled reminder: not verified.
+- Closed-app / phone-locked notification: not verified.
+- `notificationclick`: not verified.
+- Mobile verification: not completed.
+- Desktop verification: completed only through the permission-timeout blocker.
+
+Regression / safety notes:
+
+- `node --check js/app.js`: passed.
+- `node --check js/push.js`: passed.
+- `node --check sw.js`: passed.
+- No VAPID private key, Cloudflare token, credentials, or secrets were printed or committed.
+- Talk Arrangements was not modified.
+- Stage J weather was not started.
+
+Required next action:
+
+- Complete notification permission grant/reset in a real user-controlled Chrome session or on the target installed PWA/device.
+- Rerun the visible `Test Push` diagnostic after permission resolves.
+- Continue Stage I approval only after a real `subscription:` KV key, real `reminder:` KV key, delivered test push, scheduled reminder delivery, and notification tap open/focus are verified.
