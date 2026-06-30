@@ -2436,3 +2436,46 @@ Remaining risks:
 - Closed-app push delivery has since been proven on the target device path; notification tap routing still needs one real reminder notification tap against the live v46 frontend.
 - If the tap opens/focuses Notes and opens the matching note when `sourceId` is present, Stage I can be recorded as approved with reminder edit/delete verification still remaining.
 - Stage I remains `backend-deployed, frontend-live, not live-approved (verification pending)` until the v46 notification tap result is recorded.
+
+### Stage I lifecycle verification after v47 theme fix - 2026-06-30
+
+Status: `backend-deployed, frontend-live, not live-approved`
+
+Cache:
+
+- Live GitHub Pages `sw.js` verified as `ministry-tracker-v47-theme-flash-fix`.
+- Live `sw.js` still contains `NOTIFICATION_CLICK_ROUTE`.
+- Live `js/sw-register.js` still contains the notification route listener, `switchScreen('notes')`, and `openMinistryNoteModal` handling.
+
+Notification arrival:
+
+- David has verified notifications are received with the app open.
+- David has verified notifications are received with the app swipe-closed.
+
+Notification tap routing:
+
+- Not completed in this session.
+- Real device tap verification is still required to confirm notification tap opens/focuses Ministry Tracker to Notes instead of Home.
+- Matching note modal opening from `sourceId` remains unverified on a real notification tap.
+
+Reminder lifecycle:
+
+- Reminder edit/reschedule firing result: not verified.
+- Reminder delete/cancel result: not verified.
+- Completed/archived reminders do-not-fire result: not verified.
+
+App checks:
+
+- Live cache and route assets were verified by network fetch.
+- Home, Timer, Calendar, Notes, Reports, English/Spanish, light/dark, and live console were not rechecked in-browser during this pass.
+
+Guardrails:
+
+- Cloudflare Worker was not redeployed.
+- KV, VAPID, secrets, and Firebase rules were not touched.
+- Talk Arrangements, Note Clip, and Stage J Weather were not modified.
+
+Remaining risks:
+
+- Stage I cannot be marked `live-approved` until notification tap routing and reminder edit/delete lifecycle pass on a real device.
+- If tap routing passes but edit/delete remain unverified, record Stage I as still not fully live-approved with edit/delete as the remaining blocker.
