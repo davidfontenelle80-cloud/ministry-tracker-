@@ -2122,3 +2122,76 @@ Required next action:
 - Investigate why the live browser reminder save does not create a `PushSubscription` / `subscription:` KV key.
 - Add or expose a supervised Stage I diagnostic/test-push UI path if needed, without committing secrets.
 - Re-run real browser/device tests only after `subscription:` and `reminder:` KV records are observed from the live app flow.
+
+### Stage I push sync repair attempt — 2026-06-30
+
+Status: `backend-deployed, frontend-live, not live-approved`
+
+Root cause found:
+
+- The frontend reminder save path did call `syncMinistryNotePush(savedNote)`, but the app had a silent guard that returned if `window.MinistryPush` was unavailable or unconfigured.
+- There was no visible supervised diagnostic/test-push control, so the live page could not prove whether the push client was attached, whether notification permission was pending, or whether `/api/subscribe` was reached.
+- After adding the diagnostic button, the live v43 Test Push control entered `Test Push...` and remained pending with no KV records. This indicates the flow reached the push permission/subscription path but did not resolve notification permission in the controlled Chrome session.
+
+Frontend repair:
+
+- Added `window.MinistryPushDebug` in `js/push.js` with safe public wrappers for `diagnose`, `subscribe`, `testPush`, and `getSubscriptionId`.
+- Added visible `Test Push` controls to the Notes category grid and note-list views.
+- Added app-side `MinistryPushDebugApp.testPush()`.
+- Added push sync diagnostics/logging and user feedback for push unavailable, sync started, sync saved, sync failed, test sent, and test failed.
+- Added a 45-second timeout around unresolved `Notification.requestPermission()` so the button no longer hangs forever if the browser permission prompt does not resolve.
+
+Cache before: `ministry-tracker-v42-notes-modal-fix`.
+
+Cache after: `ministry-tracker-v43-push-sync-fix`.
+
+Files changed:
+
+- `js/app.js`
+- `js/push.js`
+- `sw.js`
+- this tracker MD
+
+Verification completed:
+
+- `node --check js/app.js`: passed.
+- `node --check js/push.js`: passed.
+- `node --check sw.js`: passed.
+- Live `sw.js` reached `ministry-tracker-v43-push-sync-fix`.
+- Live `js/app.js` contains `runMinistryPushDiagnostic`, `data-push-test`, and `reminder sync requested`.
+- Live `js/push.js` contains `MinistryPushDebug` and `sendTestPush`.
+- App loaded in Chrome with no console errors/warnings.
+- Notes & Reminders opened.
+- `Test Push` button was visible.
+- Clicking `Test Push` disabled the button and changed it to `Test Push...`.
+
+Push verification result:
+
+- Real PushSubscription: not created / not verified.
+- KV `subscription:` record: not created.
+- KV `reminder:` record: not created.
+- Subscribe API result: not verified from live browser because no `subscription:` key appeared.
+- Reminder API result: not verified from live browser because no `reminder:` key appeared.
+- Test-push result: pending / not verified; no notification observed.
+- Scheduled reminder result: not verified.
+- Closed-app / phone-locked result: not verified.
+- `notificationclick` result: not verified.
+
+Blocking evidence:
+
+- Cloudflare KV key listings still returned `[]` for both `subscription:` and `reminder:` prefixes.
+- The Test Push button remaining disabled as `Test Push...` means the frontend handler fired, but the browser push permission/subscription promise did not complete in the controlled Chrome session.
+- The final permission-timeout fix was committed locally as `896e871`, but push to GitHub was blocked by the environment usage-limit gate before it could be published.
+
+Cloudflare / scope notes:
+
+- Cloudflare was not redeployed.
+- No VAPID private key, Cloudflare token, credentials, or secrets were printed or committed.
+- Talk Arrangements was inspected read-only only.
+- Stage J weather was not started.
+
+Required next action:
+
+- Push local commit `896e871` when the environment allows network Git operations.
+- Re-test live v43 after `896e871` is deployed so unresolved notification permission produces an explicit timeout/failure instead of a permanent pending state.
+- If notification permission still cannot resolve in Chrome automation, complete the permission grant manually in Chrome or on the target device/PWA, then rerun Test Push and verify `subscription:` / `reminder:` KV creation.
