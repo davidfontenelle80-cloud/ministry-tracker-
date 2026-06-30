@@ -2584,3 +2584,47 @@ Stop condition:
 - Stage I physical verification stopped because an app error appeared during the reminder verification flow and the required successful sync/saved message is not visible.
 - No code changes are authorized from this evidence alone under the current Stage I verification-only scope.
 - Keep Stage I as `backend-deployed, frontend-live, not live-approved`.
+
+### Stage I frontend runtime investigation authorized - 2026-06-30
+
+Current stage: Stage I - Frontend Runtime Investigation.
+
+Objective:
+
+- Investigate the live frontend runtime error: `Load failed`, `JS-ERROR-promise`.
+- Assume the repaired/deployed Worker is healthy unless direct evidence proves otherwise.
+- Do not re-investigate Cloudflare scheduling.
+
+Investigation trace:
+
+- `window.onerror`
+- `unhandledrejection`
+- async initialization
+- app startup
+- notes initialization
+- push initialization
+- Firebase initialization
+- cloud restore
+- render
+
+Stop point:
+
+- Stop at the first rejected Promise causing the startup failure.
+- Do not mask the error.
+- Stop after identifying and repairing the startup Promise failure.
+- Do not continue to Notes polish.
+
+Files allowed:
+
+- Only files necessary to repair startup.
+- MD.
+
+Files not allowed:
+
+- Worker.
+- Stage J.
+- Talk Arrangements.
+- Note Clip.
+- Firebase rules.
+- Secrets.
+- VAPID.

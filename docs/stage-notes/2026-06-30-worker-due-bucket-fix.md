@@ -116,3 +116,20 @@ Stop condition reached:
 
 - Stop Stage I physical verification at this point until the app error is triaged or Supervisor authorizes code investigation.
 - No Worker, frontend, secrets, VAPID, Firebase rules, Note Clip, Talk Arrangements, or Stage J files changed for this evidence note.
+
+## 2026-06-30 Stage I frontend runtime investigation authorized
+
+Current stage: Stage I - Frontend Runtime Investigation.
+
+Scope:
+
+- Investigate `Load failed` / `JS-ERROR-promise` from the live frontend.
+- Stop at the first rejected Promise causing startup failure.
+- Repair only the startup Promise failure.
+- Assume the deployed Worker is healthy unless direct evidence proves otherwise.
+- Do not investigate Cloudflare scheduling again.
+
+Boundaries:
+
+- Do not touch Worker, Stage J, Talk Arrangements, Note Clip, Firebase rules, secrets, or VAPID.
+- Do not continue to Notes polish.
