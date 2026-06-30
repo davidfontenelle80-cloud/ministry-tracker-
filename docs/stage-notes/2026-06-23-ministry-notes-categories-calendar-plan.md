@@ -2502,3 +2502,31 @@ Final status for this pass:
 
 - Keep Stage I as `backend-deployed, frontend-live, not live-approved`.
 - No Cloudflare Worker, KV, VAPID, secrets, Firebase rules, Note Clip, Talk Arrangements, or Stage J Weather files were changed.
+
+### Stage I scheduled reminder sync blocker - 2026-06-30
+
+Status: `backend-deployed, frontend-live, not live-approved`
+
+Current verified behavior:
+
+- Test Push works on David's iPhone.
+- Push notifications arrive with the app open.
+- Push notifications arrive with the app swipe-closed.
+- Scheduled reminders do not fire.
+
+Targeted investigation chain:
+
+- Save reminder note.
+- `syncMinistryNotePush(savedNote)`.
+- `window.MinistryPush.syncReminder(...)`.
+- `POST /api/reminders`.
+- Worker `handleUpsertReminder()`.
+- KV key `reminder:{subscriptionId}:{sourceType}:{sourceId}`.
+- Cron `processDueReminders()`.
+- `sendWebPush()`.
+
+Guardrails:
+
+- Do not touch Cloudflare secrets, VAPID keys, Firebase rules, Note Clip, Talk Arrangements, or Stage J Weather.
+- Do not redeploy Cloudflare unless the scheduled-reminder failure is proven to require a Worker fix.
+- If frontend files change, bump cache from `ministry-tracker-v47-theme-flash-fix` to `ministry-tracker-v48-reminder-sync-fix`.
