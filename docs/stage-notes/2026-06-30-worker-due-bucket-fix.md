@@ -90,3 +90,29 @@ Current required next action after backend deployment was verified:
 6. Delete or disable the reminder and confirm no later notification fires.
 
 No frontend code repair was made during this audit because the repo frontend call chain matches the expected Stage I pipeline.
+
+## 2026-06-30 physical iPhone/PWA evidence - app error during reminder flow
+
+Status: Stage I still `backend-deployed, frontend-live, not live-approved`.
+
+Screenshot evidence:
+
+- Device/browser tested: live iPhone/PWA path, based on screenshot evidence from iPhone status bar.
+- Visible app location: Notes & Reminders tab.
+- Visible note: `Test1`, Return Visits, due `Jun 30 18:27`.
+- Screenshot time: `6:25 PM`.
+- Visible in-app error: `App error caught`; message `Load failed`; error label `JS-ERROR-promise`; where `promise`.
+
+Verification result:
+
+- Reminder save result: blocked/unverified. Successful reminder sync/saved message is not visible in the evidence.
+- Scheduled reminder result: not verified.
+- Notification tap result: not verified.
+- Reminder edit result: not verified.
+- Reminder delete result: not verified.
+- Console status: no browser console visible; in-app error banner shows `JS-ERROR-promise` / `Load failed`.
+
+Stop condition reached:
+
+- Stop Stage I physical verification at this point until the app error is triaged or Supervisor authorizes code investigation.
+- No Worker, frontend, secrets, VAPID, Firebase rules, Note Clip, Talk Arrangements, or Stage J files changed for this evidence note.

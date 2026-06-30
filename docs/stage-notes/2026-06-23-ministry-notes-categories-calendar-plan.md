@@ -2557,3 +2557,30 @@ Verification boundary:
 - Remote KV key listing is blocked by Cloudflare free usage limit for that operation today.
 - Chrome live-app testing against the GitHub Pages origin is blocked by browser security policy in this session.
 - Test Push, Save Reminder sync/saved message, scheduled reminder delivery, notification tap, edit, and delete still require David to re-save a reminder after this Worker deployment in the real iPhone/PWA flow.
+
+### Stage I physical iPhone/PWA verification stopped on app error - 2026-06-30
+
+Status: `backend-deployed, frontend-live, not live-approved`
+
+Evidence provided:
+
+- Device/browser tested: live iPhone/PWA path, based on screenshot evidence from iPhone status bar.
+- Visible app location: Notes & Reminders tab.
+- Visible note: `Test1`, Return Visits, due `Jun 30 18:27`.
+- Screenshot time: `6:25 PM`.
+- Visible in-app error: `App error caught`; message `Load failed`; error label `JS-ERROR-promise`; where `promise`.
+
+Recorded Stage I result from this evidence:
+
+- Reminder save result: blocked/unverified. The screenshot does not show a successful reminder sync/saved message.
+- Scheduled reminder result: not verified from this evidence.
+- Notification tap result: not verified from this evidence.
+- Reminder edit result: not verified.
+- Reminder delete result: not verified.
+- Console errors if visible: no browser console visible; in-app error banner shows `JS-ERROR-promise` / `Load failed`.
+
+Stop condition:
+
+- Stage I physical verification stopped because an app error appeared during the reminder verification flow and the required successful sync/saved message is not visible.
+- No code changes are authorized from this evidence alone under the current Stage I verification-only scope.
+- Keep Stage I as `backend-deployed, frontend-live, not live-approved`.
