@@ -2054,3 +2054,71 @@ Deployment / Stage I status:
 
 - Worker remains deployed and healthy; Cloudflare was not redeployed for this fix.
 - Stage I remains `backend-deployed, frontend-live, not live-approved` until the v42 frontend is live and real PushSubscription, test push, scheduled reminder, closed-app notification, and notification click are verified.
+
+### Stage I real push verification attempt after v42 notes fix — 2026-06-29
+
+Status: `backend-deployed, frontend-live, not live-approved`
+
+Repo / frontend:
+
+- Branch verified: `main`.
+- Latest fix commit verified: `dcf920e fix: restore ministry notes modal`.
+- Repo was clean before testing.
+- Live `sw.js` cache verified: `ministry-tracker-v42-notes-modal-fix`.
+- Live `js/push.js`, `js/push-config.js`, and `index.html` were reachable from GitHub Pages.
+- No committed secret values found by source scan.
+
+Worker:
+
+- Worker URL: `https://ministry-tracker-push.davidfontenelle80.workers.dev`
+- Worker deployment/version ID: `a9654632-efa0-4382-a839-9119b5385032`
+- KV namespace: `ministry-tracker-push-store`
+- KV namespace ID: `559729167b3140e0add1c89ea1a1d477`
+- `/api/health` returned `ok:true`, `hasStore:true`, `hasVapidPublicKey:true`, `hasVapidPrivateKey:true`, `hasVapidSubject:true`, `webPushDeliveryImplemented:true`.
+
+Live app checks completed:
+
+- App loads from GitHub Pages.
+- Service worker registration log observed in Chrome: scope `https://davidfontenelle80-cloud.github.io/ministry-tracker-/`.
+- Console errors/warnings: none observed during the live verification pass.
+- Notes & Reminders opens.
+- Category cards open selected category note lists.
+- `+ Add Note` opens the modal.
+- Reminder fields are present and persisted in the modal: `dueDate`, `dueTime`, `reminder`.
+- A temporary reminder note was created with due date/time and Reminder checked.
+- Reopening the note confirmed the reminder fields were saved.
+- The temporary reminder note was deleted after testing.
+- Home, Timer, Calendar, Reports, and Notes tabs opened.
+- English/Spanish toggle verified.
+- Theme toggle verified by clicking through visible header control.
+
+Push verification result:
+
+- Real browser `PushSubscription`: not created / not verified.
+- `POST /api/subscribe` from the real browser flow: not verified.
+- `POST /api/test-push`: not verified.
+- Test push notification: not received / not verified.
+- Scheduled reminder firing: not verified.
+- Closed-app / phone-locked notification: not verified.
+- `notificationclick` open/focus behavior: not verified.
+- Mobile verification: not completed.
+- Desktop verification: partially completed for UI and service worker registration, but push delivery remains blocked.
+
+Blocking evidence:
+
+- After saving the real reminder note, Cloudflare KV key listings showed no `subscription:` keys and no `reminder:` keys in namespace `559729167b3140e0add1c89ea1a1d477`.
+- The live app saved the reminder fields locally, but the backend subscription/reminder sync did not materialize in KV.
+- The app has no visible manual `test-push` control; attempts to invoke the hidden page-level push test path from Chrome automation did not execute in the live page context.
+
+Cloudflare / scope notes:
+
+- Cloudflare was not redeployed.
+- VAPID secrets were not rotated or printed.
+- Talk Arrangements was not modified.
+- Stage J weather was not started.
+
+Required next action:
+
+- Investigate why the live browser reminder save does not create a `PushSubscription` / `subscription:` KV key.
+- Add or expose a supervised Stage I diagnostic/test-push UI path if needed, without committing secrets.
+- Re-run real browser/device tests only after `subscription:` and `reminder:` KV records are observed from the live app flow.
