@@ -1,0 +1,90 @@
+/* Notes & Reminders card border polish
+   Stronger, premium edges for category/note cards in both themes.
+   This file intentionally only affects the Notes surface. */
+
+#screen-notes .mn-category-card,
+#screen-notes .mn-note-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px !important;
+  border: 1.25px solid rgba(148, 163, 184, 0.34) !important;
+  outline: 1px solid rgba(255, 255, 255, 0.42);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.72) inset,
+    0 10px 24px rgba(15, 23, 42, 0.08),
+    0 2px 8px rgba(15, 23, 42, 0.06) !important;
+}
+
+#screen-notes .mn-category-card::before {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--mn-color, var(--accent)) 52%, transparent),
+    0 0 16px color-mix(in srgb, var(--mn-color, var(--accent)) 24%, transparent);
+}
+
+#screen-notes .mn-category-card::after,
+#screen-notes .mn-note-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.18), transparent 38%),
+    linear-gradient(90deg, rgba(255,255,255,0.08), transparent 24%);
+  opacity: 0.72;
+}
+
+#screen-notes .mn-category-card:active,
+#screen-notes .mn-note-card:active {
+  transform: scale(0.992);
+}
+
+#screen-notes .mn-card-actions .btn,
+#screen-notes .mn-category-card .btn-icon,
+#screen-notes .mn-note-card .btn-icon {
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.42) inset,
+    0 5px 12px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="light"] #screen-notes .mn-category-card,
+[data-theme="light"] #screen-notes .mn-note-card {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92)) !important;
+  border-color: rgba(15, 23, 42, 0.16) !important;
+  outline-color: rgba(255,255,255,0.8);
+}
+
+[data-theme="dark"] #screen-notes .mn-category-card,
+[data-theme="dark"] #screen-notes .mn-note-card,
+:root:not([data-theme="light"]) #screen-notes .mn-category-card,
+:root:not([data-theme="light"]) #screen-notes .mn-note-card {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255,255,255,0.045), transparent 34%),
+    linear-gradient(180deg, rgba(25, 30, 39, 0.98), rgba(17, 21, 29, 0.98)) !important;
+  border-color: rgba(203, 213, 225, 0.18) !important;
+  outline-color: rgba(255,255,255,0.035);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.06) inset,
+    0 12px 28px rgba(0,0,0,0.24),
+    0 2px 8px rgba(0,0,0,0.22) !important;
+}
+
+[data-theme="dark"] #screen-notes .mn-category-card::after,
+[data-theme="dark"] #screen-notes .mn-note-card::after,
+:root:not([data-theme="light"]) #screen-notes .mn-category-card::after,
+:root:not([data-theme="light"]) #screen-notes .mn-note-card::after {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.07), transparent 34%),
+    linear-gradient(90deg, rgba(255,255,255,0.035), transparent 28%);
+  opacity: 1;
+}
+
+[data-theme="dark"] #screen-notes .mn-card-actions .btn,
+:root:not([data-theme="light"]) #screen-notes .mn-card-actions .btn {
+  border-color: rgba(203, 213, 225, 0.10) !important;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.045) inset,
+    0 7px 14px rgba(0,0,0,0.22);
+}
