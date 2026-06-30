@@ -133,3 +133,34 @@ Boundaries:
 
 - Do not touch Worker, Stage J, Talk Arrangements, Note Clip, Firebase rules, secrets, or VAPID.
 - Do not continue to Notes polish.
+
+## 2026-06-30 Stage I frontend runtime fix applied
+
+Root cause:
+
+- The live error `JS-ERROR-promise` / `Load failed` is consistent with the reminder push network/subscription Promise rejecting during `window.MinistryPush.syncReminder()` or `window.MinistryPush.clearReminder()`.
+- The app saved the note first, then started push sync. A rejected push Promise could surface through the global error boundary as a visible app error even though the note itself saved.
+
+Fix:
+
+- `js/push.js` now converts reminder sync/clear failures into handled `{ ok:false, handled:true, ... }` results instead of letting the rejection reach the global unhandled Promise handler.
+- `sendTestPush()` is intentionally still allowed to reject so Test Push can report real failures during diagnostics.
+- `sw.js` cache bumped from `ministry-tracker-v47-theme-flash-fix` to `ministry-tracker-v48-reminder-sync-error-fix` so the live PWA pulls the fixed `js/push.js`.
+
+Files changed:
+
+- `js/push.js`
+- `sw.js`
+- `docs/stage-notes/2026-06-30-worker-due-bucket-fix.md`
+
+Verification required next:
+
+1. Reload/update the iPhone PWA so cache `v48` activates.
+2. Save a reminder again.
+3. Confirm the `JS-ERROR-promise` / `Load failed` banner no longer appears.
+4. Confirm whether the reminder sync saved message appears.
+5. Continue scheduled notification, tap, edit, and delete verification.
+
+Known remaining issue:
+
+- Reminder card time formatting still displays 24-hour time in some paths (`19:22`). This was not repaired in this commit because the immediate authorized blocker was the rejected Promise error.
