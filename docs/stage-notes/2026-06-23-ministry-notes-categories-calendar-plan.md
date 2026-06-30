@@ -2479,3 +2479,26 @@ Remaining risks:
 
 - Stage I cannot be marked `live-approved` until notification tap routing and reminder edit/delete lifecycle pass on a real device.
 - If tap routing passes but edit/delete remain unverified, record Stage I as still not fully live-approved with edit/delete as the remaining blocker.
+
+### Stage I real device verification request - 2026-06-30
+
+Status: `backend-deployed, frontend-live, not live-approved`
+
+Verified from this session:
+
+- Repo on `main` matched `origin/main`.
+- Live GitHub Pages cache is `ministry-tracker-v47-theme-flash-fix`.
+- Live `sw.js` still contains notification route support.
+
+Not completed from this session:
+
+- Real notification tap routing was not verified because it requires tapping the OS notification on the real device/PWA.
+- Reminder edit/reschedule firing was not verified.
+- Reminder delete/cancel was not verified.
+- Completed/archived reminder suppression was not verified.
+- App tab, language, theme, and console smoke checks were not re-run in a browser during this pass.
+
+Final status for this pass:
+
+- Keep Stage I as `backend-deployed, frontend-live, not live-approved`.
+- No Cloudflare Worker, KV, VAPID, secrets, Firebase rules, Note Clip, Talk Arrangements, or Stage J Weather files were changed.
