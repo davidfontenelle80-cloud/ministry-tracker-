@@ -13,6 +13,7 @@ const APP_ID = 'ministry-tracker';
 const DEFAULT_ALLOWED_ORIGIN = 'https://davidfontenelle80-cloud.github.io';
 const DEFAULT_TTL_SECONDS = 60 * 60 * 24 * 28;
 const WEB_PUSH_RS = 4096;
+const DUE_BUCKET_LOOKBACK_MINUTES = 10;
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data, null, 2), {
@@ -61,6 +62,52 @@ function makeSubscriptionId(subscription) {
 
 function reminderKey(subscriptionId, sourceType, sourceId) {
   return `reminder:${subscriptionId}:${sourceType}:${sourceId}`;
+}
+
+function dueBucketMinute(value) {
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) throw new Error('fireAt must be a valid ISO date/time.');
+  return d.toISOString().slice(0, 16);
+}
+
+function dueBucketKey(minute) {
+  return `due:${minute}`;
+}
+
+async function addReminderToDueBucket(store, minute, key) {
+  const bucketKey = dueBucketKey(minute);
+  const current = await store.get(bucketKey, 'json').catch(() => null);
+  const keys = Array.isArray(current && current.keys) ? current.keys : [];
+  if (!keys.includes(key)) keys.push(key);
+  await store.put(bucketKey, JSON.stringify({ minute, keys, updatedAt: new Date().toISOString() }), {
+    expirationTtl: DEFAULT_TTL_SECONDS,
+  });
+}
+
+function dueBucketMinutesToCheck(now = new Date()) {
+  const out = [];
+  const base = new Date(now);
+  base.setSeconds(0, 0);
+  for (let i = DUE_BUCKET_LOOKBACK_MINUTES; i >= 0; i -= 1) {
+    out.push(dueBucketMinute(new Date(base.getTime() - i * 60000)));
+  }
+  return out;
+}
+
+async function getDueReminderEntries(store, nowIso) {
+  const seen = new Set();
+  const due = [];
+  for (const minute of dueBucketMinutesToCheck(new Date(nowIso))) {
+    const bucket = await store.get(dueBucketKey(minute), 'json').catch(() => null);
+    const keys = Array.isArray(bucket && bucket.keys) ? bucket.keys : [];
+    for (const key of keys) {
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      const item = await store.get(key, 'json');
+      if (item && item.fireAt && item.fireAt <= nowIso && !item.sentAt) due.push({ key, item });
+    }
+  }
+  return due;
 }
 
 function textBytes(value) {
@@ -201,20 +248,6 @@ async function encryptPushPayload(subscription, payload) {
   return concatBytes(salt, uint32Bytes(WEB_PUSH_RS), new Uint8Array([asPublic.length]), asPublic, ciphertext);
 }
 
-async function listDueReminderKeys(store, nowIso) {
-  const due = [];
-  let cursor;
-  do {
-    const page = await store.list({ prefix: 'reminder:', cursor });
-    cursor = page.cursor;
-    for (const key of page.keys || []) {
-      const item = await store.get(key.name, 'json');
-      if (item && item.fireAt && item.fireAt <= nowIso && !item.sentAt) due.push({ key: key.name, item });
-    }
-  } while (cursor);
-  return due;
-}
-
 async function handleHealth(request, env) {
   return json({
     ok: true,
@@ -224,6 +257,7 @@ async function handleHealth(request, env) {
     hasVapidPrivateKey: !!env.VAPID_PRIVATE_KEY,
     hasVapidSubject: !!env.VAPID_SUBJECT,
     webPushDeliveryImplemented: true,
+    dueBucketScheduler: true,
   }, 200, corsHeaders(request, env));
 }
 
@@ -271,6 +305,8 @@ async function handleUpsertReminder(request, env) {
   if (!subscription) return json({ ok: false, error: 'Unknown subscriptionId.' }, 404, headers);
 
   const now = new Date().toISOString();
+  const key = reminderKey(subscriptionId, sourceType, sourceId);
+  const bucketMinute = dueBucketMinute(fireAt);
   const record = {
     app: APP_ID,
     subscriptionId,
@@ -279,13 +315,15 @@ async function handleUpsertReminder(request, env) {
     title: String(data.title || 'Ministry Tracker Reminder'),
     body: String(data.body || ''),
     fireAt,
+    dueBucketMinute: bucketMinute,
     url: data.url || '/ministry-tracker-/',
     createdAt: now,
     updatedAt: now,
   };
 
-  await store.put(reminderKey(subscriptionId, sourceType, sourceId), JSON.stringify(record));
-  return json({ ok: true, reminder: record }, 200, headers);
+  await store.put(key, JSON.stringify(record), { expirationTtl: DEFAULT_TTL_SECONDS });
+  await addReminderToDueBucket(store, bucketMinute, key);
+  return json({ ok: true, reminder: record, dueBucketMinute: bucketMinute }, 200, headers);
 }
 
 async function handleDeleteReminder(request, env, pathname) {
@@ -360,7 +398,7 @@ async function handleTestPush(request, env) {
 async function processDueReminders(env) {
   const store = requireStore(env);
   const nowIso = new Date().toISOString();
-  const due = await listDueReminderKeys(store, nowIso);
+  const due = await getDueReminderEntries(store, nowIso);
   const results = [];
 
   for (const entry of due) {
@@ -376,7 +414,7 @@ async function processDueReminders(env) {
         url: reminder.url || '/ministry-tracker-/',
       }, env);
       reminder.sentAt = new Date().toISOString();
-      await store.put(entry.key, JSON.stringify(reminder));
+      await store.put(entry.key, JSON.stringify(reminder), { expirationTtl: DEFAULT_TTL_SECONDS });
       results.push({ key: entry.key, ok: true });
     } catch (error) {
       if (error && (error.status === 404 || error.status === 410)) {
@@ -387,7 +425,7 @@ async function processDueReminders(env) {
       }
       reminder.lastError = error.message;
       reminder.lastAttemptAt = new Date().toISOString();
-      await store.put(entry.key, JSON.stringify(reminder));
+      await store.put(entry.key, JSON.stringify(reminder), { expirationTtl: DEFAULT_TTL_SECONDS });
       results.push({ key: entry.key, ok: false, error: error.message });
     }
   }
