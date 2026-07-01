@@ -745,32 +745,41 @@ function injectMinistryNotesPolishCss() {
     '.mn-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}',
     '.mn-toolbar-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}',
     '.mn-category-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}',
-    '.mn-category-card{position:relative;min-height:132px;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card-bg,var(--surface));box-shadow:0 8px 20px rgba(0,0,0,.06);cursor:pointer;overflow:hidden;transition:transform .16s ease,border-color .16s ease}',
-    '.mn-category-card:active,.mn-note-card:active{transform:scale(.99)}',
-    '.mn-category-card::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--mn-color,var(--accent))}',
-    '.mn-category-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--mn-color,var(--accent)) 16%,transparent);font-size:23px}',
+    '.mn-category-card{position:relative;min-height:132px;padding:14px;border-radius:16px;border:1px solid var(--border);background:var(--card-bg,var(--surface));box-shadow:0 1px 3px rgba(0,0,0,.10),0 6px 18px rgba(0,0,0,.07);cursor:pointer;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}',
+    '.mn-category-card:hover{transform:translateY(-3px) scale(1.01);box-shadow:0 4px 10px rgba(0,0,0,.12),0 14px 30px rgba(0,0,0,.10)}',
+    '.mn-category-card:active{transform:scale(.98)}',
+    '.mn-note-card:active{transform:scale(.99)}',
+    '.mn-category-card::before{content:\"\";position:absolute;inset:0 auto 0 0;width:5px;background:var(--mn-color,var(--accent))}',
+    '.mn-category-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--mn-color,var(--accent)) 18%,transparent);font-size:24px}',
     '.mn-card-actions{display:flex;gap:6px}',
-    '.mn-empty{padding:30px 18px;text-align:center;border:1px dashed var(--border);border-radius:12px;background:var(--surface);color:var(--text-dim)}',
-    '.mn-empty-icon{width:54px;height:54px;border-radius:14px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;background:var(--surface-2,var(--surface));font-size:25px}',
+    '.mn-empty{padding:40px 20px;text-align:center;border:1px dashed var(--border);border-radius:14px;background:var(--surface);color:var(--text-dim)}',
+    '.mn-empty-icon{width:56px;height:56px;border-radius:14px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;background:var(--surface-2,var(--surface));font-size:26px}',
+    '.mn-empty-cta{display:inline-flex;align-items:center;gap:6px;margin-top:18px;padding:10px 20px;border-radius:999px;background:var(--accent,#34d399);color:var(--on-accent,#06120e);font-size:14px;font-weight:700;border:none;cursor:pointer;transition:opacity .15s ease}',
+    '.mn-empty-cta:hover{opacity:.85}',
     '.mn-list-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}',
     '.mn-list-title{display:flex;align-items:center;gap:9px;min-width:0}',
     '.mn-list-title-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--border);font-size:20px}',
     '.mn-notes-controls{display:grid;grid-template-columns:minmax(0,1fr) 150px 130px;gap:8px;margin-bottom:12px}',
     '.mn-note-grid{display:grid;grid-template-columns:1fr;gap:10px}',
-    '.mn-note-card{padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card-bg,var(--surface));box-shadow:0 8px 20px rgba(0,0,0,.05);cursor:pointer}',
-    '.mn-note-card.done{opacity:.72}.mn-note-card.archived{opacity:.6}',
-    '.mn-note-title{font-weight:800;font-size:.95rem;line-height:1.25;color:var(--text)}',
-    '.mn-note-body{font-size:.86rem;line-height:1.45;color:var(--text-dim);margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+    '.mn-note-card{padding:14px 16px;border-radius:14px;border:1px solid var(--border);background:var(--card-bg,var(--surface));box-shadow:0 1px 3px rgba(0,0,0,.08),0 4px 14px rgba(0,0,0,.05);cursor:pointer;transition:box-shadow .18s ease,transform .18s ease}',
+    '.mn-note-card:hover{box-shadow:0 3px 8px rgba(0,0,0,.11),0 8px 22px rgba(0,0,0,.08);transform:translateY(-1px)}',
+    '.mn-note-card.done{opacity:.70}',
+    '.mn-note-card.archived{opacity:.58}',
+    '.mn-note-card.done .mn-note-title{text-decoration:line-through}',
+    '.mn-note-title{font-weight:700;font-size:.96rem;line-height:1.28;color:var(--text)}',
+    '.mn-note-body{font-size:.86rem;line-height:1.5;color:var(--text-dim);margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
     '.mn-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}',
-    '.mn-badge{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:999px;padding:2px 7px;font-size:.68rem;font-weight:750;color:var(--text-dim);background:var(--surface)}',
+    '.mn-badge{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:.67rem;font-weight:700;color:var(--text-dim);background:var(--surface)}',
     '.mn-badge.priority-high{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.35);color:var(--coral,#ef4444)}',
     '.mn-badge.priority-medium{background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.35);color:#d97706}',
     '.mn-badge.priority-low{background:rgba(16,185,129,.14);border-color:rgba(16,185,129,.35);color:var(--accent,#10b981)}',
+    '.mn-badge.due-soon{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.4);color:#d97706;font-weight:700}',
+    '.mn-badge.overdue{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.4);color:var(--coral,#ef4444);font-weight:700}',
     '.mn-note-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;color:var(--text-faint,var(--text-dim));font-size:.72rem}',
     '.mn-modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}',
     '.mn-toggle-row{display:flex;align-items:center;gap:10px;min-height:44px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--surface)}',
-    '@media (max-width:560px){.mn-category-grid{grid-template-columns:1fr}.mn-notes-controls{grid-template-columns:1fr}.mn-list-head{align-items:flex-start}.mn-toolbar-actions{width:100%;justify-content:stretch}.mn-toolbar-actions .btn{flex:1}.mn-modal-grid{grid-template-columns:1fr}.mn-note-meta{align-items:flex-start;flex-direction:column}}'
-  ].join('\n');
+    '@media (max-width:560px){.mn-category-grid{grid-template-columns:1fr}.mn-notes-controls{grid-template-columns:1fr}.mn-list-head{align-items:flex-start}.mn-toolbar-actions{width:100%;justify-content:stretch}.mn-toolbar-actions .btn{flex:1}.mn-modal-grid{grid-template-columns:1fr}.mn-note-meta{align-items:flex-start;flex-direction:column}}'  ].join('\n');
+
   document.head.appendChild(style);
 }
 
@@ -2172,9 +2181,12 @@ function renderNotesListView(scr, cat) {
     '<option value="title"' + (currentNotesSort === 'title' ? ' selected' : '') + '>' + escapeHtml(t('notesSortTitle')) + '</option>' +
     '</select></div>';
   noteCards = notes.length === 0
-    ? '<div class="mn-empty"><div class="mn-empty-icon"><i class="fa-regular fa-note-sticky"></i></div>' +
+    ? '<div class="mn-empty">' +
+      '<div class="mn-empty-icon"><i class="fa-regular fa-note-sticky"></i></div>' +
       '<div class="font-bold mb-1">' + escapeHtml((currentNotesSearch || currentNotesFilter !== 'active') ? t('noNotesSearch') : t('notesEmptyTitle')) + '</div>' +
-      '<div class="text-sm">' + escapeHtml((currentNotesSearch || currentNotesFilter !== 'active') ? t('noNotesFound') : t('notesEmptyHint')) + '</div></div>'
+      '<div class="text-sm">' + escapeHtml((currentNotesSearch || currentNotesFilter !== 'active') ? t('noNotesFound') : t('notesEmptyHint')) + '</div>' +
+      ((!currentNotesSearch && currentNotesFilter === 'active') ? '<button class="mn-empty-cta" data-mn-add-from-empty><i class="fa-solid fa-plus"></i><span>' + escapeHtml(t('mnAddNote')) + '</span></button>' : '') +
+      '</div>'
     : '<div class="mn-note-grid">' + notes.map(function(note) {
       var catInfo = ministryNoteCategory(note.categoryId);
       var title = note.title || t('noteUntitled');
@@ -2187,7 +2199,15 @@ function renderNotesListView(scr, cat) {
       var badges = '';
       if (priorityLabel) badges += '<span class="mn-badge priority-' + escapeHtml(note.priority) + '">' + escapeHtml(priorityLabel) + '</span>';
       if (statusLabel) badges += '<span class="mn-badge">' + escapeHtml(statusLabel) + '</span>';
-      if (dueLabel) badges += '<span class="mn-badge"><i class="fa-regular fa-calendar"></i>' + escapeHtml(t('noteDueBadge')) + ' ' + escapeHtml(dueLabel) + '</span>';
+      if (dueLabel) {
+        var _dueCls = '';
+        if (note.dueDate && !note.completed && !note.archived && note.status !== 'done') {
+          var _dueMs = new Date(note.dueDate + 'T00:00').getTime() - Date.now();
+          if (_dueMs < 0) _dueCls = ' overdue';
+          else if (_dueMs < 48 * 3600 * 1000) _dueCls = ' due-soon';
+        }
+        badges += '<span class="mn-badge' + _dueCls + '"><i class="fa-regular fa-calendar"></i>' + escapeHtml(t('noteDueBadge')) + ' ' + escapeHtml(dueLabel) + '</span>';
+      }
       if (note.reminder) badges += '<span class="mn-badge"><i class="fa-regular fa-bell"></i>' + escapeHtml(t('noteReminderOn')) + '</span>';
       badges += '<span class="mn-badge">' + (catInfo ? escapeHtml((catInfo.icon || '') + ' ' + ministryCategoryName(catInfo)) : escapeHtml(t('noteNoCategory'))) + '</span>';
       return '<div class="' + cardClass + '" data-note-card="' + escapeHtml(note.id) + '">' +
@@ -2210,6 +2230,8 @@ function renderNotesListView(scr, cat) {
     notesToolbar + noteCards;
   var addBtn = scr.querySelector('[data-mn-add]');
   if (addBtn) addBtn.addEventListener('click', function() { openMinistryNoteModal(isAllNotesView ? '' : cat.id, null); });
+  var addFromEmptyBtn = scr.querySelector('[data-mn-add-from-empty]');
+  if (addFromEmptyBtn) addFromEmptyBtn.addEventListener('click', function() { openMinistryNoteModal(isAllNotesView ? '' : cat.id, null); });
   var backBtn = scr.querySelector('[data-mn-back]');
   if (backBtn) backBtn.addEventListener('click', function() { currentNotesView = 'categories'; currentNotesCategoryId = null; renderNotes(); });
   scr.querySelectorAll('[data-push-test]').forEach(function(el) {
