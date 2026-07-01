@@ -286,3 +286,39 @@ on every save even when the user had no intention of scheduling a reminder.
 - Weather: 0%, planned only.
 - Overall: about 97% before Weather, lower if Weather is counted as required for final release.
 
+## v53 Notes UI Polish (2026-07-01)
+
+**Commits:**
+- `js/app.js` — `221424424d073b1bb620c7c8bf422497ccbdadc9`
+- `sw.js`     — `d36c3054562d...` (HEAD)
+
+**Cache:** `ministry-tracker-v52-reminder-toggle-fix` → `ministry-tracker-v53-notes-ui-polish`
+
+**Changes applied (JS injection via `injectMinistryNotesPolishCss`):**
+
+CSS class names polished (all confirmed from source audit):
+- `.mn-category-card` — border-radius 12px → **16px**; layered ambient+direct shadow; transition now includes `box-shadow`
+- `.mn-category-card:hover` — NEW: `translateY(-3px) scale(1.01)` + shadow lift
+- `.mn-category-card:active` — scale(.98)  *(was shared with note card; now separate)*
+- `.mn-category-icon` — 42px → **44px**, radius 10px → 11px, opacity 16% → 18%
+- `.mn-note-card` — padding `14px` → **`14px 16px`**; border-radius 12px → **14px**; layered shadow; added `transition`
+- `.mn-note-card:hover` — NEW: shadow lift + `translateY(-1px)`
+- `.mn-note-card.done .mn-note-title` — NEW: `text-decoration: line-through`
+- `.mn-badge.due-soon` — NEW: amber color (rgba 245,158,11)
+- `.mn-badge.overdue` — NEW: coral/red color (rgba 239,68,68)
+- `.mn-empty-cta` — NEW: pill button style for "Add Note" CTA
+- `.mn-empty` — padding bumped 30px → 40px; radius 12px → 14px
+
+**JS logic changes:**
+- Due date badge: now computes overdue (<0 ms) / due-soon (<48 h) and applies `.overdue` or `.due-soon` class
+- Empty state (note list): when no search active and filter is "active", renders a `[data-mn-add-from-empty]` CTA button; listener wired
+- No i18n keys added (existing `mnAddNote`, `notesEmptyTitle`, `notesEmptyHint` reused)
+
+**Guardrails confirmed:**
+- Cloudflare Worker / KV / VAPID / push subscription logic: untouched
+- Stage J Weather: not started
+- Note Clip: not touched
+- Talk Arrangements: not touched
+- Reminder toggle / scheduleReminderOnSave: untouched
+
+**Status:** Pushed; pending live verification (`curl sw.js | grep CACHE_VERSION`).
