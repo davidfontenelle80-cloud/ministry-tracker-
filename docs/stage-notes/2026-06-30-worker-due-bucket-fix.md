@@ -366,3 +366,76 @@ Not allowed:
 - Talk Arrangements
 - Note Clip
 - Stage J Weather
+
+## 2026-07-01 Stage I reminder save feedback and sync diagnostics authorized
+
+Current verified facts:
+
+- Test Push works on David's iPhone/PWA.
+- Direct live Worker `POST /api/reminders` previously returned HTTP 200 with `ok:true`.
+- The direct Worker response included `dueBucketMinute`.
+- Worker runtime source no longer uses KV list.
+
+Current failure:
+
+- When David saves a note reminder in the live iPhone/PWA, no confirmation message appears.
+- No scheduled notification fires.
+- This suggests the live frontend reminder sync path is failing silently or not reaching `/api/reminders`.
+
+Objective:
+
+- Fix live reminder save/sync feedback.
+- Identify whether `POST /api/reminders` is reached from the frontend.
+- Do not trigger `JS-ERROR-promise`.
+
+Required save behavior:
+
+- If `POST /api/reminders` succeeds, show visible toast `Reminder scheduled`.
+- Also log `[MinistryPush] reminder scheduled` with sourceId, fireAt, and dueBucketMinute.
+- If `POST /api/reminders` fails, show visible toast `Reminder sync failed: <reason>`.
+- Also log `[MinistryPush] reminder sync failed` with reason.
+- If reminder is not eligible for push, show/log the exact skipped reason:
+  - missing reminder toggle
+  - missing due date
+  - invalid fireAt
+  - push unavailable
+  - completed note
+  - archived note
+  - status done
+
+Required safe debug output:
+
+```js
+window.__ministryLastPushSyncDebug = {
+  sourceId,
+  fireAt,
+  result,
+  error,
+  skippedReason,
+  timestamp
+}
+```
+
+No secrets. No VAPID private key.
+
+Allowed files:
+
+- `js/app.js`
+- `js/push.js`
+- `sw.js`
+- MD
+
+Not allowed:
+
+- Worker unless frontend `POST /api/reminders` reaches Worker and Worker fails
+- Secrets
+- VAPID rotation
+- Firebase rules
+- Talk Arrangements
+- Note Clip
+- Stage J Weather
+
+Cache target if frontend JS changes:
+
+- Before: `ministry-tracker-v49-push-error-handled`.
+- After: `ministry-tracker-v50-reminder-save-feedback`.
