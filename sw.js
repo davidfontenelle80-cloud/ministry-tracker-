@@ -2,7 +2,7 @@
  * sw.js â KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v52-reminder-toggle-fix';
+const CACHE_VERSION = 'ministry-tracker-v53-notes-ui-polish';
 
 const PRECACHE_URLS = [
   './',
