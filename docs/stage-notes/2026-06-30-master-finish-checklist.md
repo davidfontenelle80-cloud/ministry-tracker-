@@ -244,17 +244,40 @@ Run once after Stage I and Stage J are complete.
 - Offline shell loads if expected.
 - No stale JS after update.
 
+## v52 fix — reminder toggle removal (2026-07-01)
+
+**Root cause:** `ministryNoteReminderSkipReason` returned `'missing reminder toggle'` for every note
+that didn't have the per-note reminder checkbox checked, causing the "Reminder sync skipped" toast
+on every save even when the user had no intention of scheduling a reminder.
+
+**Fix — commit `ba5f83fd8db3929efe1730cbb2bfc39499c5ad2d`:**
+
+- Removed the per-note reminder toggle checkbox from modal HTML entirely.
+- Added "no notification" opt-out checkbox (`noteNoNotifToggle`); appears only when due date is set; unchecked = notification IS the default.
+- `note.reminder` now computed as `!!(dueDate && !noNotif)` — derived from data, not a toggle.
+- `ministryNoteReminderSkipReason`: dropped `!note.reminder` early-exit.
+- `ministryNoteNeedsPush`: guards `!note.reminder` before calling skip-reason.
+- `syncMinistryNotePush`: silent no-op + auto-clear when `note.reminder` is false (no toast).
+- `scheduleReminderOnSave(note)`: new — handles `Notification.requestPermission()` flow before syncing.
+- Save call: `syncMinistryNotePush(...)` → `scheduleReminderOnSave(savedNote)`.
+- EN + ES i18n: `notifDenied`, `notifUnsupported`, `noNotifLabel`.
+
+**Cache:** `v51-stored-note-reminder-sync` → `v52-reminder-toggle-fix`  
+**Live verified:** sw.js curl returns `ministry-tracker-v52-reminder-toggle-fix` ✓
+
+---
+
 ## Remaining roadmap summary
 
-1. Commit/push v47 theme flash fix.
-2. Verify v47 live.
-3. Verify v46/v47 notification tap routing on David’s iPhone.
-4. Verify reminder edit/delete lifecycle.
-5. Complete Notes parity QA and fix only confirmed gaps.
-6. Build Stage J Weather when authorized.
-7. Final production QA.
-8. Mark release-ready.
-
+1. ~~Commit/push v47 theme flash fix.~~ Done.
+2. ~~Verify v47 live.~~ Done.
+3. ~~Fix "Reminder sync skipped" toast bug (v52).~~ Done 2026-07-01.
+4. Verify v52 notification flow on David's iPhone (create note with date+time, close app, let reminder fire, tap notification, confirm routing to note).
+5. Verify reminder edit/delete lifecycle.
+6. Complete Notes parity QA and fix only confirmed gaps.
+7. Build Stage J Weather when authorized.
+8. Final production QA.
+9. Mark release-ready.
 ## Supervisor completion estimate
 
 - Core app: 99%+
