@@ -164,3 +164,46 @@ Verification required next:
 Known remaining issue:
 
 - Reminder card time formatting still displays 24-hour time in some paths (`19:22`). This was not repaired in this commit because the immediate authorized blocker was the rejected Promise error.
+
+## 2026-06-30 Stage I Test Push rejection and time-format fix authorized
+
+Current issue:
+
+- Live iPhone/PWA still shows `App error caught`, `Load failed`, `JS-ERROR-promise`, where `promise`.
+- Toast also shows `Test push failed. Load failed`.
+- This happened after pressing Test Push in Notes & Reminders.
+- Reminder cards still show 24-hour time such as `Due Jun 30 19:46`.
+
+Objective:
+
+- Fix the remaining push Promise error path, especially Test Push.
+- Fix reminder card time display to compact locale-aware 12-hour time where appropriate, such as `Due Jun 30 • 7:46 PM`.
+
+Required behavior:
+
+- Test Push failure must show/log the local failure and return `{ ok:false, handled:true, action:'test-push', error:'Load failed' }`.
+- Reminder sync failure must leave the note saved, show/log handled failure, and return a handled result.
+- Reminder clear/delete failure must show/log handled failure and return a handled result.
+- Push failures must not throw, reject unhandled, or show `App error caught` / `JS-ERROR-promise`.
+
+Cache target:
+
+- Before: `ministry-tracker-v48-reminder-sync-error-fix`.
+- After: `ministry-tracker-v49-push-error-handled`.
+
+Allowed files:
+
+- `js/push.js`
+- `js/app.js`
+- `sw.js`
+- MD
+
+Not allowed:
+
+- Worker
+- Firebase rules
+- Secrets
+- VAPID
+- Talk Arrangements
+- Note Clip
+- Stage J Weather
