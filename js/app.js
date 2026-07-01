@@ -310,8 +310,10 @@ const I18N = {
     pushTestSent: 'Test push sent.',
     pushTestFailed: 'Test push failed.',
     reminderSyncStarted: 'Reminder sync started.',
-    reminderSyncSaved: 'Reminder synced.',
-    reminderSyncFailed: 'Reminder sync failed.',
+    reminderScheduled: 'Reminder scheduled',
+    reminderSyncSaved: 'Reminder scheduled',
+    reminderSyncFailed: 'Reminder sync failed',
+    reminderSyncSkipped: 'Reminder sync skipped',
     confirmDeleteNote: 'Delete this note?',
         noteDueDate: 'Due date',
     noteDueTime: 'Due time',
@@ -604,8 +606,10 @@ const I18N_FALLBACKS = {
     pushTestSent: 'Prueba push enviada.',
     pushTestFailed: 'Fallo la prueba push.',
     reminderSyncStarted: 'Sincronizando recordatorio.',
-    reminderSyncSaved: 'Recordatorio sincronizado.',
-    reminderSyncFailed: 'Fallo la sincronizacion.',
+    reminderScheduled: 'Reminder scheduled',
+    reminderSyncSaved: 'Reminder scheduled',
+    reminderSyncFailed: 'Reminder sync failed',
+    reminderSyncSkipped: 'Reminder sync skipped',
   },
 };
 
@@ -2231,10 +2235,19 @@ function ministryNoteReminderFireAt(note) {
   return '';
 }
 
-function ministryNoteNeedsPush(note) {
-  if (!note || !note.id || !note.reminder || note.completed || note.archived || note.status === 'done') return false;
+function ministryNoteReminderSkipReason(note) {
+  if (!note || !note.reminder) return 'missing reminder toggle';
+  if (!note.dueDate) return 'missing due date';
+  if (note.completed) return 'completed note';
+  if (note.archived) return 'archived note';
+  if (note.status === 'done') return 'status done';
   const fireAt = ministryNoteReminderFireAt(note);
-  return !!(fireAt && !Number.isNaN(new Date(fireAt).getTime()));
+  if (!fireAt || Number.isNaN(new Date(fireAt).getTime())) return 'invalid fireAt';
+  return '';
+}
+
+function ministryNoteNeedsPush(note) {
+  return !ministryNoteReminderSkipReason(note);
 }
 
 function ministryNotePushBody(note) {
@@ -2242,6 +2255,34 @@ function ministryNotePushBody(note) {
   if (note.body) bits.push(String(note.body).slice(0, 180));
   if (note.dueDate) bits.push(note.dueTime ? note.dueDate + ' ' + note.dueTime : note.dueDate);
   return bits.join(' - ') || 'Ministry note reminder';
+}
+
+function ministryPushSafeResult(result) {
+  if (!result || typeof result !== 'object') return result || null;
+  return {
+    ok: result.ok,
+    handled: result.handled,
+    action: result.action,
+    skipped: result.skipped,
+    error: result.error,
+    status: result.status,
+    postReached: result.postReached,
+    dueBucketMinute: result.dueBucketMinute || (result.reminder && result.reminder.dueBucketMinute)
+  };
+}
+
+function setMinistryPushSyncDebug(details) {
+  const payload = Object.assign({
+    sourceId: '',
+    fireAt: '',
+    result: null,
+    error: '',
+    skippedReason: '',
+    timestamp: new Date().toISOString()
+  }, details || {});
+  payload.result = ministryPushSafeResult(payload.result);
+  window.__ministryLastPushSyncDebug = payload;
+  return payload;
 }
 
 function clearMinistryNotePush(noteId) {
@@ -2264,41 +2305,68 @@ function clearMinistryNotePush(noteId) {
 }
 
 function syncMinistryNotePush(note) {
-  if (!note) return Promise.resolve({ ok: true, skipped: 'missing-note' });
-  if (!window.MinistryPush || !window.MinistryPush.isConfigured || !window.MinistryPush.isConfigured()) {
-    console.warn('[MinistryPush] reminder sync skipped: push client unavailable or unconfigured.');
-    toast(t('pushNotReady'));
-    return Promise.resolve({ ok: false, skipped: 'push-unavailable' });
+  const sourceId = note && note.id ? note.id : '';
+  const fireAt = ministryNoteReminderFireAt(note);
+  if (!note) {
+    const result = { ok: false, skipped: 'missing note' };
+    setMinistryPushSyncDebug({ sourceId: sourceId, fireAt: fireAt, result: result, skippedReason: 'missing note' });
+    console.warn('[MinistryPush] reminder sync skipped', { sourceId: sourceId, fireAt: fireAt, skippedReason: 'missing note' });
+    toast(t('reminderSyncSkipped') + ': missing note');
+    return Promise.resolve(result);
   }
-  if (!ministryNoteNeedsPush(note)) {
-    return clearMinistryNotePush(note.id);
+  if (!window.MinistryPush || !window.MinistryPush.isConfigured || !window.MinistryPush.isConfigured()) {
+    const result = { ok: false, skipped: 'push unavailable' };
+    setMinistryPushSyncDebug({ sourceId: sourceId, fireAt: fireAt, result: result, skippedReason: 'push unavailable' });
+    console.warn('[MinistryPush] reminder sync skipped', { sourceId: sourceId, fireAt: fireAt, skippedReason: 'push unavailable' });
+    toast(t('reminderSyncSkipped') + ': push unavailable');
+    return Promise.resolve(result);
+  }
+  const skippedReason = ministryNoteReminderSkipReason(note);
+  if (skippedReason) {
+    console.warn('[MinistryPush] reminder sync skipped', { sourceId: sourceId, fireAt: fireAt, skippedReason: skippedReason });
+    toast(t('reminderSyncSkipped') + ': ' + skippedReason);
+    return clearMinistryNotePush(note.id).then(function(clearResult) {
+      setMinistryPushSyncDebug({ sourceId: sourceId, fireAt: fireAt, result: clearResult, skippedReason: skippedReason });
+      return clearResult;
+    }).catch(function(err) {
+      var message = err && err.message ? err.message : String(err || 'Reminder clear failed.');
+      var result = { ok: false, handled: true, action: 'reminder-clear', error: message };
+      setMinistryPushSyncDebug({ sourceId: sourceId, fireAt: fireAt, result: result, error: message, skippedReason: skippedReason });
+      return result;
+    });
   }
   console.info('[MinistryPush] reminder sync requested', {
     sourceType: 'ministry-note',
-    sourceId: note.id,
-    fireAt: ministryNoteReminderFireAt(note)
+    sourceId: sourceId,
+    fireAt: fireAt
   });
   toast(t('reminderSyncStarted'));
   const syncPromise = window.MinistryPush.syncReminder(
     'ministry-note',
-    note.id,
+    sourceId,
     note.title || 'Ministry Tracker Reminder',
     ministryNotePushBody(note),
-    ministryNoteReminderFireAt(note)
+    fireAt
   ).then(function(result) {
     if (result && result.ok === false) {
-      console.warn('[MinistryPush] reminder sync handled:', result.error || result);
-      toast(t('reminderSyncFailed') + ' ' + (result.error || ''));
+      var reason = result.error || result.skipped || 'Unknown failure';
+      setMinistryPushSyncDebug({ sourceId: sourceId, fireAt: fireAt, result: result, error: reason });
+      console.warn('[MinistryPush] reminder sync failed', { sourceId: sourceId, fireAt: fireAt, reason: reason, postReached: result.postReached });
+      toast(t('reminderSyncFailed') + ': ' + reason);
       return result;
     }
-    console.info('[MinistryPush] reminder sync saved', result);
-    toast(t('reminderSyncSaved'));
+    const dueBucketMinute = result && (result.dueBucketMinute || (result.reminder && result.reminder.dueBucketMinute));
+    setMinistryPushSyncDebug({ sourceId: sourceId, fireAt: fireAt, result: result });
+    console.info('[MinistryPush] reminder scheduled', { sourceId: sourceId, fireAt: fireAt, dueBucketMinute: dueBucketMinute });
+    toast(t('reminderScheduled'));
     return result;
   }).catch(function(err) {
     var message = err && err.message ? err.message : String(err || 'Reminder sync failed.');
-    console.warn('[MinistryPush] reminder sync handled:', message);
-    toast(t('reminderSyncFailed') + ' ' + message);
-    return { ok: false, handled: true, action: 'reminder-sync', error: message };
+    var result = { ok: false, handled: true, action: 'reminder-sync', error: message };
+    setMinistryPushSyncDebug({ sourceId: sourceId, fireAt: fireAt, result: result, error: message });
+    console.warn('[MinistryPush] reminder sync failed', { sourceId: sourceId, fireAt: fireAt, reason: message });
+    toast(t('reminderSyncFailed') + ': ' + message);
+    return result;
   });
   window.__ministryLastPushSync = syncPromise;
   return syncPromise;

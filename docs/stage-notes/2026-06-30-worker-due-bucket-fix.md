@@ -439,3 +439,32 @@ Cache target if frontend JS changes:
 
 - Before: `ministry-tracker-v49-push-error-handled`.
 - After: `ministry-tracker-v50-reminder-save-feedback`.
+
+## 2026-07-01 Stage I reminder save feedback fix applied
+
+Root cause:
+
+- The note save path called `syncMinistryNotePush(savedNote)`, but reminder ineligibility and handled sync failures could complete without a clear user-facing result on the live PWA.
+- The frontend also did not expose a safe last-sync object that clearly showed `fireAt`, success/failure, skipped reason, and whether the Worker POST was reached.
+
+Fix:
+
+- `js/app.js` now shows `Reminder scheduled` after a successful reminder sync.
+- Successful sync logs `[MinistryPush] reminder scheduled` with sourceId, fireAt, and dueBucketMinute.
+- Failed sync shows `Reminder sync failed: <reason>` and logs `[MinistryPush] reminder sync failed`.
+- Skipped reminders now show/log exact skipped reasons, including missing reminder toggle, missing due date, invalid fireAt, push unavailable, completed note, archived note, and status done.
+- `window.__ministryLastPushSyncDebug` now records safe last-sync state: sourceId, fireAt, sanitized result, error, skippedReason, and timestamp.
+- `js/push.js` now marks reminder sync results with `postReached` so frontend debug can distinguish pre-POST failures from Worker/API failures.
+- `sw.js` cache bumped to `ministry-tracker-v50-reminder-save-feedback`.
+
+Verification:
+
+- `node --check js/app.js` passed.
+- `node --check js/push.js` passed.
+- `node --check sw.js` passed.
+
+Not verified here:
+
+- Live iPhone/PWA cache activation for v50.
+- Actual live note reminder save toast.
+- Actual scheduled reminder notification delivery.

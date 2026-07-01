@@ -72,7 +72,9 @@
     var message = err && err.message ? err.message : String(err || 'Push request failed.');
     console.warn('[MinistryPush] ' + action + ' handled failure:', message, err || '');
     log(action + ':handled-failure', { message: message, name: err && err.name ? err.name : '' });
-    return { ok: false, handled: true, action: action, error: message };
+    var result = { ok: false, handled: true, action: action, error: message };
+    if (err && err.status) result.status = err.status;
+    return result;
   }
 
   function jsonFetch(url, options) {
@@ -171,8 +173,10 @@
   function syncReminder(sourceType, sourceId, title, body, fireAt) {
     var c;
     try { c = requireConfigured(); } catch (err) { return Promise.resolve(pushErrorResult('reminder:sync', err)); }
+    var postReached = false;
     return subscribe().then(function (subData) {
       log('reminder:sync', { sourceType: sourceType, sourceId: sourceId, fireAt: fireAt });
+      postReached = true;
       return jsonFetch(c.workerUrl + '/api/reminders', {
         method: 'POST',
         body: JSON.stringify({
@@ -184,9 +188,14 @@
           body: body || '',
           fireAt: fireAt
         })
+      }).then(function (data) {
+        data.postReached = true;
+        return data;
       });
     }).catch(function (err) {
-      return pushErrorResult('reminder:sync', err);
+      var result = pushErrorResult('reminder:sync', err);
+      result.postReached = postReached;
+      return result;
     });
   }
 
