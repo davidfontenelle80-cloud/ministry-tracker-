@@ -5257,8 +5257,8 @@ window.onload = function() {
 
     return advHtml+'<div class="wx-card wx-expanded" id="weatherCard" style="border-left:4px solid '+ol.color+'">'
       +'<div class="wx-exp-header">'
-      +'<div style="cursor:pointer;display:flex;align-items:center;gap:6px" onclick="App.Weather.toggle()">'
-      +'<span class="wx-chevron-up">▲</span>'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<button class="wx-collapse-btn" onclick="App.Weather.toggle()">▲ '+(isEs?'Cerrar':'Collapse')+'</button>'
       +'<span class="wx-col-loc" style="font-size:13px">📍 '+(data.locationName||'')+'</span>'
       +'<span class="wx-col-age" style="font-size:11px">↻ '+fmtAge(data.fetchedAt)+'</span>'
       +'</div>'
@@ -5288,18 +5288,24 @@ window.onload = function() {
       +'<div class="wx-section-lbl">7 '+(isEs?'días':'days')+'</div>'
       +'<div class="wx-daily">'+dailyHtml+'</div>'
       +'<div class="wx-settings">'
-      +'<div class="wx-set-title">'+(isEs?'UBICACIÓN':'LOCATION')+'</div>'
-      +'<button class="wx-gps-btn" onclick="App.Weather.useGPS()">📍 '+(isEs?'Usar mi ubicación':'Use my current location')+'</button>'
+      +'<div class="wx-loc-section">'
+      +'<div class="wx-loc-row">'
+      +'<button class="wx-loc-pill" onclick="App.Weather.toggleLocPicker()">📍 '+(isEs?'Cambiar ubicación':'Change location')+' ▾</button>'
+      +(savedHtml?'<div class="wx-saved-row">'+savedHtml+'</div>':'')
+      +'</div>'
+      +'<div id="wxLocPicker" class="wx-loc-picker" hidden>'
+      +'<button class="wx-gps-btn2" onclick="App.Weather.useGPS()">📍 '+(isEs?'Usar mi ubicación':'Use my location')+'</button>'
       +'<div class="wx-search-row">'
-      +'<input id="wxCityInput" class="wx-city-input" placeholder="'+(isEs?'Ciudad o ZIP':'City or ZIP')+'" type="text">'
+      +'<input id="wxCityInput" class="wx-city-input" placeholder="'+(isEs?'Ciudad o ZIP':'City or ZIP')+'" type="text" onkeydown="if(event.key===\'Enter\')App.Weather.searchCity()">'
       +'<button class="btn btn-sm btn-primary" onclick="App.Weather.searchCity()">'+(isEs?'Buscar':'Search')+'</button>'
       +'</div>'
       +'<div id="wxSearchResults" class="wx-search-results"></div>'
-      +(savedHtml?'<div class="wx-saved-row">'+savedHtml+'</div>':'')
+      +'</div>'
+      +'</div>'
       +'<div class="wx-set-title" style="margin-top:14px">'+(isEs?'UNIDADES':'UNITS')+'</div>'
       +'<div class="wx-units-row">'
-      +'<button class="wx-unit-btn'+(units==='F'?' wx-unit-active':'')+'" onclick="App.Weather.setUnits(\'F\')">Fahrenheit (°F)</button>'
-      +'<button class="wx-unit-btn'+(units==='C'?' wx-unit-active':'')+'" onclick="App.Weather.setUnits(\'C\')">Celsius (°C)</button>'
+      +'<button class="wx-unit-btn'+(units==='F'?' wx-unit-active':'')+'" onclick="App.Weather.setUnits(\'F\')">°F</button>'
+      +'<button class="wx-unit-btn'+(units==='C'?' wx-unit-active':'')+'" onclick="App.Weather.setUnits(\'C\')">°C</button>'
       +'</div>'
       +'<div class="wx-set-title" style="margin-top:14px">'+(isEs?'SOBRE EL PRONÓSTICO':'ABOUT OUTLOOK')+'</div>'
       +'<div class="wx-about-list">'
@@ -5308,6 +5314,7 @@ window.onload = function() {
       +'<div class="wx-about-item"><span>⛔</span><span>'+(isEs?'<strong>No ideal:</strong> Lluvia, nieve, viento extremo o temperatura extrema':'<strong>Not ideal:</strong> Rain, heavy wind, snow, or extreme temps')+'</span></div>'
       +'</div>'
       +'</div>'
+      +'<div class="wx-collapse-bar" onclick="App.Weather.toggle()">▲ '+(isEs?'Toca para cerrar':'Tap to collapse')+'</div>'
       +'</div>';
   }
 
@@ -5419,6 +5426,17 @@ window.onload = function() {
         App.Weather._data=cached;
         var adv=loadCachedAdvisory();
         render(cached,adv);
+        // If location name is just coordinates, re-geocode silently
+        if(cached.locationName&&/^Lat /.test(cached.locationName)&&cached.lat&&cached.lon){
+          reverseGeocode(cached.lat,cached.lon).then(function(name){
+            if(name&&App.Weather._data){
+              App.Weather._data.locationName=name;
+              saveCache(App.Weather._data);
+              saveLoc({lat:App.Weather._data.lat,lon:App.Weather._data.lon,name:name});
+              render(App.Weather._data,loadCachedAdvisory());
+            }
+          }).catch(function(){});
+        }
         if(Date.now()-cached.fetchedAt>WX_CACHE_TTL) App.Weather.refresh(true);
         else App.Weather.fetchAndShowAdvisory();
         return;
@@ -5523,6 +5541,11 @@ window.onload = function() {
       container.insertAdjacentHTML('afterbegin',renderAdvisory(features));
     },
 
+    toggleLocPicker:function(){
+      var el=document.getElementById('wxLocPicker');
+      if(el) el.hidden=!el.hidden;
+    },
+
     retry:function(){App.Weather.refresh();}
   };
 
@@ -5605,7 +5628,7 @@ window.onload = function() {
 .wx-d-icon{font-size:18px;width:24px;text-align:center;}
 .wx-d-range{flex:1;font-size:13px;}
 .wx-d-rain{font-size:12px;color:#60a5fa;width:32px;text-align:right;}
-.wx-day-desc{padding:4px 8px 10px 44px;font-size:13px;color:var(--muted,#8a93a8);line-height:1.5;}
+.wx-day-desc{padding:6px 12px 10px 12px;font-size:13px;color:var(--text,#e2e8f0);line-height:1.6;background:rgba(255,255,255,.05);border-radius:8px;margin:2px 0 6px 0;}[data-theme="light"] .wx-day-desc{background:rgba(0,0,0,.04);color:var(--text,#1a1a2e);}
 .wx-settings{border-top:1px solid rgba(255,255,255,.08);padding-top:14px;margin-top:4px;}
 [data-theme="light"] .wx-settings{border-top-color:rgba(0,0,0,.08);}
 .wx-set-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted,#8a93a8);margin-bottom:8px;}
@@ -5622,7 +5645,7 @@ window.onload = function() {
 .wx-saved-chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border,#444);background:transparent;color:var(--muted,#8a93a8);font-size:12px;cursor:pointer;}
 .wx-saved-chip:hover{background:rgba(255,255,255,.08);}
 .wx-units-row{display:flex;gap:8px;}
-.wx-unit-btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border,#444);background:transparent;color:var(--muted,#8a93a8);font-size:13px;cursor:pointer;}
+.wx-unit-btn{padding:8px 20px;border-radius:8px;border:1px solid var(--border,#444);background:transparent;color:var(--muted,#8a93a8);font-size:14px;cursor:pointer;font-weight:500;}
 .wx-unit-active{background:var(--accent,#6366f1);border-color:var(--accent,#6366f1);color:#fff;font-weight:600;}
 .wx-about-list{display:flex;flex-direction:column;gap:8px;}
 .wx-about-item{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--muted,#8a93a8);}
@@ -5647,7 +5670,26 @@ window.onload = function() {
 @keyframes wx-pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .wx-searching,.wx-no-results{font-size:13px;color:var(--muted,#8a93a8);padding:8px;}
 .wx-err-card{text-align:center;padding:20px;}.wx-err-msg{font-size:14px;color:var(--muted,#8a93a8);}
-.wx-refresh-btn{padding:4px 10px;font-size:16px;}`;
+.wx-refresh-btn{padding:4px 10px;font-size:16px;}
+.wx-col-meta{display:flex;align-items:center;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.06);}
+[data-theme="light"] .wx-col-meta{border-top-color:rgba(0,0,0,.06);}
+.wx-expand-hint{font-size:11px;font-weight:600;color:var(--accent,#6366f1);text-align:center;margin-top:8px;letter-spacing:.05em;padding:4px;border-top:1px solid rgba(255,255,255,.06);}
+[data-theme="light"] .wx-expand-hint{border-top-color:rgba(0,0,0,.06);}
+.wx-collapse-btn{background:rgba(255,255,255,.06);border:none;color:var(--muted,#8a93a8);font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;}
+[data-theme="light"] .wx-collapse-btn{background:rgba(0,0,0,.06);}
+.wx-collapse-bar{text-align:center;padding:12px;font-size:12px;font-weight:600;color:var(--muted,#8a93a8);cursor:pointer;margin-top:8px;border-top:1px solid rgba(255,255,255,.08);letter-spacing:.05em;}
+[data-theme="light"] .wx-collapse-bar{border-top-color:rgba(0,0,0,.08);}
+.wx-collapse-bar:hover{color:var(--text,#fff);}
+.wx-loc-section{margin-bottom:4px;}
+.wx-loc-row{display:flex;flex-direction:column;gap:8px;}
+.wx-loc-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;border:1px solid var(--border,#444);background:transparent;color:var(--text,#fff);font-size:13px;cursor:pointer;align-self:flex-start;}
+.wx-loc-pill:hover{background:rgba(255,255,255,.06);}
+[data-theme="light"] .wx-loc-pill{color:inherit;}
+.wx-loc-picker{margin-top:8px;display:flex;flex-direction:column;gap:8px;}
+.wx-gps-btn2{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:var(--text,#fff);font-size:14px;cursor:pointer;text-align:left;font-weight:500;}
+[data-theme="light"] .wx-gps-btn2{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.1);color:inherit;}
+.wx-gps-btn2:hover{background:rgba(255,255,255,.1);}
+`;
     var el=document.createElement('style');el.id='wx-style';el.textContent=css;
     document.head.appendChild(el);
   }
