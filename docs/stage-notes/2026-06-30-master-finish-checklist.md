@@ -12,7 +12,7 @@ Purpose: reduce future CoWork/Codex token use by keeping one prioritized impleme
 - Current live cache: `ministry-tracker-v52-reminder-toggle-fix`
 - v52 reminder toggle fix: pushed 2026-07-01, live-confirmed.
 - v47 theme flash fix: previously live-approved by David.
-- Stage J Weather: planned only; not started.
+- Stage J Weather: ✅ COMPLETE — commit 95616d4d, cache v55-weather, live 2026-07-01.
 
 ## Hard status rules
 
@@ -283,7 +283,7 @@ on every save even when the user had no intention of scheduling a reminder.
 - Core app: 99%+
 - Push infrastructure: 99%, pending routing/lifecycle verification.
 - Notes: 95%, pending full live QA.
-- Weather: 0%, planned only.
+- Weather: ✅ 100%, complete (Open-Meteo, GPS/city, hourly+7day, ministry outlook, EN/ES, cache).
 - Overall: about 97% before Weather, lower if Weather is counted as required for final release.
 
 ## v53 Notes UI Polish (2026-07-01)
@@ -316,7 +316,7 @@ CSS class names polished (all confirmed from source audit):
 
 **Guardrails confirmed:**
 - Cloudflare Worker / KV / VAPID / push subscription logic: untouched
-- Stage J Weather: not started
+- Stage J Weather: ✅ complete — 95616d4d
 - Note Clip: not touched
 - Talk Arrangements: not touched
 - Reminder toggle / scheduleReminderOnSave: untouched
