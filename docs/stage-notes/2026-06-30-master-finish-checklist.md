@@ -9,8 +9,9 @@ Purpose: reduce future CoWork/Codex token use by keeping one prioritized impleme
 - Repo: `davidfontenelle80-cloud/ministry-tracker-`
 - Branch: `main`
 - Current live/pending stage family: Stage I push verification + Notes polish
-- Current live cache: `ministry-tracker-v47-theme-flash-fix`
-- v47 theme flash fix: live-approved by David.
+- Current live cache: `ministry-tracker-v52-reminder-toggle-fix`
+- v52 reminder toggle fix: pushed 2026-07-01, live-confirmed.
+- v47 theme flash fix: previously live-approved by David.
 - Stage J Weather: planned only; not started.
 
 ## Hard status rules
@@ -261,3 +262,4 @@ Run once after Stage I and Stage J are complete.
 - Notes: 95%, pending full live QA.
 - Weather: 0%, planned only.
 - Overall: about 97% before Weather, lower if Weather is counted as required for final release.
+
