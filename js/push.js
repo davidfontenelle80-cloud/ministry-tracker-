@@ -70,6 +70,7 @@
 
   function pushErrorResult(action, err) {
     var message = err && err.message ? err.message : String(err || 'Push request failed.');
+    console.warn('[MinistryPush] ' + action + ' handled failure:', message, err || '');
     log(action + ':handled-failure', { message: message, name: err && err.name ? err.name : '' });
     return { ok: false, handled: true, action: action, error: message };
   }
@@ -168,7 +169,8 @@
   }
 
   function syncReminder(sourceType, sourceId, title, body, fireAt) {
-    var c = requireConfigured();
+    var c;
+    try { c = requireConfigured(); } catch (err) { return Promise.resolve(pushErrorResult('reminder:sync', err)); }
     return subscribe().then(function (subData) {
       log('reminder:sync', { sourceType: sourceType, sourceId: sourceId, fireAt: fireAt });
       return jsonFetch(c.workerUrl + '/api/reminders', {
@@ -189,7 +191,8 @@
   }
 
   function clearReminder(sourceType, sourceId) {
-    var c = requireConfigured();
+    var c;
+    try { c = requireConfigured(); } catch (err) { return Promise.resolve(pushErrorResult('reminder:clear', err)); }
     var id = getSubscriptionId();
     if (!id) return Promise.resolve({ ok: true, skipped: 'no-subscription' });
     var url = c.workerUrl + '/api/reminders/' + encodeURIComponent(sourceType) + '/' + encodeURIComponent(sourceId);
@@ -201,7 +204,8 @@
   }
 
   function sendTestPush() {
-    var c = requireConfigured();
+    var c;
+    try { c = requireConfigured(); } catch (err) { return Promise.resolve(pushErrorResult('test-push', err)); }
     return subscribe().then(function (subData) {
       log('test-push:send', { subscriptionId: subData.id || subData.subscriptionId || getSubscriptionId() });
       return jsonFetch(c.workerUrl + '/api/test-push', {
@@ -213,6 +217,8 @@
           body: 'Test reminder notification'
         })
       });
+    }).catch(function (err) {
+      return pushErrorResult('test-push', err);
     });
   }
 

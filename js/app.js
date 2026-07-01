@@ -667,6 +667,24 @@ function ministryNoteDateLabel(dateStr) {
   return new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric' });
 }
 
+function ministryNoteTimeLabel(timeStr) {
+  if (!timeStr) return '';
+  const parts = String(timeStr).split(':').map(Number);
+  if (parts.length < 2 || !Number.isFinite(parts[0]) || !Number.isFinite(parts[1])) return timeStr;
+  return new Date(2000, 0, 1, parts[0], parts[1]).toLocaleTimeString(state.lang === 'es' ? 'es-ES' : 'en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+function ministryNoteDueLabel(note) {
+  if (!note || !note.dueDate) return '';
+  const parts = [ministryNoteDateLabel(note.dueDate)];
+  if (note.dueTime) parts.push(ministryNoteTimeLabel(note.dueTime));
+  return parts.filter(Boolean).join(' • ');
+}
+
 function ministryNoteStatusLabel(note) {
   if (!note) return '';
   if (note.archived) return t('notesFilterArchived');
@@ -2153,7 +2171,7 @@ function renderNotesListView(scr, cat) {
       var preview = note.body || t('noteNoBody');
       var cardClass = 'mn-note-card' + ((note.completed || note.status === 'done') ? ' done' : '') + (note.archived ? ' archived' : '');
       var statusLabel = ministryNoteStatusLabel(note);
-      var dueLabel = note.dueDate ? ministryNoteDateLabel(note.dueDate) + (note.dueTime ? ' ' + note.dueTime : '') : '';
+      var dueLabel = ministryNoteDueLabel(note);
       var updatedLabel = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US') : '';
       var priorityLabel = note.priority ? (note.priority === 'high' ? t('priorityHigh') : note.priority === 'medium' ? t('priorityMedium') : t('priorityLow')) : '';
       var badges = '';
@@ -2232,9 +2250,16 @@ function clearMinistryNotePush(noteId) {
     console.warn('[MinistryPush] clear skipped: push client unavailable or unconfigured.');
     return Promise.resolve({ ok: true, skipped: 'push-unavailable' });
   }
-  return window.MinistryPush.clearReminder('ministry-note', noteId).catch(function(err) {
-    console.warn('[MinistryPush] reminder clear skipped:', err && err.message ? err.message : err);
-    throw err;
+  return window.MinistryPush.clearReminder('ministry-note', noteId).then(function(result) {
+    if (result && result.ok === false) {
+      console.warn('[MinistryPush] reminder clear handled:', result.error || result);
+      return result;
+    }
+    return result;
+  }).catch(function(err) {
+    var message = err && err.message ? err.message : String(err || 'Reminder clear failed.');
+    console.warn('[MinistryPush] reminder clear handled:', message);
+    return { ok: false, handled: true, action: 'reminder-clear', error: message };
   });
 }
 
@@ -2261,13 +2286,19 @@ function syncMinistryNotePush(note) {
     ministryNotePushBody(note),
     ministryNoteReminderFireAt(note)
   ).then(function(result) {
+    if (result && result.ok === false) {
+      console.warn('[MinistryPush] reminder sync handled:', result.error || result);
+      toast(t('reminderSyncFailed') + ' ' + (result.error || ''));
+      return result;
+    }
     console.info('[MinistryPush] reminder sync saved', result);
     toast(t('reminderSyncSaved'));
     return result;
   }).catch(function(err) {
-    console.warn('[MinistryPush] reminder sync failed:', err && err.message ? err.message : err);
-    toast(t('reminderSyncFailed') + ' ' + (err && err.message ? err.message : ''));
-    throw err;
+    var message = err && err.message ? err.message : String(err || 'Reminder sync failed.');
+    console.warn('[MinistryPush] reminder sync handled:', message);
+    toast(t('reminderSyncFailed') + ' ' + message);
+    return { ok: false, handled: true, action: 'reminder-sync', error: message };
   });
   window.__ministryLastPushSync = syncPromise;
   return syncPromise;
@@ -2282,13 +2313,19 @@ function runMinistryPushDiagnostic(btn) {
   const original = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.textContent = t('testPush') + '...'; }
   const testPromise = window.MinistryPush.sendTestPush().then(function(result) {
+    if (result && result.ok === false) {
+      console.warn('[MinistryPush] test push handled:', result.error || result);
+      toast(t('pushTestFailed') + ' ' + (result.error || ''));
+      return result;
+    }
     console.info('[MinistryPush] test push sent', result);
     toast(t('pushTestSent'));
     return result;
   }).catch(function(err) {
-    console.warn('[MinistryPush] test push failed:', err && err.message ? err.message : err);
-    toast(t('pushTestFailed') + ' ' + (err && err.message ? err.message : ''));
-    throw err;
+    var message = err && err.message ? err.message : String(err || 'Test push failed.');
+    console.warn('[MinistryPush] test push handled:', message);
+    toast(t('pushTestFailed') + ' ' + message);
+    return { ok: false, handled: true, action: 'test-push', error: message };
   }).finally(function() {
     if (btn) { btn.disabled = false; btn.innerHTML = original || escapeHtml(t('testPush')); }
   });

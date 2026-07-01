@@ -207,3 +207,37 @@ Not allowed:
 - Talk Arrangements
 - Note Clip
 - Stage J Weather
+
+## 2026-06-30 Stage I Test Push rejection and time-format fix applied
+
+Root cause:
+
+- `sendTestPush()` still allowed push subscription/fetch failures to reject.
+- `runMinistryPushDiagnostic()` then showed `Test push failed...` but rethrew the rejection, allowing the global `unhandledrejection` handler to show `App error caught` / `JS-ERROR-promise`.
+- Reminder sync/clear paths also needed app-level handling so handled backend/client failures were not treated as success or rethrown.
+- Reminder card due labels concatenated the raw `HH:mm` value, producing 24-hour display such as `Due Jun 30 19:46`.
+
+Fix:
+
+- `js/push.js` now converts Test Push failures into handled `{ ok:false, handled:true, action:'test-push', error }` results.
+- `js/push.js` also guards synchronous push configuration errors for test, sync, and clear paths.
+- `js/app.js` now treats handled push failures as local failures, shows/logs the failure, and returns handled results without throwing.
+- `js/app.js` now formats due time through locale-aware `toLocaleTimeString()` with compact 12-hour display and separates date/time with ` • `.
+- `sw.js` cache bumped to `ministry-tracker-v49-push-error-handled`.
+
+Verification:
+
+- `node --check js/push.js` passed.
+- `node --check js/app.js` passed.
+- `node --check sw.js` passed.
+- Controlled `js/push.js` runtime with `fetch()` rejecting `Load failed`: `sendTestPush()` returned `{ ok:false, handled:true, action:'test-push', error:'Load failed' }`.
+- Controlled `js/push.js` runtime with `fetch()` rejecting `Load failed`: reminder sync and clear returned handled failure objects.
+- Local browser Test Push failure stayed local: warnings logged and the error boundary remained hidden.
+- Local browser reminder save with Reminder enabled kept the note saved, showed no global error boundary, and logged handled push failure.
+- Local browser note card rendered `Due Jun 30 • 7:49 PM` for a `19:49` due time.
+
+Not verified here:
+
+- Physical live iPhone/PWA v49 cache activation.
+- Real successful `POST /api/reminders` response with `dueBucketMinute`.
+- Scheduled notification delivery after this frontend fix.
