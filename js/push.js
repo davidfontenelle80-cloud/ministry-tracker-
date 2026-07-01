@@ -174,25 +174,40 @@
     var c;
     try { c = requireConfigured(); } catch (err) { return Promise.resolve(pushErrorResult('reminder:sync', err)); }
     var postReached = false;
-    return subscribe().then(function (subData) {
-      log('reminder:sync', { sourceType: sourceType, sourceId: sourceId, fireAt: fireAt });
-      postReached = true;
-      return jsonFetch(c.workerUrl + '/api/reminders', {
-        method: 'POST',
-        body: JSON.stringify({
-          app: 'ministry-tracker',
-          subscriptionId: subData.id || subData.subscriptionId || getSubscriptionId(),
-          sourceType: sourceType,
-          sourceId: sourceId,
-          title: title,
-          body: body || '',
-          fireAt: fireAt
-        })
-      }).then(function (data) {
-        data.postReached = true;
-        return data;
+    function attemptSync() {
+      return subscribe().then(function (subData) {
+        log('reminder:sync', { sourceType: sourceType, sourceId: sourceId, fireAt: fireAt });
+        postReached = true;
+        return jsonFetch(c.workerUrl + '/api/reminders', {
+          method: 'POST',
+          body: JSON.stringify({
+            app: 'ministry-tracker',
+            subscriptionId: subData.id || subData.subscriptionId || getSubscriptionId(),
+            sourceType: sourceType,
+            sourceId: sourceId,
+            title: title,
+            body: body || '',
+            fireAt: fireAt
+          })
+        }).then(function (data) {
+          data.postReached = true;
+          return data;
+        });
       });
-    }).catch(function (err) {
+    }
+    return attemptSync().catch(function (err) {
+      var message = err && err.message ? err.message : String(err || '');
+      var isNetworkAbort = (message === 'Load failed' || message === 'Failed to fetch' || message === 'NetworkError when attempting to fetch resource.');
+      if (isNetworkAbort) {
+        // SW update may have caused a page-reload abort. Wait 3s and retry once.
+        return new Promise(function(resolve) { setTimeout(resolve, 3000); })
+          .then(function() { return attemptSync(); })
+          .catch(function(err2) {
+            var result2 = pushErrorResult('reminder:sync', err2);
+            result2.postReached = postReached;
+            return result2;
+          });
+      }
       var result = pushErrorResult('reminder:sync', err);
       result.postReached = postReached;
       return result;

@@ -115,6 +115,8 @@
         if (input.value !== input.defaultValue) return false;
       }
     }
+    // Don't reload if a push subscription sync is in-flight
+    if (window.__ministryPushSyncActive) return false;
     return true;
   }
 

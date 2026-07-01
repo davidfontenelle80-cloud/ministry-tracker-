@@ -1485,7 +1485,6 @@ function renderHome() {
   // Stage J: Weather — refresh card on every home render
   if (typeof App !== 'undefined' && App.Weather && App.Weather._tryInit) App.Weather._tryInit();
 
-  if(App&&App.Weather&&App.Weather._tryInit)App.Weather._tryInit();
 }
 function updateRing(id, r, ratio) {
   const circ = 2 * Math.PI * r;
@@ -2409,6 +2408,7 @@ function syncMinistryNotePush(note) {
     fireAt: fireAt
   });
   toast(t('reminderSyncStarted'));
+  window.__ministryPushSyncActive = true;
   const syncPromise = window.MinistryPush.syncReminder(
     'ministry-note',
     sourceId,
@@ -2416,6 +2416,7 @@ function syncMinistryNotePush(note) {
     ministryNotePushBody(note),
     fireAt
   ).then(function(result) {
+    window.__ministryPushSyncActive = false;
     if (result && result.ok === false) {
       var reason = result.error || result.skipped || 'Unknown failure';
       setMinistryPushSyncDebug({ sourceId: sourceId, fireAt: fireAt, result: result, error: reason });
@@ -2436,6 +2437,7 @@ function syncMinistryNotePush(note) {
     toast(t('reminderScheduled'));
     return result;
   }).catch(function(err) {
+    window.__ministryPushSyncActive = false;
     var message = err && err.message ? err.message : String(err || 'Reminder sync failed.');
     var result = { ok: false, handled: true, action: 'reminder-sync', error: message };
     setMinistryPushSyncDebug({ sourceId: sourceId, fireAt: fireAt, result: result, error: message });
@@ -5450,8 +5452,13 @@ window.onload = function() {
             }
           }).catch(function(){});
         }
-        if(Date.now()-cached.fetchedAt>WX_CACHE_TTL) App.Weather.refresh(true);
-        else App.Weather.fetchAndShowAdvisory();
+        var _wxAgeMs = Date.now() - (cached.fetchedAt || 0);
+        if (_wxAgeMs < WX_CACHE_TTL) {
+          // Cache is fresh — skip all network fetches
+          App.Weather._initRunning = false;
+          return;
+        }
+        App.Weather.refresh(true);
         return;
       }
       el.innerHTML=renderSkeleton();
