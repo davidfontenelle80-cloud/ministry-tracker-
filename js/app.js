@@ -2285,6 +2285,19 @@ function setMinistryPushSyncDebug(details) {
   return payload;
 }
 
+function ministryStoredNoteForSync(note) {
+  if (!note || !note.id) return note;
+  const storedNote = (state.ministryNotes || []).find(function(n) { return n && n.id === note.id; }) || note;
+  console.info('[MinistryPush] reminder stored note loaded', {
+    sourceId: storedNote.id,
+    reminder: !!storedNote.reminder,
+    dueDate: storedNote.dueDate || '',
+    dueTime: storedNote.dueTime || '',
+    fireAt: ministryNoteReminderFireAt(storedNote)
+  });
+  return storedNote;
+}
+
 function clearMinistryNotePush(noteId) {
   if (!noteId) return Promise.resolve({ ok: true, skipped: 'missing-note-id' });
   if (!window.MinistryPush || !window.MinistryPush.isConfigured || !window.MinistryPush.isConfigured()) {
@@ -2463,13 +2476,13 @@ function openMinistryNoteModal(categoryId, noteId, _calDate) {
       note.completed = !(note.completed || note.status === 'done');
       note.status = note.completed ? 'done' : 'open';
       note.updatedAt = Date.now();
-      saveState(); closeModal(); renderNotes(); renderCalendar(); syncMinistryNotePush(note);
+      saveState(); closeModal(); renderNotes(); renderCalendar(); syncMinistryNotePush(ministryStoredNoteForSync(note));
     });
     var archiveBtn = document.getElementById('mnQuickArchiveBtn');
     if (archiveBtn && note) archiveBtn.addEventListener('click', function() {
       note.archived = !note.archived;
       note.updatedAt = Date.now();
-      saveState(); closeModal(); renderNotes(); renderCalendar(); syncMinistryNotePush(note);
+      saveState(); closeModal(); renderNotes(); renderCalendar(); syncMinistryNotePush(ministryStoredNoteForSync(note));
     });
     if (sb) sb.addEventListener('click', function() {
       var nt = ((ti && ti.value) || '').trim();
@@ -2503,7 +2516,7 @@ function openMinistryNoteModal(categoryId, noteId, _calDate) {
         state.ministryNotes.push(savedNote);
       }
       saveState(); closeModal(); renderNotes(); renderCalendar();
-      syncMinistryNotePush(savedNote);
+      syncMinistryNotePush(ministryStoredNoteForSync(savedNote));
     });
   }, 50);
   return;

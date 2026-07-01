@@ -2,7 +2,7 @@
  * sw.js â KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v50-reminder-save-feedback';
+const CACHE_VERSION = 'ministry-tracker-v51-stored-note-reminder-sync';
 
 const PRECACHE_URLS = [
   './',

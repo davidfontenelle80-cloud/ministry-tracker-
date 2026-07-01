@@ -468,3 +468,33 @@ Not verified here:
 - Live iPhone/PWA cache activation for v50.
 - Actual live note reminder save toast.
 - Actual scheduled reminder notification delivery.
+
+## 2026-07-01 Stage I stored-note reminder sync path authorized
+
+Current diagnostic path:
+
+1. Reminder toggle in UI.
+2. Save note object.
+3. Stored note.
+4. Reload note.
+5. `syncMinistryNotePush(note)`.
+6. `ministryNoteReminderSkipReason(note)`.
+
+Objective:
+
+- Ensure reminder sync evaluates the persisted/stored note shape, not only the pre-save in-memory note reference.
+- Keep the diagnostic safe: log reminder flag, due date, due time, sourceId, and fireAt only.
+- Keep Worker, secrets, Note Clip, Talk Arrangements, and Stage J untouched.
+
+Fix:
+
+- `js/app.js` now reloads the just-saved note from `state.ministryNotes` before calling `syncMinistryNotePush()`.
+- Quick complete/archive reminder cleanup paths also reload the stored note before sync.
+- Safe log `[MinistryPush] reminder stored note loaded` records sourceId, reminder flag, dueDate, dueTime, and fireAt only.
+- `sw.js` cache bumped to `ministry-tracker-v51-stored-note-reminder-sync`.
+
+Verification:
+
+- `node --check js/app.js` passed.
+- `node --check js/push.js` passed.
+- `node --check sw.js` passed.
