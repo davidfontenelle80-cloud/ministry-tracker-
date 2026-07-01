@@ -310,10 +310,10 @@ const I18N = {
     pushTestSent: 'Test push sent.',
     pushTestFailed: 'Test push failed.',
     reminderSyncStarted: 'Reminder sync started.',
-    reminderScheduled: 'Reminder scheduled',
-    reminderSyncSaved: 'Reminder scheduled',
-    reminderSyncFailed: 'Reminder sync failed',
-    reminderSyncSkipped: 'Reminder sync skipped',
+    reminderScheduled: 'Recordatorio programado',
+    reminderSyncSaved: 'Recordatorio guardado',
+    reminderSyncFailed: 'Error al sincronizar recordatorio',
+    reminderSyncSkipped: 'Sincronización omitida',
     notifDenied: 'Notifications disabled. Enable in device Settings.',
     notifUnsupported: 'Notifications not supported on this device',
     noNotifLabel: 'Due date only — no notification',
@@ -609,10 +609,10 @@ const I18N_FALLBACKS = {
     pushTestSent: 'Prueba push enviada.',
     pushTestFailed: 'Fallo la prueba push.',
     reminderSyncStarted: 'Sincronizando recordatorio.',
-    reminderScheduled: 'Reminder scheduled',
-    reminderSyncSaved: 'Reminder scheduled',
-    reminderSyncFailed: 'Reminder sync failed',
-    reminderSyncSkipped: 'Reminder sync skipped',
+    reminderScheduled: 'Recordatorio programado',
+    reminderSyncSaved: 'Recordatorio guardado',
+    reminderSyncFailed: 'Error al sincronizar recordatorio',
+    reminderSyncSkipped: 'Sincronización omitida',
     notifDenied: 'Notificaciones desactivadas. Actiévalas en Configuración.',
     notifUnsupported: 'Notificaciones no disponibles en este dispositivo',
     noNotifLabel: 'Solo fecha de vencimiento — sin notificación',
@@ -2420,7 +2420,14 @@ function syncMinistryNotePush(note) {
       var reason = result.error || result.skipped || 'Unknown failure';
       setMinistryPushSyncDebug({ sourceId: sourceId, fireAt: fireAt, result: result, error: reason });
       console.warn('[MinistryPush] reminder sync failed', { sourceId: sourceId, fireAt: fireAt, reason: reason, postReached: result.postReached });
-      toast(t('reminderSyncFailed') + ': ' + reason);
+      var displayReason = (state.lang === 'es')
+        ? (reason === 'Load failed' || reason === 'Failed to fetch' ? 'No se pudo cargar'
+         : reason === 'push unavailable' || reason === 'push-unavailable' ? 'Push no disponible'
+         : reason === 'missing note' ? 'Nota no encontrada'
+         : reason === 'Unknown failure' ? 'Error desconocido'
+         : reason)
+        : reason;
+      toast(t('reminderSyncFailed') + ': ' + displayReason);
       return result;
     }
     const dueBucketMinute = result && (result.dueBucketMinute || (result.reminder && result.reminder.dueBucketMinute));
@@ -2433,7 +2440,12 @@ function syncMinistryNotePush(note) {
     var result = { ok: false, handled: true, action: 'reminder-sync', error: message };
     setMinistryPushSyncDebug({ sourceId: sourceId, fireAt: fireAt, result: result, error: message });
     console.warn('[MinistryPush] reminder sync failed', { sourceId: sourceId, fireAt: fireAt, reason: message });
-    toast(t('reminderSyncFailed') + ': ' + message);
+    var displayMessage = (state.lang === 'es')
+      ? (message === 'Load failed' || message === 'Failed to fetch' ? 'No se pudo cargar'
+       : message === 'Unknown failure' ? 'Error desconocido'
+       : message)
+      : message;
+    toast(t('reminderSyncFailed') + ': ' + displayMessage);
     return result;
   });
   window.__ministryLastPushSync = syncPromise;
