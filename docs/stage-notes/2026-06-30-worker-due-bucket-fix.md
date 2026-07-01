@@ -241,3 +241,56 @@ Not verified here:
 - Physical live iPhone/PWA v49 cache activation.
 - Real successful `POST /api/reminders` response with `dueBucketMinute`.
 - Scheduled notification delivery after this frontend fix.
+
+## 2026-06-30 Stage I scheduled reminder path investigation authorized
+
+Current verified live status:
+
+- Test Push works on David's iPhone/PWA.
+- Push subscription works.
+- VAPID works.
+- Worker can send push.
+- Service worker receives push.
+- Notification display works.
+
+Current failure:
+
+- David sets a note reminder time and saves it, but no scheduled reminder notification fires.
+
+Objective:
+
+- Trace only the scheduled reminder path.
+- Do not revisit Test Push except to confirm it still works after any fix.
+
+Pipeline to verify:
+
+1. Note save.
+2. `syncMinistryNotePush()`.
+3. `window.MinistryPush.syncReminder()`.
+4. `POST /api/reminders`.
+5. Worker stores reminder key.
+6. Worker stores due bucket key.
+7. Cron runs.
+8. Scheduled push sends.
+
+Allowed files:
+
+- `js/app.js`
+- `js/push.js`
+- `cloudflare/ministry-tracker-push/worker.js`
+- `sw.js` only if frontend cache must be bumped
+- MD
+
+Not allowed:
+
+- Secrets
+- VAPID rotation
+- Firebase rules
+- Talk Arrangements
+- Note Clip
+- Stage J Weather
+
+Cache target if frontend JS changes:
+
+- Before: `ministry-tracker-v49-push-error-handled`.
+- After: `ministry-tracker-v50-scheduled-reminder-fix`.
