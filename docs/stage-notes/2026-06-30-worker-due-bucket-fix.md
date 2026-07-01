@@ -294,3 +294,75 @@ Cache target if frontend JS changes:
 
 - Before: `ministry-tracker-v49-push-error-handled`.
 - After: `ministry-tracker-v50-scheduled-reminder-fix`.
+
+## 2026-07-01 Stage I KV list quota blocker and no-list audit authorized
+
+Current confirmed blocker:
+
+- Cloudflare reported the daily Workers KV list limit was exceeded.
+- Free tier limit: 1000 KV list operations per day.
+- List operations reset: 2026-07-01 00:00 UTC.
+
+Current verified status:
+
+- Test Push works on David's iPhone/PWA.
+- Direct live `POST /api/reminders` previously returned HTTP 200 with `ok:true`.
+- The direct response included `dueBucketMinute:"2026-07-01T03:36"`.
+
+Current failure:
+
+- Scheduled reminder notification is still not verified.
+
+Objective:
+
+- Audit the Ministry Tracker Worker and diagnostic process for any remaining KV list usage.
+- Do not use KV list for verification.
+- Do not run commands that consume KV list quota.
+- Verify source only first.
+
+Source search targets:
+
+- `PUSH_STORE.list`
+- `store.list`
+- `env.PUSH_STORE.list`
+- `.list({`
+
+Allowed runtime pattern:
+
+- Direct subscription key reads.
+- Direct reminder key reads.
+- Deterministic due bucket reads.
+- Deterministic due bucket writes.
+- Deterministic due bucket cleanup.
+
+Not allowed in reminder runtime path:
+
+- Listing all reminder keys.
+- Listing all due keys.
+- Listing all subscription keys.
+- Any namespace-wide KV scan.
+
+No-list diagnostic rule:
+
+1. Use frontend `POST /api/reminders` response.
+2. Require response proof such as `dueBucketMinute`.
+3. Use direct known-key reads only if the key is known.
+4. Use cron logs if available.
+5. Use actual iPhone notification receipt.
+
+Allowed files:
+
+- `cloudflare/ministry-tracker-push/worker.js`
+- `js/app.js` only if frontend POST/fireAt bug is proven
+- `js/push.js` only if frontend POST/fireAt bug is proven
+- `sw.js` only if frontend JS changes
+- MD
+
+Not allowed:
+
+- Secrets
+- VAPID rotation
+- Firebase rules
+- Talk Arrangements
+- Note Clip
+- Stage J Weather
