@@ -5183,7 +5183,7 @@ window.onload = function() {
       +'</div>'
       +'<span class="wx-chevron">▼</span>'
       +'</div>'
-      +'<div class="wx-expand-bar">▼ Tap to expand</div>'
+      +'<div class="wx-expand-bar" onclick="App.Weather.toggle()">▼ Tap to expand</div>'
       +'</div>';
   }
 
@@ -5677,10 +5677,10 @@ window.onload = function() {
 [data-theme="light"] .wx-col-meta{border-top-color:rgba(0,0,0,.06);}
 .wx-expand-hint{font-size:11px;font-weight:600;color:var(--accent,#6366f1);text-align:center;margin-top:8px;letter-spacing:.05em;padding:4px;border-top:1px solid rgba(255,255,255,.06);}
 [data-theme="light"] .wx-expand-hint{border-top-color:rgba(0,0,0,.06);}
-.wx-collapse-btn{background:rgba(255,255,255,.06);border:none;color:var(--muted,#8a93a8);font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;}
-[data-theme="light"] .wx-collapse-btn{background:rgba(0,0,0,.06);}
-.wx-collapse-bar{text-align:center;padding:12px;font-size:12px;font-weight:600;color:var(--muted,#8a93a8);cursor:pointer;margin-top:8px;border-top:1px solid rgba(255,255,255,.08);letter-spacing:.05em;}
-[data-theme="light"] .wx-collapse-bar{border-top-color:rgba(0,0,0,.08);}
+.wx-collapse-btn{background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3);color:var(--accent,#4ade80);font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;cursor:pointer;letter-spacing:0.05em;}
+[data-theme="light"] .wx-collapse-btn{background:rgba(22,163,74,0.1);border-color:rgba(22,163,74,0.3);color:var(--accent,#16a34a);}
+.wx-collapse-bar{text-align:center;padding:12px;font-size:12px;font-weight:700;color:var(--accent,#4ade80);cursor:pointer;margin-top:8px;border-top:1px solid rgba(74,222,128,0.2);letter-spacing:.05em;}
+[data-theme="light"] .wx-collapse-bar{border-top-color:rgba(22,163,74,0.2);color:var(--accent,#16a34a);}
 .wx-collapse-bar:hover{color:var(--text,#fff);}
 .wx-loc-section{margin-bottom:4px;}
 .wx-loc-row{display:flex;flex-direction:column;gap:8px;}
