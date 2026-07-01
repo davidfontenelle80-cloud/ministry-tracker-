@@ -5357,7 +5357,6 @@ window.onload = function() {
     };
     saveCache(d);
     saveLoc({lat:lat,lon:lon,name:name});
-    addSaved({lat:lat,lon:lon,name:name});
     return d;
   }
 
@@ -5408,9 +5407,12 @@ window.onload = function() {
 
   App.Weather = {
     _data: null,
+    _initRunning: false,
 
     async init(){
-      var el=getEl(); if(!el) return;
+      if(App.Weather._initRunning) return;
+      App.Weather._initRunning = true;
+      var el=getEl(); if(!el){ App.Weather._initRunning=false; return; }
       injectWeatherCSS();
       var cached=loadCache();
       if(cached){
@@ -5423,6 +5425,7 @@ window.onload = function() {
       }
       el.innerHTML=renderSkeleton();
       App.Weather.useGPS();
+      App.Weather._initRunning = false;
     },
 
     toggle(){
@@ -5531,16 +5534,24 @@ window.onload = function() {
   });
 
   var _wxInitDone=false;
+  var _wxBusy=false;var _wxLast=0;
   App.Weather._tryInit=function(){
-    injectWeatherCSS();
-    var el=document.getElementById('wxContainer');
-    if(!el) return;
-    if(!App.Weather._data){
-      if(App&&App.Weather&&App.Weather._tryInit)App.Weather._tryInit();
-    } else {
-      var adv=loadCachedAdvisory();
-      render(App.Weather._data,adv);
-    }
+    if(_wxBusy) return;
+    var _now=Date.now();
+    if(_now-_wxLast<300) return;
+    _wxLast=_now; _wxBusy=true;
+    try{
+      injectWeatherCSS();
+      var el=document.getElementById('wxContainer');
+      if(!el){_wxBusy=false;return;}
+      if(!App.Weather._data){
+        App.Weather.init().then(function(){_wxBusy=false;}).catch(function(){_wxBusy=false;});
+      } else {
+        var adv=loadCachedAdvisory();
+        render(App.Weather._data,adv);
+        _wxBusy=false;
+      }
+    }catch(e){_wxBusy=false;}
   };
 
   function injectWeatherCSS(){

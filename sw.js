@@ -2,7 +2,7 @@
  * sw.js â KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v57-weather-enhanced';
+const CACHE_VERSION = 'ministry-tracker-v57a-weather-hotfix';
 
 const PRECACHE_URLS = [
   './',
