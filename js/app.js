@@ -1481,6 +1481,9 @@ function renderHome() {
       }
     }
   }
+
+  // Stage J: Weather — refresh card on every home render
+  if (typeof App !== 'undefined' && App.Weather) App.Weather.init();
 }
 function updateRing(id, r, ratio) {
   const circ = 2 * Math.PI * r;
@@ -4965,3 +4968,442 @@ window.onload = function() {
     }
   }, 800);
 };
+
+
+
+// ─── Stage J: Weather ───────────────────────────────────────────────────────
+(function(App) {
+  'use strict';
+
+  var WX_CACHE_KEY     = 'mt_weather_v1';
+  var WX_LOCATION_KEY  = 'mt_weather_location';
+  var WX_CACHE_TTL     = 30 * 60 * 1000; // 30 min
+
+  // WMO weather code → {label, emoji}
+  var WMO_CODES = {
+    0:  { en:'Clear sky',              es:'Cielo despejado',      emoji:'☀️'  },
+    1:  { en:'Mainly clear',           es:'Mayormente despejado', emoji:'🌤️' },
+    2:  { en:'Partly cloudy',          es:'Parcialmente nublado', emoji:'⛅'  },
+    3:  { en:'Overcast',               es:'Nublado',              emoji:'☁️'  },
+    45: { en:'Foggy',                  es:'Niebla',               emoji:'🌫️' },
+    48: { en:'Icy fog',                es:'Niebla helada',        emoji:'🌫️' },
+    51: { en:'Light drizzle',          es:'Llovizna ligera',      emoji:'🌦️' },
+    53: { en:'Drizzle',                es:'Llovizna',             emoji:'🌦️' },
+    55: { en:'Heavy drizzle',          es:'Llovizna intensa',     emoji:'🌦️' },
+    61: { en:'Light rain',             es:'Lluvia ligera',        emoji:'🌧️' },
+    63: { en:'Rain',                   es:'Lluvia',               emoji:'🌧️' },
+    65: { en:'Heavy rain',             es:'Lluvia intensa',       emoji:'🌧️' },
+    71: { en:'Light snow',             es:'Nieve ligera',         emoji:'🌨️' },
+    73: { en:'Snow',                   es:'Nieve',                emoji:'🌨️' },
+    75: { en:'Heavy snow',             es:'Nieve intensa',        emoji:'🌨️' },
+    80: { en:'Rain showers',           es:'Chubascos',            emoji:'🌦️' },
+    81: { en:'Heavy showers',          es:'Chubascos fuertes',    emoji:'🌦️' },
+    82: { en:'Violent showers',        es:'Chubascos violentos',  emoji:'⛈️' },
+    95: { en:'Thunderstorm',           es:'Tormenta',             emoji:'⛈️' },
+    96: { en:'Thunderstorm + hail',    es:'Tormenta con granizo', emoji:'⛈️' },
+    99: { en:'Thunderstorm + hail',    es:'Tormenta con granizo', emoji:'⛈️' }
+  };
+
+  function wmoEntry(code) {
+    return WMO_CODES[code] || WMO_CODES[Math.floor(code / 10) * 10] || { en:'Unknown', es:'Desconocido', emoji:'🌡️' };
+  }
+  function wmoLabel(code, lang) {
+    var e = wmoEntry(code);
+    return e.emoji + ' ' + (lang === 'es' ? e.es : e.en);
+  }
+
+  function ministryOutlook(cur) {
+    var rain = cur.precipitation_probability || 0;
+    var temp = cur.temperature_2m;
+    var wind = cur.windspeed_10m;
+    var code = cur.weathercode;
+    if (rain > 60 || temp > 40 || temp < 5 || wind > 50 || code >= 61) {
+      return { level:'bad',     icon:'⛔', en:'Not ideal for ministry', es:'No ideal para el ministerio' };
+    }
+    if (rain > 30 || temp > 35 || temp < 10 || wind > 30) {
+      return { level:'caution', icon:'⚠️', en:'Use caution',            es:'Precaución al salir' };
+    }
+    return   { level:'good',    icon:'✅', en:'Good for ministry',      es:'Bueno para el ministerio' };
+  }
+
+  function fmtTemp(c) { return Math.round(c) + '°'; }
+
+  function fmtTime(iso) {
+    var d = new Date(iso);
+    var h = d.getHours(), ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return h + ':' + ('0' + d.getMinutes()).slice(-2) + ' ' + ampm;
+  }
+
+  function fmtDay(iso, lang) {
+    var d   = new Date(iso);
+    var en  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var es  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    return (lang === 'es' ? es : en)[d.getDay()];
+  }
+
+  // ── Cache helpers ──────────────────────────────────────────────
+  function loadCachedWeather() {
+    try {
+      var raw = localStorage.getItem(WX_CACHE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw); // return even if stale — we age-stamp it
+    } catch(e) { return null; }
+  }
+  function saveCachedWeather(data) {
+    try { localStorage.setItem(WX_CACHE_KEY, JSON.stringify(data)); } catch(e) {}
+  }
+  function loadSavedLocation() {
+    try { return JSON.parse(localStorage.getItem(WX_LOCATION_KEY) || 'null'); } catch(e) { return null; }
+  }
+  function saveLocation(loc) {
+    try { localStorage.setItem(WX_LOCATION_KEY, JSON.stringify(loc)); } catch(e) {}
+  }
+
+  // ── Network ────────────────────────────────────────────────────
+  async function fetchWeatherForCoords(lat, lon, locationName) {
+    var url = 'https://api.open-meteo.com/v1/forecast'
+      + '?latitude=' + lat + '&longitude=' + lon
+      + '&current=temperature_2m,apparent_temperature,precipitation_probability,weathercode,windspeed_10m,is_day'
+      + '&hourly=temperature_2m,precipitation_probability,weathercode,windspeed_10m'
+      + '&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+      + '&forecast_days=7&timezone=auto&wind_speed_unit=kmh';
+    var resp = await fetch(url);
+    if (!resp.ok) throw new Error('Weather API ' + resp.status);
+    var json = await resp.json();
+    var data = {
+      fetchedAt:    Date.now(),
+      locationName: locationName || ('Lat ' + lat.toFixed(2) + ', Lon ' + lon.toFixed(2)),
+      lat: lat, lon: lon,
+      current: json.current,
+      hourly:  json.hourly,
+      daily:   json.daily
+    };
+    saveCachedWeather(data);
+    saveLocation({ lat: lat, lon: lon, name: data.locationName });
+    return data;
+  }
+
+  async function geocodeCity(query) {
+    var url = 'https://geocoding-api.open-meteo.com/v1/search'
+      + '?name=' + encodeURIComponent(query) + '&count=5&language=en&format=json';
+    var resp = await fetch(url);
+    if (!resp.ok) throw new Error('Geocoding ' + resp.status);
+    var json = await resp.json();
+    return (json.results || []).map(function(r) {
+      return {
+        lat:  r.latitude,
+        lon:  r.longitude,
+        name: r.name + (r.admin1 ? ', ' + r.admin1 : '') + ', ' + r.country_code
+      };
+    });
+  }
+
+  // ── Rendering ──────────────────────────────────────────────────
+  function renderWeatherCard(data, lang) {
+    var cur      = data.current;
+    var outlook  = ministryOutlook(cur);
+    var staleMs  = Date.now() - data.fetchedAt;
+    var staleMins= Math.floor(staleMs / 60000);
+    var isStale  = staleMs > WX_CACHE_TTL;
+    var ageHtml  = isStale
+      ? '<span class="wx-stale">⚠️ ' + (lang==='es' ? 'Actualizado hace ' + staleMins + ' min' : 'Updated ' + staleMins + ' min ago') + '</span>'
+      : '<span class="wx-fresh">⟳ ' + (lang==='es' ? 'Hace ' + staleMins + ' min' : staleMins + ' min ago') + '</span>';
+
+    // Hourly — next 12 hours
+    var now = new Date();
+    var hourlyHtml = '';
+    var count = 0;
+    if (data.hourly && data.hourly.time) {
+      for (var i = 0; i < data.hourly.time.length && count < 12; i++) {
+        if (new Date(data.hourly.time[i]) < now) continue;
+        var hEntry = wmoEntry(data.hourly.weathercode[i]);
+        hourlyHtml += '<div class="wx-hour-item">'
+          + '<div class="wx-hour-time">'  + fmtTime(data.hourly.time[i]) + '</div>'
+          + '<div class="wx-hour-icon">'  + hEntry.emoji + '</div>'
+          + '<div class="wx-hour-temp">'  + fmtTemp(data.hourly.temperature_2m[i]) + '</div>'
+          + '<div class="wx-hour-rain">'  + (data.hourly.precipitation_probability[i] || 0) + '%</div>'
+          + '</div>';
+        count++;
+      }
+    }
+
+    // 7-day
+    var dailyHtml = '';
+    if (data.daily && data.daily.time) {
+      for (var j = 0; j < data.daily.time.length; j++) {
+        var dEntry  = wmoEntry(data.daily.weathercode[j]);
+        var dayLbl  = j === 0 ? (lang==='es' ? 'Hoy' : 'Today') : fmtDay(data.daily.time[j], lang);
+        dailyHtml += '<div class="wx-day-item' + (j === 0 ? ' wx-day-today' : '') + '">'
+          + '<div class="wx-day-name">'  + dayLbl + '</div>'
+          + '<div class="wx-day-icon">'  + dEntry.emoji + '</div>'
+          + '<div class="wx-day-temps">' + fmtTemp(data.daily.temperature_2m_max[j]) + ' / ' + fmtTemp(data.daily.temperature_2m_min[j]) + '</div>'
+          + '<div class="wx-day-rain">'  + (data.daily.precipitation_probability_max[j] || 0) + '%️</div>'
+          + '</div>';
+      }
+    }
+
+    var outlookColor = outlook.level === 'good'
+      ? '#22c55e'
+      : outlook.level === 'caution' ? '#f59e0b' : '#ef4444';
+
+    return ''
+      + '<div class="wx-card" id="weatherCard">'
+
+      // header
+      + '<div class="wx-header">'
+      +   '<div class="wx-location-row">'
+      +     '<span class="wx-loc-name">📍 ' + (data.locationName || '') + '</span>'
+      +     ageHtml
+      +   '</div>'
+      +   '<div class="wx-actions">'
+      +     '<button class="btn btn-secondary btn-icon" style="font-size:14px;padding:6px 8px;" onclick="App.Weather.refresh()" title="Refresh">↻</button>'
+      +     '<button class="btn btn-secondary btn-icon" style="font-size:14px;padding:6px 8px;" onclick="App.Weather.showLocationPicker()" title="Change location">⚙️</button>'
+      +   '</div>'
+      + '</div>'
+
+      // current
+      + '<div class="wx-current">'
+      +   '<div class="wx-temp-main">' + fmtTemp(cur.temperature_2m) + '</div>'
+      +   '<div class="wx-condition">'  + wmoLabel(cur.weathercode, lang) + '</div>'
+      +   '<div class="wx-feels">Feels like ' + fmtTemp(cur.apparent_temperature)
+      +     ' · Wind ' + Math.round(cur.windspeed_10m) + ' km/h</div>'
+      +   '<div class="wx-rain-chance">💧 ' + (cur.precipitation_probability || 0) + '% precipitation</div>'
+      + '</div>'
+
+      // outlook
+      + '<div class="wx-outlook" style="border-left:4px solid ' + outlookColor + '">'
+      +   '<span class="wx-outlook-icon">' + outlook.icon + '</span>'
+      +   '<span class="wx-outlook-text">' + (lang === 'es' ? outlook.es : outlook.en) + '</span>'
+      + '</div>'
+
+      // hourly
+      + '<div class="wx-hourly-wrap">'
+      +   '<div class="wx-section-label">' + (lang==='es' ? 'Próximas horas' : 'Next hours') + '</div>'
+      +   '<div class="wx-hourly-scroll">' + hourlyHtml + '</div>'
+      + '</div>'
+
+      // 7-day
+      + '<div class="wx-daily-wrap">'
+      +   '<div class="wx-section-label">7 ' + (lang==='es' ? 'días' : 'days') + '</div>'
+      +   '<div class="wx-daily-list">' + dailyHtml + '</div>'
+      + '</div>'
+
+      + '</div>'; // .wx-card
+  }
+
+  function renderLocationPicker(lang) {
+    var isEs = lang === 'es';
+    return '<div class="wx-picker-overlay" id="wxPickerOverlay" onclick="if(event.target===this)App.Weather.hideLocationPicker()">'
+      + '<div class="wx-picker-box">'
+      +   '<h4 style="margin:0 0 16px;">' + (isEs ? 'Cambiar ubicación' : 'Change location') + '</h4>'
+      +   '<div class="wx-picker-row">'
+      +     '<button class="btn btn-primary" style="width:100%;" onclick="App.Weather.useGPS()">'
+      +       '📍 ' + (isEs ? 'Usar mi ubicación (GPS)' : 'Use my location (GPS)') + '</button>'
+      +   '</div>'
+      +   '<div class="wx-picker-row" style="margin-top:12px;">'
+      +     '<input type="text" id="wxCityInput" class="wx-city-input" placeholder="' + (isEs ? 'Ciudad...' : 'City name...') + '" onkeydown="if(event.key===\'Enter\')App.Weather.searchCity()">'
+      +     '<button class="btn btn-primary" onclick="App.Weather.searchCity()">' + (isEs ? 'Buscar' : 'Search') + '</button>'
+      +   '</div>'
+      +   '<div id="wxSearchResults" class="wx-search-results"></div>'
+      +   '<button class="btn btn-secondary" style="margin-top:12px;width:100%;" onclick="App.Weather.hideLocationPicker()">'
+      +     (isEs ? 'Cancelar' : 'Cancel') + '</button>'
+      + '</div>'
+      + '</div>';
+  }
+
+  function getPlaceholder() {
+    return '<div class="wx-card wx-card-loading" id="weatherCard">'
+      + '<div style="display:flex;flex-direction:column;gap:8px;padding:4px 0;">'
+      +   '<div class="wx-skeleton" style="height:52px;width:110px;"></div>'
+      +   '<div class="wx-skeleton" style="height:18px;width:160px;"></div>'
+      +   '<div class="wx-skeleton" style="height:14px;width:200px;margin-top:4px;"></div>'
+      + '</div>'
+      + '</div>';
+  }
+
+  function getErrorCard(msg, lang) {
+    return '<div class="wx-card" id="weatherCard" style="text-align:center;padding:20px 16px;">'
+      + '<div style="font-size:13px;color:var(--text-faint,#8a93a8);margin-bottom:12px;">⚠️ ' + msg + '</div>'
+      + '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">'
+      +   '<button class="btn btn-secondary btn-sm" onclick="App.Weather.retry()">' + (lang==='es' ? 'Reintentar' : 'Retry') + '</button>'
+      +   '<button class="btn btn-secondary btn-sm" onclick="App.Weather.showLocationPicker()">' + (lang==='es' ? 'Elegir ciudad' : 'Choose city') + '</button>'
+      + '</div>'
+      + '</div>';
+  }
+
+  function getLang() {
+    try { return (typeof state !== 'undefined' && state.lang) ? state.lang : 'en'; } catch(e) { return 'en'; }
+  }
+  function getWeatherEl() { return document.getElementById('wxContainer'); }
+
+  // ── CSS injection ──────────────────────────────────────────────
+  function injectWeatherCSS() {
+    if (document.getElementById('wx-style')) return;
+    var css = [
+      '.wx-card{background:var(--surface,#1e2130);border-radius:16px;padding:16px;margin-bottom:0;box-shadow:0 2px 12px rgba(0,0,0,.15);}',
+      '.wx-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px;}',
+      '.wx-location-row{display:flex;flex-direction:column;gap:2px;min-width:0;}',
+      '.wx-loc-name{font-size:13px;color:var(--text-faint,#8a93a8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.wx-fresh{font-size:11px;color:var(--text-faint,#8a93a8);}',
+      '.wx-stale{font-size:11px;color:#f59e0b;}',
+      '.wx-actions{display:flex;gap:6px;flex-shrink:0;}',
+      '.wx-current{margin-bottom:10px;}',
+      '.wx-temp-main{font-size:52px;font-weight:700;line-height:1;letter-spacing:-2px;margin-bottom:2px;}',
+      '.wx-condition{font-size:16px;margin-bottom:2px;}',
+      '.wx-feels{font-size:12px;color:var(--text-faint,#8a93a8);margin-bottom:1px;}',
+      '.wx-rain-chance{font-size:12px;color:var(--text-faint,#8a93a8);}',
+      '.wx-outlook{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.05);margin-bottom:10px;}',
+      '[data-theme="light"] .wx-outlook{background:rgba(0,0,0,.04);}',
+      '.wx-outlook-icon{font-size:18px;flex-shrink:0;}',
+      '.wx-outlook-text{font-size:14px;font-weight:600;}',
+      '.wx-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint,#8a93a8);margin-bottom:6px;}',
+      '.wx-hourly-wrap{margin-bottom:10px;}',
+      '.wx-hourly-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}',
+      '.wx-hourly-scroll::-webkit-scrollbar{display:none;}',
+      '.wx-hour-item{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:50px;background:rgba(255,255,255,.04);border-radius:10px;padding:7px 5px;}',
+      '[data-theme="light"] .wx-hour-item{background:rgba(0,0,0,.04);}',
+      '.wx-hour-time{font-size:10px;color:var(--text-faint,#8a93a8);}',
+      '.wx-hour-icon{font-size:17px;}',
+      '.wx-hour-temp{font-size:13px;font-weight:600;}',
+      '.wx-hour-rain{font-size:10px;color:#60a5fa;}',
+      '.wx-daily-wrap{}',
+      '.wx-daily-list{display:flex;flex-direction:column;gap:2px;}',
+      '.wx-day-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);}',
+      '[data-theme="light"] .wx-day-item{border-bottom-color:rgba(0,0,0,.06);}',
+      '.wx-day-item:last-child{border-bottom:none;}',
+      '.wx-day-today{font-weight:700;}',
+      '.wx-day-name{width:38px;font-size:13px;}',
+      '.wx-day-icon{font-size:17px;width:26px;text-align:center;}',
+      '.wx-day-temps{flex:1;font-size:12px;font-family:monospace;}',
+      '.wx-day-rain{font-size:12px;color:#60a5fa;width:36px;text-align:right;}',
+      '.wx-skeleton{background:rgba(255,255,255,.08);border-radius:6px;animation:wx-pulse 1.5s ease-in-out infinite;}',
+      '@keyframes wx-pulse{0%,100%{opacity:1}50%{opacity:.35}}',
+      '.wx-picker-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;}',
+      '.wx-picker-box{background:var(--surface,#1e2130);border-radius:16px;padding:20px;width:100%;max-width:360px;}',
+      '.wx-picker-row{display:flex;gap:8px;}',
+      '.wx-city-input{flex:1;padding:9px 12px;border-radius:8px;border:1px solid var(--border,#333);background:var(--input-bg,#2a2f45);color:var(--text,#fff);font-size:14px;min-width:0;}',
+      '.wx-search-results{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto;margin-top:8px;}',
+      '.wx-result-btn{text-align:left;padding:9px 12px;border-radius:8px;border:none;background:rgba(255,255,255,.06);color:var(--text,#fff);cursor:pointer;font-size:13px;width:100%;}',
+      '.wx-result-btn:hover{background:rgba(255,255,255,.12);}',
+      '.wx-no-results{font-size:13px;color:var(--text-faint,#8a93a8);padding:6px 0;}',
+    ].join('');
+    var el = document.createElement('style');
+    el.id = 'wx-style';
+    el.textContent = css;
+    document.head.appendChild(el);
+  }
+
+  // ── Public API ─────────────────────────────────────────────────
+  App.Weather = {
+    async init() {
+      var el = getWeatherEl();
+      if (!el) return;
+      injectWeatherCSS();
+      var cached = loadCachedWeather();
+      if (cached) {
+        el.innerHTML = renderWeatherCard(cached, getLang());
+        if (Date.now() - cached.fetchedAt > WX_CACHE_TTL) {
+          App.Weather.refresh(true); // silent background refresh
+        }
+        return;
+      }
+      // No cache — placeholder then GPS
+      el.innerHTML = getPlaceholder();
+      App.Weather.useGPS();
+    },
+
+    async refresh(silent) {
+      var loc = loadSavedLocation();
+      if (!loc) { App.Weather.useGPS(); return; }
+      var el = getWeatherEl();
+      if (!silent && el) el.innerHTML = getPlaceholder();
+      try {
+        var data = await fetchWeatherForCoords(loc.lat, loc.lon, loc.name);
+        if (el) el.innerHTML = renderWeatherCard(data, getLang());
+      } catch(e) {
+        if (!silent && el) el.innerHTML = getErrorCard(e.message, getLang());
+      }
+    },
+
+    async useGPS() {
+      var el = getWeatherEl();
+      if (!('geolocation' in navigator)) {
+        if (el) el.innerHTML = getErrorCard('Geolocation not supported', getLang());
+        return;
+      }
+      if (el) el.innerHTML = getPlaceholder();
+      navigator.geolocation.getCurrentPosition(
+        async function(pos) {
+          try {
+            var data = await fetchWeatherForCoords(pos.coords.latitude, pos.coords.longitude, null);
+            var el2 = getWeatherEl();
+            if (el2) el2.innerHTML = renderWeatherCard(data, getLang());
+          } catch(e) {
+            var el2 = getWeatherEl();
+            if (el2) el2.innerHTML = getErrorCard(e.message, getLang());
+          }
+        },
+        function(err) {
+          var el2 = getWeatherEl();
+          if (el2) el2.innerHTML = getErrorCard('Location access denied — enter a city below', getLang());
+          App.Weather.showLocationPicker();
+        },
+        { timeout: 10000 }
+      );
+    },
+
+    async searchCity() {
+      var input = document.getElementById('wxCityInput');
+      var q = input ? input.value.trim() : '';
+      if (!q) return;
+      var res = document.getElementById('wxSearchResults');
+      if (res) res.innerHTML = '<div class="wx-no-results">🔍 Searching…</div>';
+      try {
+        var results = await geocodeCity(q);
+        if (!results.length) {
+          if (res) res.innerHTML = '<div class="wx-no-results">No results found.</div>';
+          return;
+        }
+        if (res) {
+          res.innerHTML = results.map(function(r) {
+            return '<button class="wx-result-btn" onclick="App.Weather.selectCity('
+              + r.lat + ',' + r.lon + ',\'' + r.name.replace(/'/g, '\\u0027') + '\')">'
+              + r.name + '</button>';
+          }).join('');
+        }
+      } catch(e) {
+        if (res) res.innerHTML = '<div class="wx-no-results">Error: ' + e.message + '</div>';
+      }
+    },
+
+    async selectCity(lat, lon, name) {
+      App.Weather.hideLocationPicker();
+      var el = getWeatherEl();
+      if (el) el.innerHTML = getPlaceholder();
+      try {
+        var data = await fetchWeatherForCoords(lat, lon, name);
+        if (el) el.innerHTML = renderWeatherCard(data, getLang());
+      } catch(e) {
+        if (el) el.innerHTML = getErrorCard(e.message, getLang());
+      }
+    },
+
+    showLocationPicker() {
+      var existing = document.getElementById('wxPickerOverlay');
+      if (existing) existing.remove();
+      document.body.insertAdjacentHTML('beforeend', renderLocationPicker(getLang()));
+      var inp = document.getElementById('wxCityInput');
+      if (inp) setTimeout(function(){ inp.focus(); }, 50);
+    },
+
+    hideLocationPicker() {
+      var el = document.getElementById('wxPickerOverlay');
+      if (el) el.remove();
+    },
+
+    retry() { App.Weather.refresh(); }
+  };
+
+})(window.App = window.App || {});
+// ─── End Stage J: Weather ────────────────────────────────────────────────────
