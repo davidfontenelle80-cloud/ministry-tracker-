@@ -4978,7 +4978,7 @@ window.onload = function() {
 (function(App) {
   'use strict';
 
-  var WX_CACHE_KEY    = 'mt_weather_v1';
+  var WX_CACHE_KEY    = 'mt_weather_v2';
   var WX_LOCATION_KEY = 'mt_weather_location';
   var WX_UNITS_KEY    = 'mt_weather_units';
   var WX_EXPANDED_KEY = 'mt_weather_expanded';
@@ -5183,6 +5183,7 @@ window.onload = function() {
       +'</div>'
       +'<span class="wx-chevron">▼</span>'
       +'</div>'
+      +'<div class="wx-expand-bar">▼ Tap to expand</div>'
       +'</div>';
   }
 
@@ -5462,6 +5463,7 @@ window.onload = function() {
 
     async refresh(silent){
       var loc=loadLoc(); if(!loc){App.Weather.useGPS();return;}
+      if(loc.name&&/^Lat\s/.test(loc.name)){loc.name=null;}
       var el=getEl();
       if(!silent&&el) el.innerHTML=renderSkeleton();
       try{
@@ -5689,6 +5691,8 @@ window.onload = function() {
 .wx-gps-btn2{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:var(--text,#fff);font-size:14px;cursor:pointer;text-align:left;font-weight:500;}
 [data-theme="light"] .wx-gps-btn2{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.1);color:inherit;}
 .wx-gps-btn2:hover{background:rgba(255,255,255,.1);}
+.wx-expand-bar{text-align:center;padding:8px;font-size:12px;font-weight:700;letter-spacing:0.08em;color:var(--accent,#4ade80);border-top:1px solid rgba(255,255,255,0.07);margin-top:6px;}
+[data-theme="light"] .wx-expand-bar{border-top-color:rgba(0,0,0,0.07);color:var(--accent,#16a34a);}
 `;
     var el=document.createElement('style');el.id='wx-style';el.textContent=css;
     document.head.appendChild(el);
