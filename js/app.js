@@ -314,6 +314,9 @@ const I18N = {
     reminderSyncSaved: 'Reminder scheduled',
     reminderSyncFailed: 'Reminder sync failed',
     reminderSyncSkipped: 'Reminder sync skipped',
+    notifDenied: 'Notifications disabled. Enable in device Settings.',
+    notifUnsupported: 'Notifications not supported on this device',
+    noNotifLabel: 'Due date only — no notification',
     confirmDeleteNote: 'Delete this note?',
         noteDueDate: 'Due date',
     noteDueTime: 'Due time',
@@ -610,6 +613,9 @@ const I18N_FALLBACKS = {
     reminderSyncSaved: 'Reminder scheduled',
     reminderSyncFailed: 'Reminder sync failed',
     reminderSyncSkipped: 'Reminder sync skipped',
+    notifDenied: 'Notificaciones desactivadas. Actiévalas en Configuración.',
+    notifUnsupported: 'Notificaciones no disponibles en este dispositivo',
+    noNotifLabel: 'Solo fecha de vencimiento — sin notificación',
   },
 };
 
@@ -2236,8 +2242,7 @@ function ministryNoteReminderFireAt(note) {
 }
 
 function ministryNoteReminderSkipReason(note) {
-  if (!note || !note.reminder) return 'missing reminder toggle';
-  if (!note.dueDate) return 'missing due date';
+  if (!note) return 'missing note';
   if (note.completed) return 'completed note';
   if (note.archived) return 'archived note';
   if (note.status === 'done') return 'status done';
@@ -2247,6 +2252,7 @@ function ministryNoteReminderSkipReason(note) {
 }
 
 function ministryNoteNeedsPush(note) {
+  if (!note || !note.reminder) return false;
   return !ministryNoteReminderSkipReason(note);
 }
 
@@ -2317,6 +2323,23 @@ function clearMinistryNotePush(noteId) {
   });
 }
 
+function scheduleReminderOnSave(note) {
+  if (!note || !note.reminder) {
+    if (note && note.id) clearMinistryNotePush(note.id).catch(function() {});
+    return Promise.resolve({ ok: true, skipped: 'no-reminder' });
+  }
+  var hasNotif = ('Notification' in window) || ('PushManager' in window);
+  if (!hasNotif) { toast(t('notifUnsupported')); return Promise.resolve({ ok: false, skipped: 'unsupported' }); }
+  var perm = ('Notification' in window) ? Notification.permission : 'denied';
+  if (perm === 'granted') { return syncMinistryNotePush(ministryStoredNoteForSync(note)); }
+  if (perm !== 'default') { toast(t('notifDenied')); return Promise.resolve({ ok: false, skipped: 'denied' }); }
+  return Notification.requestPermission().then(function(p) {
+    if (p !== 'granted') { toast(t('notifDenied')); return Promise.resolve({ ok: false, skipped: 'denied' }); }
+    var sub = (window.MinistryPush && window.MinistryPush.subscribe) ? window.MinistryPush.subscribe() : Promise.resolve();
+    return sub.catch(function() {}).then(function() { return syncMinistryNotePush(ministryStoredNoteForSync(note)); });
+  });
+}
+
 function syncMinistryNotePush(note) {
   const sourceId = note && note.id ? note.id : '';
   const fireAt = ministryNoteReminderFireAt(note);
@@ -2333,6 +2356,11 @@ function syncMinistryNotePush(note) {
     console.warn('[MinistryPush] reminder sync skipped', { sourceId: sourceId, fireAt: fireAt, skippedReason: 'push unavailable' });
     toast(t('reminderSyncSkipped') + ': push unavailable');
     return Promise.resolve(result);
+  }
+  // Silent skip: note.reminder encodes date+opt-out decision
+  if (!note.reminder) {
+    if (note.id) clearMinistryNotePush(note.id).catch(function() {});
+    return Promise.resolve({ ok: true, skipped: 'no-reminder' });
   }
   const skippedReason = ministryNoteReminderSkipReason(note);
   if (skippedReason) {
@@ -2452,8 +2480,10 @@ function openMinistryNoteModal(categoryId, noteId, _calDate) {
     '<div><label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="mnStatusSelect">' + escapeHtml(t('noteStatus')) + '</label><select id="mnStatusSelect" class="input">' + statusOpts + '</select></div></div>' +
     '<div class="mn-modal-grid"><div><label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="mnDueDateInput">' + escapeHtml(t('noteDueDate')) + '</label><input type="date" id="mnDueDateInput" class="input" value="' + escapeHtml((note && note.dueDate) || _calDate || '') + '"></div>' +
     '<div><label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="mnDueTimeInput">' + escapeHtml(t('noteDueTime')) + '</label><input type="time" id="mnDueTimeInput" class="input" value="' + escapeHtml((note && note.dueTime) || '') + '"></div></div>' +
+    '<div id="mnOptOutRow" style="display:none;margin-top:6px;">' +
+    '<label style="display:flex;align-items:center;gap:8px;font-size:0.9em;color:var(--color-faint,#888)">' +
+    '<input type="checkbox" id="noteNoNotifToggle" style="width:18px;height:18px;"> ' + escapeHtml(t('noNotifLabel')) + '</label></div>' +
     '<div class="mn-modal-grid">' +
-    '<label class="mn-toggle-row"><span class="text-sm font-semibold" style="flex:1;">' + escapeHtml(t('noteReminder')) + '</span><input type="checkbox" id="mnReminderToggle" style="width:22px;height:22px;"' + (note && note.reminder ? ' checked' : '') + '></label>' +
     '<label class="mn-toggle-row"><span class="text-sm font-semibold" style="flex:1;">' + escapeHtml(t('noteCompleted')) + '</span><input type="checkbox" id="mnCompletedToggle" style="width:22px;height:22px;"' + (note && note.completed ? ' checked' : '') + '></label>' +
     '<label class="mn-toggle-row"><span class="text-sm font-semibold" style="flex:1;">' + escapeHtml(t('noteArchived')) + '</span><input type="checkbox" id="mnArchivedToggle" style="width:22px;height:22px;"' + (note && note.archived ? ' checked' : '') + '></label>' +
     '</div></div>' +
@@ -2471,6 +2501,16 @@ function openMinistryNoteModal(categoryId, noteId, _calDate) {
     document.querySelectorAll('[data-close-modal]').forEach(function(b) { b.onclick = closeModal; });
     if (cb) cb.addEventListener('click', closeModal);
     if (ti) ti.focus();
+    var optRow = document.getElementById('mnOptOutRow');
+    var noNotifEl = document.getElementById('noteNoNotifToggle');
+    var dueDateEl = document.getElementById('mnDueDateInput');
+    if (optRow) optRow.style.display = (note && note.dueDate) ? '' : 'none';
+    if (noNotifEl && note) noNotifEl.checked = !!(note.dueDate && !note.reminder);
+    if (dueDateEl) dueDateEl.addEventListener('change', function() {
+      var r = document.getElementById('mnOptOutRow');
+      if (r) r.style.display = this.value ? '' : 'none';
+      if (!this.value && noNotifEl) noNotifEl.checked = false;
+    });
     var doneBtn = document.getElementById('mnQuickDoneBtn');
     if (doneBtn && note) doneBtn.addEventListener('click', function() {
       note.completed = !(note.completed || note.status === 'done');
@@ -2492,8 +2532,9 @@ function openMinistryNoteModal(categoryId, noteId, _calDate) {
       var ncatId = (document.getElementById('mnCatSelect') || {}).value || null;
       var ndueDate = (document.getElementById('mnDueDateInput') || {}).value || null;
       var ndueTime = (document.getElementById('mnDueTimeInput') || {}).value || null;
-      var nreminder = document.getElementById('mnReminderToggle') ? document.getElementById('mnReminderToggle').checked : false;
-      var nreminderAt = ndueDate && nreminder ? new Date(ndueDate + (ndueTime ? 'T' + ndueTime : 'T00:00')).getTime() : null;
+      var noNotif = document.getElementById('noteNoNotifToggle') ? document.getElementById('noteNoNotifToggle').checked : false;
+      var nreminder = !!(ndueDate && !noNotif);
+      var nreminderAt = (nreminder && ndueTime) ? new Date(ndueDate + 'T' + ndueTime).getTime() : null;
       var npriority = (document.getElementById('mnPrioritySelect') || {}).value || null;
       var nstatus = (document.getElementById('mnStatusSelect') || {}).value || null;
       var ncompleted = document.getElementById('mnCompletedToggle') ? document.getElementById('mnCompletedToggle').checked : false;
@@ -2516,7 +2557,7 @@ function openMinistryNoteModal(categoryId, noteId, _calDate) {
         state.ministryNotes.push(savedNote);
       }
       saveState(); closeModal(); renderNotes(); renderCalendar();
-      syncMinistryNotePush(ministryStoredNoteForSync(savedNote));
+      scheduleReminderOnSave(savedNote).catch(function(e) { console.warn('[MinistryTracker] scheduleReminderOnSave error', e); });
     });
   }, 50);
   return;
