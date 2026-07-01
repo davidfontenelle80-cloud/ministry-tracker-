@@ -138,6 +138,9 @@
   background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
   box-shadow: 0 12px 32px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
+[data-theme="dark"] .card-accent {
+  background: linear-gradient(135deg, #047857, #065f46);
+}
 
   * { -webkit-tap-highlight-color: transparent; }
   html, body {
