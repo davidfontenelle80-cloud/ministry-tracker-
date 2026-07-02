@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/responsive.css" />
   <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/notes-card-borders.css" />
 
   <title>Ministry Tracker</title>
 </head>
@@ -786,7 +787,11 @@
 
     <!-- Data -->
     <div class="card stack-2" style="margin-bottom: 16px;">
-      <div class="text-xs uppercase tracking-wider text-dim font-semibold mb-2" id="lbl_data">Data</div>
+      <button id="backupToggle" class="row-between w-full" aria-expanded="false" style="background:none;border:none;padding:0;cursor:pointer;color:inherit;text-align:left;align-items:center;">
+        <span class="text-xs uppercase tracking-wider text-dim font-semibold" id="lbl_data">Backup &amp; Restore</span>
+        <i class="fa-solid fa-chevron-down text-dim" id="backupChevron" style="font-size:11px;transition:transform .2s ease;"></i>
+      </button>
+      <div id="backupBody" class="stack-2" style="display:none;">
       <button id="btnExport" class="btn btn-secondary w-full">
         <i class="fa-solid fa-arrow-up-from-bracket text-accent"></i>
         <span id="lbl_exportBtn">Export backup</span>
@@ -804,14 +809,14 @@
 
       <!-- Cloud backup -->
       <div style="border-top: 1px solid var(--border); margin: 12px 0;"></div>
-      <div class="text-xs uppercase tracking-wider text-dim font-semibold mb-2">Cloud</div>
+      <div class="text-xs uppercase tracking-wider text-dim font-semibold mb-2" id="lbl_cloudHeader">Cloud</div>
       <button id="btnCloudSave" class="btn btn-secondary w-full">
         <i class="fa-solid fa-cloud-arrow-up text-accent"></i>
-        <span>Save to Cloud</span>
+        <span id="lbl_cloudSaveBtn">Cloud Save</span>
       </button>
       <button id="btnCloudRestore" class="btn btn-secondary w-full">
         <i class="fa-solid fa-cloud-arrow-down text-blue"></i>
-        <span>Restore from Cloud</span>
+        <span id="lbl_cloudRestoreBtn">Cloud Restore</span>
       </button>
       <div id="cloudBackupInfo" class="text-xs text-faint text-center" style="padding-top: 4px;"></div>
 
@@ -824,6 +829,7 @@
         <i class="fa-solid fa-trash"></i>
         <span id="lbl_clearAll">Clear all data</span>
       </button>
+      </div>
     </div>
 
     <div class="text-center text-xs text-faint py-4">

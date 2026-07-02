@@ -21,9 +21,9 @@
   ============================================================ */
   :root {
   /* ── House dark tokens (single source of truth) ── */
-  --color-primary:        #5be3a0;
-  --color-primary-dark:   #3fbf84;
-  --color-primary-strong: #74f0b6;
+  --color-primary:        #10b981;
+  --color-primary-dark:   #059669;
+  --color-primary-strong: #34d399;
   --color-accent-yellow:  #f4c152;
   --color-bg:             #0b0d12;
   --color-surface:        #161a20;
@@ -35,7 +35,7 @@
   --color-text-dim:       #5c6675;
   --color-text-inverse:   #07120c;
   --color-on-primary:     #ffffff;
-  --color-success:        #5be3a0;
+  --color-success:        #10b981;
   --color-warning:        #f4c152;
   --color-error:          #f2817f;
   --color-info:           #7e9cff;
@@ -55,9 +55,9 @@
   --header-height: 56px; --bottom-nav-height: 76px; --max-width: 480px;
 
   /* ── Domain colors (carry semantic meaning, not flattened) ── */
-  --accent:      #5be3a0;
+  --accent:      #10b981;
   --accent-soft: color-mix(in srgb, var(--color-primary) 15%, transparent);
-  --accent-dark: #3fbf84;
+  --accent-dark: #059669;
   --coral:       #fb7185;
   --coral-soft:  color-mix(in srgb, var(--coral) 18%, transparent);
   --amber:       #fbbf24;
@@ -79,9 +79,9 @@
   --border:       var(--color-border);
 }
   [data-theme="light"] {
-  --color-primary:        #12a06a;
-  --color-primary-dark:   #0c7f53;
-  --color-primary-strong: #16b87a;
+  --color-primary:        #10b981;
+  --color-primary-dark:   #047857;
+  --color-primary-strong: #059669;
   --color-bg:             #eef1f5;
   --color-surface:        #ffffff;
   --color-surface-2:      #e9edf2;
@@ -91,7 +91,7 @@
   --color-text-muted:     #5c6675;
   --color-text-dim:       #97a0ad;
   --color-text-inverse:   #ffffff;
-  --color-success:        #12a06a;
+  --color-success:        #10b981;
   --color-warning:        #d99413;
   --color-error:          #e0524c;
   --color-info:           #4f6bf0;
@@ -102,9 +102,9 @@
   --shadow-glow: 0 12px 28px rgba(18,160,106,.42);
 
   /* Domain colors -- light versions */
-  --accent:      #12a06a;
+  --accent:      #10b981;
   --accent-soft: #d1fae5;
-  --accent-dark: #0c7f53;
+  --accent-dark: #047857;
   --coral:       #f43f5e;
   --coral-soft:  #ffe4e6;
   --amber:       #f59e0b;
@@ -980,4 +980,19 @@
 .keypad-display, .timer-display, .progress-label {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+/* v60: iOS empty date/time inputs - prevent blank oversized bars */
+input[type="date"],
+input[type="time"] {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.2em;
 }

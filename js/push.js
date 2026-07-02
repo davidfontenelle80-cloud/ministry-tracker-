@@ -80,6 +80,9 @@
   function jsonFetch(url, options) {
     options = options || {};
     options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+    // v60: keep requests alive across page reloads (SW-update race caused
+    // 'Load failed' aborts on reminder sync).
+    if (options.keepalive === undefined) { try { options.keepalive = true; } catch (e) {} }
     return fetch(url, options).then(function (res) {
       return res.text().then(function (txt) {
         var data = {};

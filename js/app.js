@@ -123,10 +123,11 @@ const I18N = {
     backupReminder: 'Monthly backup reminder',
     roundMins: 'Round minutes', roundOff: 'Off (exact)',
     autoPause: 'Auto-pause (min idle, 0 = off)',
-    data: 'Data', exportBtn: 'Export backup', backupBtn: 'Backup',
+    data: 'Data', exportBtn: 'Export Backup', backupBtn: 'Backup',
+    cloudSaveBtn: 'Cloud Save', cloudRestoreBtn: 'Cloud Restore', cloudHeader: 'Cloud',
     pastSY: 'Past service years', pastSYNone: 'No past years archived yet.',
     pastSYHours: 'hours', pastSYStudies: 'studies', pastSYDays: 'days', pastSYArchived: 'archived',
-    importBtn: 'Import from file', pasteImportBtn: 'Paste backup text',
+    importBtn: 'Import from File', pasteImportBtn: 'Paste backup text',
     clearMonth: 'Clear current month', clearAll: 'Clear all data',
     nav_home: 'Home', nav_timer: 'Timer', nav_cal: 'Calendar', nav_log: 'Log', nav_notes: 'Notes & Reminders', nav_reports: 'Reports', nav_settings: 'Settings',
     logHistory: 'Log History',
@@ -167,7 +168,7 @@ const I18N = {
     pasteImportTitle: 'Paste backup',
     pasteImportHint: 'Paste the JSON below and tap Import.',
     importHint: 'Choose how to bring in your backup.',
-    backupTitle: 'Backup & restore',
+    backupTitle: 'Backup & Restore',
     backupNever: 'Never backed up. Export now to be safe.',
     backupRecent: 'Last backup',
     backupOld: 'Backup is over 30 days old',
@@ -377,6 +378,7 @@ const I18N = {
     roundMins: 'Redondear minutos', roundOff: 'Exacto',
     autoPause: 'Pausa automática (min inactivo, 0 = apagado)',
     data: 'Datos', exportBtn: 'Exportar respaldo', backupBtn: 'Respaldo',
+    cloudSaveBtn: 'Guardar en la nube', cloudRestoreBtn: 'Restaurar desde la nube', cloudHeader: 'Nube',
     pastSY: 'Años de servicio anteriores', pastSYNone: 'Aún no hay años archivados.',
     pastSYHours: 'horas', pastSYStudies: 'cursos', pastSYDays: 'días', pastSYArchived: 'archivado',
     importBtn: 'Importar desde archivo', pasteImportBtn: 'Pegar texto de respaldo',
@@ -754,7 +756,7 @@ function injectMinistryNotesPolishCss() {
     '.mn-card-actions{display:flex;gap:6px}',
     '.mn-empty{padding:40px 20px;text-align:center;border:1px dashed var(--border);border-radius:14px;background:var(--surface);color:var(--text-dim)}',
     '.mn-empty-icon{width:56px;height:56px;border-radius:14px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;background:var(--surface-2,var(--surface));font-size:26px}',
-    '.mn-empty-cta{display:inline-flex;align-items:center;gap:6px;margin-top:18px;padding:10px 20px;border-radius:999px;background:var(--accent,#34d399);color:var(--on-accent,#06120e);font-size:14px;font-weight:700;border:none;cursor:pointer;transition:opacity .15s ease}',
+    '.mn-empty-cta{display:inline-flex;align-items:center;gap:6px;margin-top:18px;padding:10px 20px;border-radius:999px;background:var(--accent,#10b981);color:var(--on-accent,#06120e);font-size:14px;font-weight:700;border:none;cursor:pointer;transition:opacity .15s ease}',
     '.mn-empty-cta:hover{opacity:.85}',
     '.mn-list-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}',
     '.mn-list-title{display:flex;align-items:center;gap:9px;min-width:0}',
@@ -1221,7 +1223,8 @@ function applyI18n() {
     lbl_showStreak: 'showStreak', lbl_weekStartsMon: 'weekStartsMon',
     lbl_carryOver: 'carryOver', lbl_haptics: 'haptics', lbl_backupReminder: 'backupReminder',
     lbl_roundMins: 'roundMins', opt_roundOff: 'roundOff', lbl_autoPause: 'autoPause',
-    lbl_data: 'data', lbl_exportBtn: 'exportBtn',
+    lbl_data: 'backupTitle', lbl_exportBtn: 'exportBtn',
+    lbl_cloudSaveBtn: 'cloudSaveBtn', lbl_cloudRestoreBtn: 'cloudRestoreBtn', lbl_cloudHeader: 'cloudHeader',
     lbl_pastSY: 'pastSY',
     lbl_backupBtn: 'backupBtn',
     lbl_importBtn: 'importBtn', lbl_pasteImportBtn: 'pasteImportBtn',
@@ -2094,12 +2097,16 @@ function renderNotes() {
     '<div class="row gap-2" style="flex-wrap:wrap;justify-content:flex-end;">' +
     '<button class="btn btn-secondary" data-all-notes style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('allNotes')) + '</button>' +
     '<button class="btn btn-secondary" data-push-test style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('testPush')) + '</button>' +
+    '<button class="btn btn-secondary" data-push-debug style="font-size:13px;padding:7px 14px;" title="Push debug"><i class="fa-solid fa-stethoscope"></i></button>' +
     '<button class="btn btn-primary" data-add-cat style="font-size:13px;padding:7px 14px;">' +
     '<i class="fa-solid fa-plus"></i><span>' + t('addCategory') + '</span></button></div></div>' +
     gridHTML;
   scr.querySelectorAll('[data-add-cat]').forEach(function(el) { el.addEventListener('click', openAddCategoryModal); });
   var allNotesBtn = scr.querySelector('[data-all-notes]');
   if (allNotesBtn) allNotesBtn.addEventListener('click', function() { currentNotesView = 'all'; currentNotesCategoryId = null; renderNotes(); });
+  scr.querySelectorAll('[data-push-debug]').forEach(function(el) {
+    el.addEventListener('click', showMinistryPushDebug);
+  });
   scr.querySelectorAll('[data-push-test]').forEach(function(el) {
     el.addEventListener('click', function() { runMinistryPushDiagnostic(el); });
   });
@@ -2230,6 +2237,7 @@ function renderNotesListView(scr, cat) {
     '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:20px;">' + escapeHtml(icon) + '</span>' +
     '<span class="font-semibold text-sm">' + escapeHtml(catName) + '</span></div>' +
     '<button class="btn btn-secondary" data-push-test style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('testPush')) + '</button>' +
+    '<button class="btn btn-secondary" data-push-debug style="font-size:13px;padding:7px 14px;" title="Push debug"><i class="fa-solid fa-stethoscope"></i></button>' +
     '<button class="btn btn-primary" data-mn-add style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('mnAddNote')) + '</button></div>' +
     notesToolbar + noteCards;
   var addBtn = scr.querySelector('[data-mn-add]');
@@ -2238,6 +2246,9 @@ function renderNotesListView(scr, cat) {
   if (addFromEmptyBtn) addFromEmptyBtn.addEventListener('click', function() { openMinistryNoteModal(isAllNotesView ? '' : cat.id, null); });
   var backBtn = scr.querySelector('[data-mn-back]');
   if (backBtn) backBtn.addEventListener('click', function() { currentNotesView = 'categories'; currentNotesCategoryId = null; renderNotes(); });
+  scr.querySelectorAll('[data-push-debug]').forEach(function(el) {
+    el.addEventListener('click', showMinistryPushDebug);
+  });
   scr.querySelectorAll('[data-push-test]').forEach(function(el) {
     el.addEventListener('click', function() { runMinistryPushDiagnostic(el); });
   });
@@ -2315,6 +2326,86 @@ function setMinistryPushSyncDebug(details) {
   payload.result = ministryPushSafeResult(payload.result);
   window.__ministryLastPushSyncDebug = payload;
   return payload;
+}
+
+function initBackupCollapse() {
+  var tgl = document.getElementById('backupToggle');
+  var body = document.getElementById('backupBody');
+  var chev = document.getElementById('backupChevron');
+  if (!tgl || !body) return;
+  var open = false;
+  try { open = localStorage.getItem('mtBackupSectionOpen') === '1'; } catch (e) {}
+  function apply() {
+    body.style.display = open ? '' : 'none';
+    if (chev) chev.style.transform = open ? 'rotate(180deg)' : '';
+    tgl.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  apply();
+  tgl.addEventListener('click', function() {
+    open = !open;
+    try { localStorage.setItem('mtBackupSectionOpen', open ? '1' : '0'); } catch (e) {}
+    apply();
+  });
+}
+
+function showMinistryPushDebug() {
+  var dbg = window.__ministryLastPushSyncDebug || null;
+  var diagP = (window.MinistryPush && window.MinistryPush.diagnose)
+    ? window.MinistryPush.diagnose() : Promise.resolve({});
+  var pcfg = window.MINISTRY_TRACKER_PUSH_CONFIG || {};
+  var healthP = fetch(String(pcfg.workerUrl || '').replace(/\/+$/, '') + '/api/health', { method: 'GET' })
+    .then(function(r) { return r.ok ? 'ok (' + r.status + ')' : 'HTTP ' + r.status; })
+    .catch(function(e) { return 'FAILED: ' + (e && e.message ? e.message : String(e)); });
+  Promise.all([diagP, healthP]).then(function(res) {
+    var d = res[0] || {};
+    var health = res[1];
+    var r = (dbg && dbg.result) || {};
+    function row(k, v) {
+      var val = (v === undefined || v === null || v === '') ? '—' : String(v);
+      return '<div class="row-between" style="gap:10px;padding:5px 0;border-bottom:1px solid var(--border);">'
+        + '<span class="text-xs text-dim" style="white-space:nowrap;">' + escapeHtml(k) + '</span>'
+        + '<span class="text-xs" style="word-break:break-all;text-align:right;">' + escapeHtml(val) + '</span></div>';
+    }
+    openModal(
+      '<div class="row-between items-center mb-3"><div class="font-bold text-xl">Push Debug</div>'
+      + '<button class="btn btn-secondary btn-icon" data-close-modal style="width:38px;height:38px;" aria-label="close"><i class="fa-solid fa-xmark"></i></button></div>'
+      + row('workerUrl', d.workerUrl)
+      + row('worker /api/health', health)
+      + row('permission', d.permission)
+      + row('subscriptionId', d.subscriptionId)
+      + row('SW controller', (navigator.serviceWorker && navigator.serviceWorker.controller) ? 'active' : 'none')
+      + '<div class="text-xs font-bold uppercase tracking-wider text-dim" style="margin:12px 0 2px;">Last reminder sync</div>'
+      + row('timestamp', dbg && dbg.timestamp)
+      + row('sourceId', dbg && dbg.sourceId)
+      + row('fireAt', dbg && dbg.fireAt)
+      + row('postReached', r.postReached)
+      + row('ok', r.ok)
+      + row('error', (dbg && dbg.error) || r.error)
+      + row('status', r.status)
+      + row('skippedReason', (dbg && dbg.skippedReason) || r.skipped)
+      + row('dueBucketMinute', r.dueBucketMinute)
+      + '<button class="btn btn-secondary w-full" data-close-modal style="margin-top:14px;">OK</button>'
+    );
+  });
+}
+
+function resumePendingReminderSync() {
+  var raw = null;
+  try { raw = localStorage.getItem('mtPendingReminderSync'); } catch (e) { return; }
+  if (!raw) return;
+  var pending = null;
+  try { pending = JSON.parse(raw); } catch (e) { pending = null; }
+  if (!pending || !pending.sourceId) {
+    try { localStorage.removeItem('mtPendingReminderSync'); } catch (e) {}
+    return;
+  }
+  var note = (state.ministryNotes || []).find(function(n) { return n && n.id === pending.sourceId; });
+  if (!note || !note.reminder) {
+    try { localStorage.removeItem('mtPendingReminderSync'); } catch (e) {}
+    return;
+  }
+  console.info('[MinistryPush] resuming interrupted reminder sync', { sourceId: pending.sourceId });
+  setTimeout(function() { syncMinistryNotePush(note); }, 4000);
 }
 
 function ministryStoredNoteForSync(note) {
@@ -2408,6 +2499,7 @@ function syncMinistryNotePush(note) {
     fireAt: fireAt
   });
   toast(t('reminderSyncStarted'));
+  try { localStorage.setItem('mtPendingReminderSync', JSON.stringify({ sourceId: sourceId, ts: Date.now() })); } catch (e) {}
   window.__ministryPushSyncActive = true;
   const syncPromise = window.MinistryPush.syncReminder(
     'ministry-note',
@@ -2417,6 +2509,9 @@ function syncMinistryNotePush(note) {
     fireAt
   ).then(function(result) {
     window.__ministryPushSyncActive = false;
+    if (!result || result.ok !== false || result.postReached) {
+      try { localStorage.removeItem('mtPendingReminderSync'); } catch (e) {}
+    }
     if (result && result.ok === false) {
       var reason = result.error || result.skipped || 'Unknown failure';
       setMinistryPushSyncDebug({ sourceId: sourceId, fireAt: fireAt, result: result, error: reason });
@@ -2712,7 +2807,7 @@ function _injectCalNotesCss() {
   if (_calNotesCssInjected) return; _calNotesCssInjected = true;
   const s = document.createElement('style');
   s.textContent = [
-    '.cal-note-dot{display:block;width:5px;height:5px;border-radius:50%;background:var(--accent,#4f8ef7);margin:1px auto 0}',
+    '.cal-note-dot{display:block;width:5px;height:5px;border-radius:50%;background:var(--accent,#10b981);margin:1px auto 0}',
     '.cal-notes-panel{margin:.75rem 1rem .5rem;background:var(--card-bg,#fff);border-radius:12px;overflow:hidden;border:1px solid var(--border,#e2e8f0)}',
     '.dark .cal-notes-panel{background:var(--card-bg,#1e293b);border-color:var(--border,#334155)}',
     '.cal-notes-panel-hdr{font-size:.7rem;font-weight:700;color:var(--text-muted,#64748b);text-transform:uppercase;letter-spacing:.05em;padding:.6rem 1rem .4rem}',
@@ -2722,7 +2817,7 @@ function _injectCalNotesCss() {
     '.cal-note-item:active{background:var(--hover,#f1f5f9)}',
     '.cal-note-item-title{display:block;font-size:.875rem;font-weight:500}',
     '.cal-note-item-body{display:block;font-size:.75rem;color:var(--text-muted,#64748b);margin-top:2px}',
-    '.cal-add-note-btn{display:block;width:100%;text-align:center;background:none;border:none;border-top:1px solid var(--border,#e2e8f0);padding:.7rem 1rem;font-size:.875rem;font-weight:600;color:var(--accent,#4f8ef7);cursor:pointer}',
+    '.cal-add-note-btn{display:block;width:100%;text-align:center;background:none;border:none;border-top:1px solid var(--border,#e2e8f0);padding:.7rem 1rem;font-size:.875rem;font-weight:600;color:var(--accent,#10b981);cursor:pointer}',
     '.cal-add-note-btn:active{opacity:.7}'
   ].join('');
   document.head.appendChild(s);
@@ -4742,6 +4837,7 @@ function wireEvents() {
 
   document.getElementById('addCategoryBtn').onclick = () => openCategoryEditModal('__new__');
 
+  initBackupCollapse();
   document.getElementById('btnExport').onclick = openExportModal;
   document.getElementById('btnImport').onclick = () => {
     openConfirmModal(t('importConfirmMsg'), () => {
@@ -4977,6 +5073,7 @@ window.onload = function() {
   if (state.activeTimer) startLiveTick();
   renderAll();
   switchScreen('home');
+  resumePendingReminderSync();
   // Backup reminder: show on open if overdue (but only after UI is up)
   setTimeout(() => {
     if (shouldShowBackupPopup() && !state.backupBannerDismissed) {
@@ -5056,7 +5153,7 @@ window.onload = function() {
 
   function uvLabel(uv,lang){
     var isEs=lang==='es';
-    if(uv<=2) return{txt:isEs?'Bajo':'Low',color:'#22c55e'};
+    if(uv<=2) return{txt:isEs?'Bajo':'Low',color:'#10b981'};
     if(uv<=5) return{txt:isEs?'Moderado':'Moderate',color:'#f59e0b'};
     if(uv<=7) return{txt:isEs?'Alto':'High',color:'#f97316'};
     if(uv<=10) return{txt:isEs?'Muy alto':'Very High',color:'#ef4444'};
@@ -5065,7 +5162,7 @@ window.onload = function() {
 
   function aqiLabel(aqi,lang){
     var isEs=lang==='es';
-    if(aqi<=50)  return{txt:isEs?'Bueno':'Good',color:'#22c55e'};
+    if(aqi<=50)  return{txt:isEs?'Bueno':'Good',color:'#10b981'};
     if(aqi<=100) return{txt:isEs?'Moderado':'Moderate',color:'#f59e0b'};
     if(aqi<=150) return{txt:isEs?'No saludable*':'Unhealthy*',color:'#f97316'};
     if(aqi<=200) return{txt:isEs?'No saludable':'Unhealthy',color:'#ef4444'};
@@ -5099,7 +5196,7 @@ window.onload = function() {
       return{level:'bad',icon:'⛔',en:'Not ideal for ministry',es:'No ideal para el ministerio',color:'#ef4444'};
     if(rain>30||temp>35||temp<10||wind>30)
       return{level:'caution',icon:'⚠️',en:'Use caution',es:'Precaución',color:'#f59e0b'};
-    return{level:'good',icon:'✅',en:'Good for ministry',es:'Bueno para el ministerio',color:'#22c55e'};
+    return{level:'good',icon:'✅',en:'Good for ministry',es:'Bueno para el ministerio',color:'#10b981'};
   }
 
   function buildOutlookNarrative(data,lang){
@@ -5166,7 +5263,7 @@ window.onload = function() {
     var top=features[0].properties;
     var cls=severityClass(features);
     var icon=cls.indexOf('extreme')>=0||cls.indexOf('severe')>=0?'🚨':cls.indexOf('moderate')>=0?'⚠️':'ℹ️';
-    var moreHtml=features.length>1?'<span class="wx-adv-more">+'+(features.length-1)+' more</span>':'';
+    var moreHtml=features.length>1?'<span class="wx-adv-more">+'+(features.length-1)+(getLang()==='es'?' más':' more')+'</span>':'';
     return'<div class="wx-advisory '+cls+'" id="wxAdvisory">'
       +'<div class="wx-adv-inner">'
       +'<span class="wx-adv-icon">'+icon+'</span>'
@@ -5197,7 +5294,7 @@ window.onload = function() {
       +'</div>'
       +'<span class="wx-chevron">▼</span>'
       +'</div>'
-      +'<div class="wx-expand-bar" onclick="App.Weather.toggle()">▼ Tap to expand</div>'
+      +'<div class="wx-expand-bar" onclick="App.Weather.toggle()">▼ '+(lang==='es'?'Toca para expandir':'Tap to expand')+'</div>'
       +'</div>';
   }
 
@@ -5612,7 +5709,7 @@ window.onload = function() {
 .wx-col-age{font-size:11px;color:var(--muted,#8a93a8);}
 .wx-chevron,.wx-chevron-up{font-size:12px;color:var(--muted,#8a93a8);margin-left:4px;}
 .wx-outlook-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;}
-.wx-ol-good{background:rgba(34,197,94,.15);color:#22c55e;}
+.wx-ol-good{background:rgba(16,185,129,.15);color:#10b981;}
 .wx-ol-caution{background:rgba(245,158,11,.15);color:#f59e0b;}
 .wx-ol-bad{background:rgba(239,68,68,.15);color:#ef4444;}
 .wx-exp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
@@ -5696,10 +5793,10 @@ window.onload = function() {
 [data-theme="light"] .wx-col-meta{border-top-color:rgba(0,0,0,.06);}
 .wx-expand-hint{font-size:11px;font-weight:600;color:var(--accent,#6366f1);text-align:center;margin-top:8px;letter-spacing:.05em;padding:4px;border-top:1px solid rgba(255,255,255,.06);}
 [data-theme="light"] .wx-expand-hint{border-top-color:rgba(0,0,0,.06);}
-.wx-collapse-btn{background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3);color:var(--accent,#4ade80);font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;cursor:pointer;letter-spacing:0.05em;}
-[data-theme="light"] .wx-collapse-btn{background:rgba(22,163,74,0.1);border-color:rgba(22,163,74,0.3);color:var(--accent,#16a34a);}
-.wx-collapse-bar{text-align:center;padding:12px;font-size:12px;font-weight:700;color:var(--accent,#4ade80);cursor:pointer;margin-top:8px;border-top:1px solid rgba(74,222,128,0.2);letter-spacing:.05em;}
-[data-theme="light"] .wx-collapse-bar{border-top-color:rgba(22,163,74,0.2);color:var(--accent,#16a34a);}
+.wx-collapse-btn{background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);color:var(--accent,#34d399);font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;cursor:pointer;letter-spacing:0.05em;}
+[data-theme="light"] .wx-collapse-btn{background:rgba(5,150,105,0.1);border-color:rgba(5,150,105,0.3);color:var(--accent,#059669);}
+.wx-collapse-bar{text-align:center;padding:12px;font-size:12px;font-weight:700;color:var(--accent,#34d399);cursor:pointer;margin-top:8px;border-top:1px solid rgba(52,211,153,0.2);letter-spacing:.05em;}
+[data-theme="light"] .wx-collapse-bar{border-top-color:rgba(5,150,105,0.2);color:var(--accent,#059669);}
 .wx-collapse-bar:hover{color:var(--text,#fff);}
 .wx-loc-section{margin-bottom:4px;}
 .wx-loc-row{display:flex;flex-direction:column;gap:8px;}
@@ -5710,8 +5807,8 @@ window.onload = function() {
 .wx-gps-btn2{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:var(--text,#fff);font-size:14px;cursor:pointer;text-align:left;font-weight:500;}
 [data-theme="light"] .wx-gps-btn2{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.1);color:inherit;}
 .wx-gps-btn2:hover{background:rgba(255,255,255,.1);}
-.wx-expand-bar{text-align:center;padding:8px;font-size:12px;font-weight:700;letter-spacing:0.08em;color:var(--accent,#4ade80);border-top:1px solid rgba(255,255,255,0.07);margin-top:6px;}
-[data-theme="light"] .wx-expand-bar{border-top-color:rgba(0,0,0,0.07);color:var(--accent,#16a34a);}
+.wx-expand-bar{text-align:center;padding:8px;font-size:12px;font-weight:700;letter-spacing:0.08em;color:var(--accent,#34d399);border-top:1px solid rgba(255,255,255,0.07);margin-top:6px;}
+[data-theme="light"] .wx-expand-bar{border-top-color:rgba(0,0,0,0.07);color:var(--accent,#059669);}
 `;
     var el=document.createElement('style');el.id='wx-style';el.textContent=css;
     document.head.appendChild(el);

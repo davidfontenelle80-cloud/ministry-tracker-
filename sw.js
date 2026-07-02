@@ -2,7 +2,7 @@
  * sw.js â KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v59-push-race-fix';
+const CACHE_VERSION = 'ministry-tracker-v61-rc-stabilization';
 
 const PRECACHE_URLS = [
   './',
@@ -12,6 +12,7 @@ const PRECACHE_URLS = [
   './css/dark-mode.css',
   './css/components.css',
   './css/responsive.css',
+  './css/notes-card-borders.css',
   './js/config.js',
   './js/sw-register.js',
   './js/i18n.js',
@@ -71,7 +72,22 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin) {
+    // v60: runtime-cache CDN assets (Font Awesome, Google Fonts) so nav icons
+    // and fonts survive offline / CDN hiccups.
+    if (/(^|\.)(cdnjs\.cloudflare\.com|fonts\.googleapis\.com|fonts\.gstatic\.com)$/.test(url.hostname)) {
+      event.respondWith(
+        caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
+          if (response && (response.status === 200 || response.type === 'opaque')) {
+            const copy = response.clone();
+            caches.open(CACHE_VERSION).then(cache => cache.put(event.request, copy));
+          }
+          return response;
+        }))
+      );
+    }
+    return;
+  }
 
   const isAppShell = PRECACHE_URLS.some(path => new URL(path, self.location.href).pathname === url.pathname);
   if (!isAppShell) return;
