@@ -2,7 +2,7 @@
  * sw.js â KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v62-home-backup-calendar-green';
+const CACHE_VERSION = 'ministry-tracker-v63-audit-polish';
 
 const PRECACHE_URLS = [
   './',
@@ -13,6 +13,8 @@ const PRECACHE_URLS = [
   './css/components.css',
   './css/responsive.css',
   './css/notes-card-borders.css',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
   './js/config.js',
   './js/sw-register.js',
   './js/i18n.js',
