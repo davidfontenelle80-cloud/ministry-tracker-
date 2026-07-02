@@ -21,9 +21,9 @@
   ============================================================ */
   :root {
   /* ── House dark tokens (single source of truth) ── */
-  --color-primary:        #10b981;
-  --color-primary-dark:   #059669;
-  --color-primary-strong: #34d399;
+  --color-primary:        #059669;
+  --color-primary-dark:   #047857;
+  --color-primary-strong: #10b981;
   --color-accent-yellow:  #f4c152;
   --color-bg:             #0b0d12;
   --color-surface:        #161a20;
@@ -55,9 +55,9 @@
   --header-height: 56px; --bottom-nav-height: 76px; --max-width: 480px;
 
   /* ── Domain colors (carry semantic meaning, not flattened) ── */
-  --accent:      #10b981;
+  --accent:      #059669;
   --accent-soft: color-mix(in srgb, var(--color-primary) 15%, transparent);
-  --accent-dark: #059669;
+  --accent-dark: #047857;
   --coral:       #fb7185;
   --coral-soft:  color-mix(in srgb, var(--coral) 18%, transparent);
   --amber:       #fbbf24;

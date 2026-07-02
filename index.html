@@ -275,16 +275,17 @@
 
     <!-- Backup banner -->
     <div class="card mt-4" style="border: 1px solid var(--border);">
-      <div class="row gap-3 mb-3">
+      <button id="homeBackupToggle" class="row gap-3 w-full" aria-expanded="false" style="background:none;border:none;padding:0;cursor:pointer;color:inherit;text-align:left;align-items:center;">
         <div style="width: 40px; height: 40px; border-radius: 12px; background: var(--blue-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
           <i class="fa-solid fa-cloud-arrow-up text-blue text-lg"></i>
         </div>
         <div class="flex-1 min-w-0">
-          <div class="font-bold text-sm" id="lbl_backupTitle">Backup & restore</div>
+          <div class="font-bold text-sm" id="lbl_backupTitle">Backup & Restore</div>
           <div id="homeBackupStatus" class="text-tiny text-faint mt-1"></div>
         </div>
-      </div>
-      <div class="grid grid-2" style="gap: 8px;">
+        <i class="fa-solid fa-chevron-down text-dim" id="homeBackupChevron" style="font-size:11px;transition:transform .2s ease;flex-shrink:0;"></i>
+      </button>
+      <div class="grid grid-2" id="homeBackupBody" style="gap: 8px; display:none; margin-top:12px;">
         <button id="homeExportBtn" class="btn btn-primary text-sm" style="padding: 12px;">
           <i class="fa-solid fa-arrow-up-from-bracket"></i>
           <span id="lbl_homeExport">Export</span>
@@ -295,11 +296,11 @@
         </button>
         <button id="homeCloudSaveBtn" class="btn btn-secondary text-sm" style="padding: 12px;">
           <i class="fa-solid fa-cloud-arrow-up text-accent"></i>
-          <span>Cloud Save</span>
+          <span id="lbl_homeCloudSave">Cloud Save</span>
         </button>
         <button id="homeCloudRestoreBtn" class="btn btn-secondary text-sm" style="padding: 12px;">
           <i class="fa-solid fa-cloud-arrow-down text-blue"></i>
-          <span>Cloud Restore</span>
+          <span id="lbl_homeCloudRestore">Cloud Restore</span>
         </button>
       </div>
     </div>

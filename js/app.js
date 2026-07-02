@@ -1225,6 +1225,7 @@ function applyI18n() {
     lbl_roundMins: 'roundMins', opt_roundOff: 'roundOff', lbl_autoPause: 'autoPause',
     lbl_data: 'backupTitle', lbl_exportBtn: 'exportBtn',
     lbl_cloudSaveBtn: 'cloudSaveBtn', lbl_cloudRestoreBtn: 'cloudRestoreBtn', lbl_cloudHeader: 'cloudHeader',
+    lbl_homeCloudSave: 'cloudSaveBtn', lbl_homeCloudRestore: 'cloudRestoreBtn',
     lbl_pastSY: 'pastSY',
     lbl_backupBtn: 'backupBtn',
     lbl_importBtn: 'importBtn', lbl_pasteImportBtn: 'pasteImportBtn',
@@ -2329,12 +2330,17 @@ function setMinistryPushSyncDebug(details) {
 }
 
 function initBackupCollapse() {
-  var tgl = document.getElementById('backupToggle');
-  var body = document.getElementById('backupBody');
-  var chev = document.getElementById('backupChevron');
+  _initCollapseSection('backupToggle', 'backupBody', 'backupChevron', 'mtBackupSectionOpen');
+  _initCollapseSection('homeBackupToggle', 'homeBackupBody', 'homeBackupChevron', 'mtHomeBackupOpen');
+}
+
+function _initCollapseSection(toggleId, bodyId, chevronId, storeKey) {
+  var tgl = document.getElementById(toggleId);
+  var body = document.getElementById(bodyId);
+  var chev = document.getElementById(chevronId);
   if (!tgl || !body) return;
   var open = false;
-  try { open = localStorage.getItem('mtBackupSectionOpen') === '1'; } catch (e) {}
+  try { open = localStorage.getItem(storeKey) === '1'; } catch (e) {}
   function apply() {
     body.style.display = open ? '' : 'none';
     if (chev) chev.style.transform = open ? 'rotate(180deg)' : '';
@@ -2343,7 +2349,7 @@ function initBackupCollapse() {
   apply();
   tgl.addEventListener('click', function() {
     open = !open;
-    try { localStorage.setItem('mtBackupSectionOpen', open ? '1' : '0'); } catch (e) {}
+    try { localStorage.setItem(storeKey, open ? '1' : '0'); } catch (e) {}
     apply();
   });
 }
@@ -2807,17 +2813,17 @@ function _injectCalNotesCss() {
   if (_calNotesCssInjected) return; _calNotesCssInjected = true;
   const s = document.createElement('style');
   s.textContent = [
-    '.cal-note-dot{display:block;width:5px;height:5px;border-radius:50%;background:var(--accent,#10b981);margin:1px auto 0}',
-    '.cal-notes-panel{margin:.75rem 1rem .5rem;background:var(--card-bg,#fff);border-radius:12px;overflow:hidden;border:1px solid var(--border,#e2e8f0)}',
-    '.dark .cal-notes-panel{background:var(--card-bg,#1e293b);border-color:var(--border,#334155)}',
-    '.cal-notes-panel-hdr{font-size:.7rem;font-weight:700;color:var(--text-muted,#64748b);text-transform:uppercase;letter-spacing:.05em;padding:.6rem 1rem .4rem}',
-    '.cal-notes-empty{font-size:.875rem;color:var(--text-muted,#64748b);padding:.4rem 1rem .6rem}',
+    '.cal-note-dot{display:block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin:1px auto 0}',
+    '.cal-notes-panel{margin:.75rem 1rem .5rem;background:var(--surface);border-radius:12px;overflow:hidden;border:1px solid var(--border)}',
+    '.cal-notes-panel-hdr, .cal-notes-empty, .cal-note-item-body{color:var(--text-dim)}',
+    '.cal-notes-panel-hdr{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.6rem 1rem .4rem}',
+    '.cal-notes-empty{font-size:.875rem;padding:.4rem 1rem .6rem}',
     '.cal-notes-list{display:flex;flex-direction:column}',
-    '.cal-note-item{display:block;width:100%;text-align:left;background:none;border:none;border-top:1px solid var(--border,#e2e8f0);padding:.6rem 1rem;cursor:pointer;color:var(--text,#1e293b)}',
-    '.cal-note-item:active{background:var(--hover,#f1f5f9)}',
+    '.cal-note-item{display:block;width:100%;text-align:left;background:none;border:none;border-top:1px solid var(--border);padding:.6rem 1rem;cursor:pointer;color:var(--text)}',
+    '.cal-note-item:active{background:var(--surface-sub,var(--surface))}',
     '.cal-note-item-title{display:block;font-size:.875rem;font-weight:500}',
-    '.cal-note-item-body{display:block;font-size:.75rem;color:var(--text-muted,#64748b);margin-top:2px}',
-    '.cal-add-note-btn{display:block;width:100%;text-align:center;background:none;border:none;border-top:1px solid var(--border,#e2e8f0);padding:.7rem 1rem;font-size:.875rem;font-weight:600;color:var(--accent,#10b981);cursor:pointer}',
+    '.cal-note-item-body{display:block;font-size:.75rem;margin-top:2px}',
+    '.cal-add-note-btn{display:block;width:100%;text-align:center;background:none;border:none;border-top:1px solid var(--border);padding:.7rem 1rem;font-size:.875rem;font-weight:600;color:var(--accent);cursor:pointer}',
     '.cal-add-note-btn:active{opacity:.7}'
   ].join('');
   document.head.appendChild(s);

@@ -7,9 +7,9 @@
 html[data-theme="dark"],
 [data-theme="dark"] {
   color-scheme: dark;
-  --color-primary: #10b981;
-  --color-primary-dark: #059669;
-  --color-accent: #10b981;
+  --color-primary: #059669;
+  --color-primary-dark: #047857;
+  --color-accent: #059669;
   --color-bg: #07080c;
   --color-surface: #14171f;
   --color-border: rgba(255,255,255,.07);
