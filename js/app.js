@@ -10,6 +10,11 @@
    constant is the only line to edit. */
 const REMINDER_CHECK_MINUTES = 5;
 
+/* Minimum lead time for a reminder: anything closer than one cron interval
+   can be missed by the next worker check. Referenced everywhere — a future
+   change is this one line. */
+const MIN_REMINDER_LEAD_MINUTES = 5;
+
 // Round a chosen reminder time up to the next cron grid mark, with a safety
 // buffer: if that mark is less than one full interval away, use the next one
 // (the worker may already be mid-run). Past/"now" times are treated as now.
@@ -356,6 +361,7 @@ const I18N = {
     noteDueTime: 'Due time',
     noteReminder: 'Reminder',
     deliversAround: 'Delivers around {time}',
+    reminderLeadError: 'Pick a time at least {min} minutes from now so the reminder can be delivered.',
     setForDelivers: 'Set for {picked} \u2014 delivers around {time}',
     notePriority: 'Priority',
     noteStatus: 'Status',
@@ -574,6 +580,7 @@ const I18N = {
     noteDueTime: 'Hora límite',
     noteReminder: 'Recordatorio',
     deliversAround: 'Se entrega alrededor de las {time}',
+    reminderLeadError: 'Elige una hora al menos {min} minutos despu\u00e9s de ahora para que el recordatorio pueda entregarse.',
     setForDelivers: 'Programado para las {picked} \u2014 se entrega alrededor de las {time}',
     notePriority: 'Prioridad',
     noteStatus: 'Estado',
@@ -2811,6 +2818,18 @@ function openMinistryNoteModal(categoryId, noteId, _calDate) {
       var noNotif = document.getElementById('noteNoNotifToggle') ? document.getElementById('noteNoNotifToggle').checked : false;
       var nreminder = !!(ndueDate && !noNotif);
       var nreminderAt = (nreminder && ndueTime) ? new Date(ndueDate + 'T' + ndueTime).getTime() : null;
+      // Minimum lead-time check: only when a reminder with an explicit time
+      // will be scheduled AND the user changed the time (unrelated edits pass).
+      if (nreminderAt) {
+        var reminderTimeChanged = !note
+          || (note.dueDate || null) !== (ndueDate || null)
+          || (note.dueTime || null) !== (ndueTime || null)
+          || !note.reminder;
+        if (reminderTimeChanged && (nreminderAt - Date.now() < MIN_REMINDER_LEAD_MINUTES * 60000)) {
+          toast(t('reminderLeadError').replace('{min}', String(MIN_REMINDER_LEAD_MINUTES)));
+          return; // keep the modal open with the entered values intact
+        }
+      }
       var npriority = (document.getElementById('mnPrioritySelect') || {}).value || null;
       var nstatus = (document.getElementById('mnStatusSelect') || {}).value || null;
       var ncompleted = document.getElementById('mnCompletedToggle') ? document.getElementById('mnCompletedToggle').checked : false;

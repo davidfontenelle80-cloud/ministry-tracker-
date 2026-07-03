@@ -2,7 +2,7 @@
  * sw.js â KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v65-delivery-hint';
+const CACHE_VERSION = 'ministry-tracker-v66-lead-time-check';
 
 const PRECACHE_URLS = [
   './',
