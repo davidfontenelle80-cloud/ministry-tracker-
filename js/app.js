@@ -4,6 +4,37 @@
  */
 
 /* ===== STATE / CONFIG ===== */
+/* Push reminders are delivered by a Cloudflare Worker cron that runs every
+   REMINDER_CHECK_MINUTES minutes. A reminder fires at the first cron tick AT
+   OR AFTER its scheduled time. If the cron schedule ever changes, this
+   constant is the only line to edit. */
+const REMINDER_CHECK_MINUTES = 5;
+
+// Round a chosen reminder time up to the next cron grid mark, with a safety
+// buffer: if that mark is less than one full interval away, use the next one
+// (the worker may already be mid-run). Past/"now" times are treated as now.
+function computeDeliveryTime(reminderTime) {
+  const interval = REMINDER_CHECK_MINUTES * 60 * 1000;
+  const now = Date.now();
+  let t = (reminderTime instanceof Date) ? reminderTime.getTime() : new Date(reminderTime).getTime();
+  if (Number.isNaN(t)) return null;
+  if (t < now) t = now;
+  let fireTime = Math.ceil(t / interval) * interval;
+  if (fireTime - now < interval) {
+    fireTime += interval;
+  }
+  return new Date(fireTime);
+}
+
+// Display stamp for the delivery hint: time only when it lands on the same
+// calendar day as the picked time, date + time otherwise.
+function formatDeliveryStamp(d, includeDate) {
+  const loc = (state && state.lang === 'es') ? 'es-ES' : 'en-US';
+  const timeStr = d.toLocaleTimeString(loc, { hour: 'numeric', minute: '2-digit' });
+  if (!includeDate) return timeStr;
+  return d.toLocaleDateString(loc, { month: 'short', day: 'numeric' }) + ' ' + timeStr;
+}
+
 const APP_CONFIG = {
   storageKey: 'ministry-tracker-v4',
   archivePrefix: 'ministry-tracker-archive-sy-',
@@ -324,6 +355,8 @@ const I18N = {
         noteDueDate: 'Due date',
     noteDueTime: 'Due time',
     noteReminder: 'Reminder',
+    deliversAround: 'Delivers around {time}',
+    setForDelivers: 'Set for {picked} \u2014 delivers around {time}',
     notePriority: 'Priority',
     noteStatus: 'Status',
     noteCompleted: 'Completed',
@@ -540,6 +573,8 @@ const I18N = {
         noteDueDate: 'Fecha límite',
     noteDueTime: 'Hora límite',
     noteReminder: 'Recordatorio',
+    deliversAround: 'Se entrega alrededor de las {time}',
+    setForDelivers: 'Programado para las {picked} \u2014 se entrega alrededor de las {time}',
     notePriority: 'Prioridad',
     noteStatus: 'Estado',
     noteCompleted: 'Completado',
@@ -2693,6 +2728,7 @@ function openMinistryNoteModal(categoryId, noteId, _calDate) {
     '<div id="mnOptOutRow" style="display:none;margin-top:6px;">' +
     '<label style="display:flex;align-items:center;gap:8px;font-size:0.9em;color:var(--text-faint,#888)">' +
     '<input type="checkbox" id="noteNoNotifToggle" style="width:18px;height:18px;"> ' + escapeHtml(t('noNotifLabel')) + '</label></div>' +
+    '<div id="mnDeliveryHint" class="text-xs" style="display:none;margin-top:6px;color:var(--accent);"></div>' +
     '<div class="mn-modal-grid">' +
     '<label class="mn-toggle-row"><span class="text-sm font-semibold" style="flex:1;">' + escapeHtml(t('noteCompleted')) + '</span><input type="checkbox" id="mnCompletedToggle" style="width:22px;height:22px;"' + (note && note.completed ? ' checked' : '') + '></label>' +
     '<label class="mn-toggle-row"><span class="text-sm font-semibold" style="flex:1;">' + escapeHtml(t('noteArchived')) + '</span><input type="checkbox" id="mnArchivedToggle" style="width:22px;height:22px;"' + (note && note.archived ? ' checked' : '') + '></label>' +
@@ -2714,13 +2750,43 @@ function openMinistryNoteModal(categoryId, noteId, _calDate) {
     var optRow = document.getElementById('mnOptOutRow');
     var noNotifEl = document.getElementById('noteNoNotifToggle');
     var dueDateEl = document.getElementById('mnDueDateInput');
+    var dueTimeEl = document.getElementById('mnDueTimeInput');
     if (optRow) optRow.style.display = (note && note.dueDate) ? '' : 'none';
     if (noNotifEl && note) noNotifEl.checked = !!(note.dueDate && !note.reminder);
+    // Honest delivery time: the worker cron only checks every
+    // REMINDER_CHECK_MINUTES minutes, so show when the push will really land.
+    function updateDeliveryHint() {
+      var hint = document.getElementById('mnDeliveryHint');
+      if (!hint) return;
+      var dv = (dueDateEl && dueDateEl.value) || '';
+      var tv = (dueTimeEl && dueTimeEl.value) || '';
+      if (!dv || (noNotifEl && noNotifEl.checked)) { hint.style.display = 'none'; hint.textContent = ''; return; }
+      var picked = new Date(dv + 'T' + (tv || '00:00'));
+      if (Number.isNaN(picked.getTime())) { hint.style.display = 'none'; hint.textContent = ''; return; }
+      var delivery = computeDeliveryTime(picked);
+      if (!delivery) { hint.style.display = 'none'; hint.textContent = ''; return; }
+      var crossesDay = delivery.toDateString() !== picked.toDateString();
+      var deliveryStr = formatDeliveryStamp(delivery, crossesDay);
+      var text;
+      if (delivery.getTime() !== picked.getTime()) {
+        text = t('setForDelivers')
+          .replace('{picked}', formatDeliveryStamp(picked, false))
+          .replace('{time}', deliveryStr);
+      } else {
+        text = t('deliversAround').replace('{time}', deliveryStr);
+      }
+      hint.textContent = text;
+      hint.style.display = '';
+    }
     if (dueDateEl) dueDateEl.addEventListener('change', function() {
       var r = document.getElementById('mnOptOutRow');
       if (r) r.style.display = this.value ? '' : 'none';
       if (!this.value && noNotifEl) noNotifEl.checked = false;
+      updateDeliveryHint();
     });
+    if (dueTimeEl) dueTimeEl.addEventListener('change', updateDeliveryHint);
+    if (noNotifEl) noNotifEl.addEventListener('change', updateDeliveryHint);
+    updateDeliveryHint();
     var doneBtn = document.getElementById('mnQuickDoneBtn');
     if (doneBtn && note) doneBtn.addEventListener('click', function() {
       note.completed = !(note.completed || note.status === 'done');
