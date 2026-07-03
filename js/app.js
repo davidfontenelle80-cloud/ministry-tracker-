@@ -31,8 +31,9 @@ const APP_CONFIG = {
     lastBackupISO: null,
     sessionsSinceLastBackup: 0,
     backupBannerDismissed: false,
-    carryOverMin: 0,
+    carryOverMin: 0, // deprecated (v64) — kept for backup compatibility, no longer written
     lastMonthProcessed: null,
+    rolloverBackfillJun2026Done: false,
     lastUsedCategory: null,
     activeTimer: null,
     sessions: [],
@@ -119,6 +120,7 @@ const I18N = {
     showStreak: 'Show streak counter',
     weekStartsMon: 'Week starts Monday',
     carryOver: 'Carry over partial minutes',
+    rolloverLabel: 'Rollover',
     haptics: 'Haptic feedback',
     backupReminder: 'Monthly backup reminder',
     roundMins: 'Round minutes', roundOff: 'Off (exact)',
@@ -373,6 +375,7 @@ const I18N = {
     showStreak: 'Mostrar contador de racha',
     weekStartsMon: 'Semana empieza lunes',
     carryOver: 'Trasladar minutos parciales',
+    rolloverLabel: 'Traslado',
     haptics: 'Vibración táctil',
     backupReminder: 'Recordatorio mensual de respaldo',
     roundMins: 'Redondear minutos', roundOff: 'Exacto',
@@ -906,7 +909,6 @@ function checkServiceYearReset() {
     state.creditEntries = [];
     state.creditByMonth = {};
     state.plannedByDate = {};
-    state.carryOverMin = 0;
     state.lastClearedServiceYear = currentSY;
     saveState();
     toast(t('serviceYearReset'));
@@ -930,19 +932,84 @@ function processMonthEndRollover() {
   const isSeptFirst = (now.getMonth() === 8);
 
   if (!isSeptFirst && state.carryOver) {
-    const prevTotal = getMonthMinutes(prevMK);
-    const remainderMins = prevTotal % 60;
+    const remainderMins = getMonthMinutes(prevMK) % 60;
     if (remainderMins > 0) {
-      // Carry-over is a field-service planning helper, not credit-hour storage.
-      state.carryOverMin = remainderMins;
-    } else {
-      state.carryOverMin = 0;
+      // MOVE the remainder: trim it off the prior month, re-log it on the 1st.
+      // Prior month closes at whole hours; service-year total is unchanged.
+      trimMinutesFromMonth(prevMK, remainderMins);
+      createRolloverSession(currentMK, remainderMins);
     }
-  } else {
-    state.carryOverMin = 0;
   }
+  // state.carryOverMin is deprecated (v64) — kept for backup compatibility, no longer written.
 
   state.lastMonthProcessed = currentMK;
+  saveState();
+}
+
+// Remove `mins` minutes from the end of a month by shrinking its latest sessions.
+// Cascades backwards through earlier sessions; never creates negative durations.
+function trimMinutesFromMonth(mk, mins) {
+  if (mins <= 0) return;
+  const monthSessions = state.sessions
+    .filter(s => s.date && s.date.startsWith(mk) && s.stopISO && (s.durationMin || 0) > 0)
+    .sort((a, b) => b.date.localeCompare(a.date) || String(b.startISO).localeCompare(String(a.startISO)));
+  let remaining = mins;
+  for (const s of monthSessions) {
+    if (remaining <= 0) break;
+    if (s.durationMin <= remaining) {
+      remaining -= s.durationMin;
+      if ((s.studies || 0) > 0 || (s.note || '').trim()) {
+        // Keep the entry — it still carries a study or a note
+        s.durationMin = 0;
+        s.stopISO = s.startISO;
+      } else {
+        const idx = state.sessions.findIndex(x => x.id === s.id);
+        if (idx !== -1) state.sessions.splice(idx, 1);
+      }
+    } else {
+      const newDur = s.durationMin - remaining;
+      s.stopISO = new Date(new Date(s.startISO).getTime() + newDur * 60000).toISOString();
+      s.durationMin = newDur;
+      remaining = 0;
+    }
+  }
+}
+
+// Log the moved remainder as a flagged session on the 1st of `mk`.
+// type:'rollover' counts toward month/service-year totals but is excluded from
+// service days, day ring, weekly totals, and streaks.
+function createRolloverSession(mk, mins) {
+  if (mins <= 0) return;
+  const [y, m] = mk.split('-').map(Number);
+  const start = new Date(y, m - 1, 1, 0, 5);
+  state.sessions.push({
+    id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    date: mk + '-01',
+    startISO: start.toISOString(),
+    stopISO: new Date(start.getTime() + mins * 60000).toISOString(),
+    durationMin: mins,
+    category: (state.categories[0] || { id: 'regular' }).id,
+    note: state.lang === 'es' ? 'Minutos del mes anterior' : 'Previous month rollover',
+    studies: 0,
+    type: 'rollover',
+  });
+}
+
+/* ===== ONE-TIME BACKFILL: June 2026 rollover (v64) =====
+   The write-only carryOverMin bug left June 2026 at 21:13 with no July entry,
+   and lastMonthProcessed was already '2026-07', so the normal guard skips it.
+   Runs once, then never again. */
+function runJune2026RolloverBackfill() {
+  if (state.rolloverBackfillJun2026Done) return;
+  if (state.carryOver) {
+    const remainderMins = getMonthMinutes('2026-06') % 60;
+    const alreadyDone = state.sessions.some(s => s.type === 'rollover' && s.date === '2026-07-01');
+    if (remainderMins > 0 && !alreadyDone) {
+      trimMinutesFromMonth('2026-06', remainderMins);
+      createRolloverSession('2026-07', remainderMins);
+    }
+  }
+  state.rolloverBackfillJun2026Done = true;
   saveState();
 }
 
@@ -977,8 +1044,9 @@ function getAllArchives() {
 }
 
 /* ===== AGGREGATIONS ===== */
+function isRolloverSession(s) { return !!s && s.type === 'rollover'; }
 function getSessionsForDate(d) { return state.sessions.filter(s => s.date === d && s.stopISO); }
-function getDayMinutes(d) { return getSessionsForDate(d).reduce((a,s) => a + (s.durationMin||0), 0); }
+function getDayMinutes(d) { return getSessionsForDate(d).filter(s => !isRolloverSession(s)).reduce((a,s) => a + (s.durationMin||0), 0); }
 function getMonthMinutes(mk) {
   return state.sessions.filter(s => s.date.startsWith(mk) && s.stopISO).reduce((a,s) => a + (s.durationMin||0), 0);
 }
@@ -988,7 +1056,7 @@ function getMonthStudies(mk) { return getMonthSessions(mk).reduce((a,s) => a + (
 function getMonthServiceDays(mk) {
   const days = new Set();
   for (const s of state.sessions) {
-    if (s.date && s.date.startsWith(mk) && s.stopISO && (s.durationMin || 0) > 0) {
+    if (s.date && s.date.startsWith(mk) && s.stopISO && (s.durationMin || 0) > 0 && !isRolloverSession(s)) {
       days.add(s.date);
     }
   }
@@ -1025,7 +1093,7 @@ function getWeekRange() {
 function getWeekMinutes() {
   const { start, end } = getWeekRange();
   const s = ymd(start), e = ymd(end);
-  return state.sessions.filter(x => x.date >= s && x.date <= e && x.stopISO).reduce((a,x) => a + (x.durationMin||0), 0);
+  return state.sessions.filter(x => x.date >= s && x.date <= e && x.stopISO && !isRolloverSession(x)).reduce((a,x) => a + (x.durationMin||0), 0);
 }
 function getPlannedForDate(d) { return (state.plannedByDate || {})[d] || 0; }
 function getMonthPlannedTotal(mk) {
@@ -1752,7 +1820,7 @@ function renderCategoryChipRow() {
 function sessionCardHTML(s) {
   const startT = new Date(s.startISO).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   const stopT = new Date(s.stopISO).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  const cat = categoryLabel(s.category);
+  const cat = isRolloverSession(s) ? t('rolloverLabel') : categoryLabel(s.category);
   const studies = s.studies ? `<span class="chip chip-amber" style="padding:2px 8px; font-size:10px;"><i class="fa-solid fa-book"></i>${s.studies}</span>` : '';
   const note = s.note ? `<div class="text-xs text-faint mt-2" style="font-style:italic;">"${escapeHtml(s.note)}"</div>` : '';
   return `
@@ -3160,7 +3228,10 @@ function renderReports() {
   // Categories
   const sessions = getMonthSessions(currentReportMonth);
   const catTotals = {};
-  sessions.forEach(s => { catTotals[s.category] = (catTotals[s.category]||0) + s.durationMin; });
+  sessions.forEach(s => {
+    const key = isRolloverSession(s) ? '__rollover' : s.category;
+    catTotals[key] = (catTotals[key]||0) + s.durationMin;
+  });
   const total = Object.values(catTotals).reduce((a,b) => a+b, 0);
   const catEl = document.getElementById('reportCategories');
   if (!total) { catEl.innerHTML = `<div class="text-faint text-sm text-center py-4">${t('empty')}</div>`; return; }
@@ -3170,7 +3241,7 @@ function renderReports() {
     return `
       <div>
         <div class="row-between text-sm mb-1">
-          <span class="font-semibold">${escapeHtml(categoryLabel(cat))}</span>
+          <span class="font-semibold">${escapeHtml(cat === '__rollover' ? t('rolloverLabel') : categoryLabel(cat))}</span>
           <span class="font-mono font-bold">${formatHM(m)}</span>
         </div>
         <div class="progress-track" style="height:8px;"><div style="width:${pct}%; height:100%; background:${colors[i%colors.length]}; border-radius:999px;"></div></div>
@@ -5074,6 +5145,7 @@ window.onload = function() {
   applyTheme();
   checkServiceYearReset();
   checkMonthEndRollover();
+  runJune2026RolloverBackfill();
   wireEvents();
   // Resume timer if it was running before reload/restart
   if (state.activeTimer) startLiveTick();

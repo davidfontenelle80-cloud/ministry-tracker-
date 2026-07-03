@@ -2,7 +2,7 @@
  * sw.js â KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v63-audit-polish';
+const CACHE_VERSION = 'ministry-tracker-v64-rollover-move';
 
 const PRECACHE_URLS = [
   './',
