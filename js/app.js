@@ -3779,10 +3779,14 @@ function openPlanModal(dateStr) {
   };
 }
 
-function openEditSessionModal(sessionId) {
+function openEditSessionModal(sessionId, overrides) {
   const s = state.sessions.find(x => x.id === sessionId);
   if (!s) return;
-  const startD = new Date(s.startISO), stopD = new Date(s.stopISO);
+  overrides = overrides || {};
+  const initStartISO = overrides.startISO || s.startISO;
+  const initStopISO = overrides.stopISO || s.stopISO;
+  const initDurMin = (overrides.durationMin !== undefined) ? overrides.durationMin : s.durationMin;
+  const startD = new Date(initStartISO), stopD = new Date(initStopISO);
   const startTime = `${String(startD.getHours()).padStart(2,'0')}:${String(startD.getMinutes()).padStart(2,'0')}`;
   const stopTime = `${String(stopD.getHours()).padStart(2,'0')}:${String(stopD.getMinutes()).padStart(2,'0')}`;
   openModal(`
@@ -3817,7 +3821,7 @@ function openEditSessionModal(sessionId) {
       </div>
       <div class="card-flat duration-tile text-center" id="editDurationTile">
         <div class="text-tiny uppercase tracking-wider text-dim font-bold">${t('durationLabel')}</div>
-        <div id="editSessDuration" class="display-num text-3xl font-mono text-accent mt-1">${formatHM(s.durationMin)}</div>
+        <div id="editSessDuration" class="display-num text-3xl font-mono text-accent mt-1">${formatHM(initDurMin)}</div>
         <div class="text-tiny text-faint mt-1">${t('tapToEdit')}</div>
       </div>
       <div class="row gap-2">
@@ -3827,10 +3831,10 @@ function openEditSessionModal(sessionId) {
       </div>
     </div>`);
   // Track local working values so wheel edits + time edits stay in sync
-  let workingStartISO = s.startISO;
-  let workingStopISO = s.stopISO;
-  let workingDurMin = s.durationMin;
-  let lastEdit = 'times'; // 'times' or 'wheel'
+  let workingStartISO = initStartISO;
+  let workingStopISO = initStopISO;
+  let workingDurMin = initDurMin;
+  let lastEdit = overrides.lastEdit || 'times'; // 'times' or 'wheel'
 
   function refreshDurFromTimes() {
     const startVal = document.getElementById('editStartTime').value;
@@ -3865,12 +3869,14 @@ function openEditSessionModal(sessionId) {
           workingStartISO = newStart.toISOString();
         }
         workingDurMin = newMin;
-        lastEdit = 'wheel';
-        // Update visible time fields (show wrapped value if >24h)
-        const ns = new Date(workingStartISO);
-        const ne = new Date(workingStopISO);
-        document.getElementById('editStartTime').value = `${String(ns.getHours()).padStart(2,'0')}:${String(ns.getMinutes()).padStart(2,'0')}`;
-        document.getElementById('editStopTime').value = `${String(ne.getHours()).padStart(2,'0')}:${String(ne.getMinutes()).padStart(2,'0')}`;
+        // Re-open the edit modal with updated times — the duration wheel
+        // replaced the session edit form, so restore it with new working values.
+        openEditSessionModal(sessionId, {
+          startISO: workingStartISO,
+          stopISO: workingStopISO,
+          durationMin: workingDurMin,
+          lastEdit: 'wheel'
+        });
         document.getElementById('editSessDuration').textContent = formatHM(workingDurMin);
       });
     });
