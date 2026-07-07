@@ -796,7 +796,7 @@ function injectMinistryNotesPolishCss() {
     '.mn-category-card:hover{transform:translateY(-3px) scale(1.01);box-shadow:0 4px 10px rgba(0,0,0,.12),0 14px 30px rgba(0,0,0,.10)}',
     '.mn-category-card:active{transform:scale(.98)}',
     '.mn-note-card:active{transform:scale(.99)}',
-    '.mn-category-card::before{content:\"\";position:absolute;inset:0 auto 0 0;width:5px;background:var(--mn-color,var(--accent))}',
+    '.mn-category-card::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--mn-color,var(--accent))}',
     '.mn-category-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--mn-color,var(--accent)) 18%,transparent);font-size:24px}',
     '.mn-card-actions{display:flex;gap:6px}',
     '.mn-empty{padding:40px 20px;text-align:center;border:1px dashed var(--border);border-radius:14px;background:var(--surface);color:var(--text-dim)}',
@@ -847,7 +847,7 @@ function loadState() {
         try {
           const parsed = JSON.parse(old);
           return migrateCategories({ ...APP_CONFIG.defaults, ...parsed, schemaVersion: APP_CONFIG.schemaVersion });
-        } catch(e) {}
+        } catch(e){ /* ignore */ }
       }
       return JSON.parse(JSON.stringify(APP_CONFIG.defaults));
     }
@@ -921,7 +921,7 @@ function minutesBetween(startISO, stopISO) {
 }
 function vibrate(p) {
   if (state.haptics && navigator.vibrate) {
-    try { navigator.vibrate(p); } catch(e) {}
+    try { navigator.vibrate(p); } catch(e){ /* ignore */ }
   }
 }
 
@@ -945,7 +945,7 @@ function checkServiceYearReset() {
       archivedAt: new Date().toISOString(),
       serviceYear: state.lastClearedServiceYear,
     };
-    try { localStorage.setItem(archKey, JSON.stringify(archive)); } catch(e) {}
+    try { localStorage.setItem(archKey, JSON.stringify(archive)); } catch(e){ /* ignore */ }
     state.sessions = [];
     state.studiesByDate = {};
     state.creditEntries = [];
@@ -1078,10 +1078,10 @@ function getAllArchives() {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith(APP_CONFIG.archivePrefix)) {
-        try { archives[key] = JSON.parse(localStorage.getItem(key)); } catch(e) {}
+        try { archives[key] = JSON.parse(localStorage.getItem(key)); } catch(e){ /* ignore */ }
       }
     }
-  } catch(e) {}
+  } catch(e){ /* ignore */ }
   return archives;
 }
 
@@ -2452,7 +2452,7 @@ function _initCollapseSection(toggleId, bodyId, chevronId, storeKey) {
   var chev = document.getElementById(chevronId);
   if (!tgl || !body) return;
   var open = false;
-  try { open = localStorage.getItem(storeKey) === '1'; } catch (e) {}
+  try { open = localStorage.getItem(storeKey) === '1'; } catch(e){ /* ignore */ }
   function apply() {
     body.style.display = open ? '' : 'none';
     if (chev) chev.style.transform = open ? 'rotate(180deg)' : '';
@@ -2461,7 +2461,7 @@ function _initCollapseSection(toggleId, bodyId, chevronId, storeKey) {
   apply();
   tgl.addEventListener('click', function() {
     open = !open;
-    try { localStorage.setItem(storeKey, open ? '1' : '0'); } catch (e) {}
+    try { localStorage.setItem(storeKey, open ? '1' : '0'); } catch(e){ /* ignore */ }
     apply();
   });
 }
@@ -2514,12 +2514,12 @@ function resumePendingReminderSync() {
   var pending = null;
   try { pending = JSON.parse(raw); } catch (e) { pending = null; }
   if (!pending || !pending.sourceId) {
-    try { localStorage.removeItem('mtPendingReminderSync'); } catch (e) {}
+    try { localStorage.removeItem('mtPendingReminderSync'); } catch(e){ /* ignore */ }
     return;
   }
   var note = (state.ministryNotes || []).find(function(n) { return n && n.id === pending.sourceId; });
   if (!note || !note.reminder) {
-    try { localStorage.removeItem('mtPendingReminderSync'); } catch (e) {}
+    try { localStorage.removeItem('mtPendingReminderSync'); } catch(e){ /* ignore */ }
     return;
   }
   console.info('[MinistryPush] resuming interrupted reminder sync', { sourceId: pending.sourceId });
@@ -2617,7 +2617,7 @@ function syncMinistryNotePush(note) {
     fireAt: fireAt
   });
   toast(t('reminderSyncStarted'));
-  try { localStorage.setItem('mtPendingReminderSync', JSON.stringify({ sourceId: sourceId, ts: Date.now() })); } catch (e) {}
+  try { localStorage.setItem('mtPendingReminderSync', JSON.stringify({ sourceId: sourceId, ts: Date.now() })); } catch(e){ /* ignore */ }
   window.__ministryPushSyncActive = true;
   const syncPromise = window.MinistryPush.syncReminder(
     'ministry-note',
@@ -2628,7 +2628,7 @@ function syncMinistryNotePush(note) {
   ).then(function(result) {
     window.__ministryPushSyncActive = false;
     if (!result || result.ok !== false || result.postReached) {
-      try { localStorage.removeItem('mtPendingReminderSync'); } catch (e) {}
+      try { localStorage.removeItem('mtPendingReminderSync'); } catch(e){ /* ignore */ }
     }
     if (result && result.ok === false) {
       var reason = result.error || result.skipped || 'Unknown failure';
@@ -3407,9 +3407,9 @@ function renderPastServiceYears() {
           days: dayset.size,
           archivedAt: data.archivedAt || null,
         });
-      } catch(e) {}
+      } catch(e){ /* ignore */ }
     }
-  } catch(e) {}
+  } catch(e){ /* ignore */ }
   archives.sort((a, b) => b.sy - a.sy); // newest first
 
   if (!archives.length) {
@@ -4485,7 +4485,7 @@ function importJSONFromText(text) {
     // Restore archives if present
     if (obj._archives && typeof obj._archives === 'object') {
       Object.entries(obj._archives).forEach(([k, v]) => {
-        try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {}
+        try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){ /* ignore */ }
       });
     }
     // Strip private fields and merge
@@ -4576,7 +4576,7 @@ function openShareTextPicker(text) {
     } catch(e) {
       // Fallback: select the textarea
       const ta = document.querySelector('.modal-body textarea');
-      if (ta) { ta.focus(); ta.select(); try { document.execCommand('copy'); toast(t('copied')); closeModal(); } catch(e2) {} }
+      if (ta) { ta.focus(); ta.select(); try { document.execCommand('copy'); toast(t('copied')); closeModal(); } catch(e2){ /* ignore */ } }
     }
   };
 
@@ -4617,7 +4617,7 @@ try {
   const _mm = window.matchMedia('(prefers-color-scheme: dark)');
   if (_mm.addEventListener) _mm.addEventListener('change', () => { if (state.theme === 'auto') applyTheme(); });
   else if (_mm.addListener) _mm.addListener(() => { if (state.theme === 'auto') applyTheme(); });
-} catch(e) {}
+} catch(e){ /* ignore */ }
 const SCREEN_ORDER = ['home', 'timer', 'calendar', 'notes', 'reports', 'settings'];
 function switchScreen(name) {
   const prevName = currentScreen;
@@ -5207,7 +5207,7 @@ function wireEvents() {
           if (k && k.startsWith(APP_CONFIG.archivePrefix)) keysToDelete.push(k);
         }
         keysToDelete.forEach(k => localStorage.removeItem(k));
-      } catch(e) {}
+      } catch(e){ /* ignore */ }
       const preserve = {
         publisherType: state.publisherType, annualGoalHrs: state.annualGoalHrs,
         monthlyGoalHrs: state.monthlyGoalHrs, dailyGoalHrs: state.dailyGoalHrs,
@@ -5348,15 +5348,15 @@ window.onload = function() {
   }
 
   function loadCache(){ try{var r=localStorage.getItem(WX_CACHE_KEY);return r?JSON.parse(r):null;}catch(e){return null;} }
-  function saveCache(d){ try{localStorage.setItem(WX_CACHE_KEY,JSON.stringify(d));}catch(e){} }
+  function saveCache(d){ try{localStorage.setItem(WX_CACHE_KEY,JSON.stringify(d));}catch(e){ /* ignore */ } }
   function loadLoc(){ try{return JSON.parse(localStorage.getItem(WX_LOCATION_KEY)||'null');}catch(e){return null;} }
-  function saveLoc(l){ try{localStorage.setItem(WX_LOCATION_KEY,JSON.stringify(l));}catch(e){} }
+  function saveLoc(l){ try{localStorage.setItem(WX_LOCATION_KEY,JSON.stringify(l));}catch(e){ /* ignore */ } }
   function loadSaved(){ try{return JSON.parse(localStorage.getItem(WX_SAVED_KEY)||'[]');}catch(e){return[];} }
   function addSaved(loc){
     var list=loadSaved().filter(function(l){return l.name!==loc.name;});
     list.unshift({lat:loc.lat,lon:loc.lon,name:loc.name});
     if(list.length>6) list=list.slice(0,6);
-    try{localStorage.setItem(WX_SAVED_KEY,JSON.stringify(list));}catch(e){}
+    try{localStorage.setItem(WX_SAVED_KEY,JSON.stringify(list));}catch(e){ /* ignore */ }
   }
 
   function loadCachedAdvisory(){
@@ -5641,7 +5641,7 @@ window.onload = function() {
         var aqiJ=await aqiR.json();
         aqi=aqiJ.current&&aqiJ.current.us_aqi!=null?aqiJ.current.us_aqi:null;
       }
-    }catch(e){}
+    }catch(e){ /* ignore */ }
 
     var d={
       fetchedAt:Date.now(),
@@ -5693,7 +5693,7 @@ window.onload = function() {
       var j=await r.json();
       var feats=(j.features||[]).filter(function(f){return f.properties&&f.properties.event;});
       if(feats.length){
-        try{localStorage.setItem(WX_ADVISORY_KEY,JSON.stringify({fetchedAt:Date.now(),features:feats}));}catch(e){}
+        try{localStorage.setItem(WX_ADVISORY_KEY,JSON.stringify({fetchedAt:Date.now(),features:feats}));}catch(e){ /* ignore */ }
       }
       return feats.length?feats:null;
     }catch(e){return null;}
@@ -5838,7 +5838,7 @@ window.onload = function() {
     },
 
     selectSaved:function(enc){
-      try{var s=JSON.parse(decodeURIComponent(enc));App.Weather.selectCity(s.lat,s.lon,s.name);}catch(e){}
+      try{var s=JSON.parse(decodeURIComponent(enc));App.Weather.selectCity(s.lat,s.lon,s.name);}catch(e){ /* ignore */ }
     },
 
     dismissAdvisory:function(){
