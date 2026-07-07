@@ -2,7 +2,7 @@
  * sw.js â KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v67-edit-time-fix';
+const CACHE_VERSION = 'ministry-tracker-v68-credit-save-fix';
 
 const PRECACHE_URLS = [
   './',
