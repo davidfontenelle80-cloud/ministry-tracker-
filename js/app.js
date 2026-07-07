@@ -5658,6 +5658,16 @@ window.onload = function() {
   }
 
   async function geocodeCity(q){
+    var zip=(q||'').trim();
+    // US ZIP codes aren't matched by Open-Meteo's name search; use a ZIP geocoder.
+    if(/^\d{5}$/.test(zip)){
+      var zr=await fetch('https://api.zippopotam.us/us/'+zip);
+      if(!zr.ok) return [];
+      var zj=await zr.json();
+      return(zj.places||[]).map(function(p){
+        return{lat:parseFloat(p.latitude),lon:parseFloat(p.longitude),name:(p['place name']||zip)+(p['state abbreviation']?', '+p['state abbreviation']:'')+' '+zip+', US'};
+      });
+    }
     var r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=5&language=en&format=json');
     if(!r.ok) throw new Error('Geocoding failed');
     var j=await r.json();
