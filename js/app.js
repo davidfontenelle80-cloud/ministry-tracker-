@@ -5586,7 +5586,7 @@ window.onload = function() {
       +'<div id="wxLocPicker" class="wx-loc-picker" hidden>'
       +'<button class="wx-gps-btn2" onclick="App.Weather.useGPS()">📍 '+(isEs?'Usar mi ubicación':'Use my location')+'</button>'
       +'<div class="wx-search-row">'
-      +'<input id="wxCityInput" class="wx-city-input" placeholder="'+(isEs?'Ciudad o ZIP':'City or ZIP')+'" type="text" onkeydown="if(event.key===\'Enter\')App.Weather.searchCity()">'
+      +'<input id="wxCityInput" class="wx-city-input" placeholder="'+(isEs?'Ciudad, o ZIP + país':'City, or ZIP + country')+'" type="text" onkeydown="if(event.key===\'Enter\')App.Weather.searchCity()">'
       +'<button class="btn btn-sm btn-primary" onclick="App.Weather.searchCity()">'+(isEs?'Buscar':'Search')+'</button>'
       +'</div>'
       +'<div id="wxSearchResults" class="wx-search-results"></div>'
@@ -5658,17 +5658,26 @@ window.onload = function() {
   }
 
   async function geocodeCity(q){
-    var zip=(q||'').trim();
-    // US ZIP codes aren't matched by Open-Meteo's name search; use a ZIP geocoder.
-    if(/^\d{5}$/.test(zip)){
-      var zr=await fetch('https://api.zippopotam.us/us/'+zip);
-      if(!zr.ok) return [];
-      var zj=await zr.json();
-      return(zj.places||[]).map(function(p){
-        return{lat:parseFloat(p.latitude),lon:parseFloat(p.longitude),name:(p['place name']||zip)+(p['state abbreviation']?', '+p['state abbreviation']:'')+' '+zip+', US'};
-      });
+    var raw=(q||'').trim();
+    // Postal-code lookup: bare digits default to US; "<postal> <CC>" or "<CC> <postal>"
+    // (CC = 2-letter country) hits that country. City names fall through to name search.
+    var cc=null, postal=null, m;
+    if(/^\d{3,10}$/.test(raw)){ cc='us'; postal=raw; }
+    else if((m=raw.match(/^([A-Za-z]{2})[\s,]+([A-Za-z0-9][A-Za-z0-9\s-]{1,9})$/))){ cc=m[1].toLowerCase(); postal=m[2]; }
+    else if((m=raw.match(/^([A-Za-z0-9][A-Za-z0-9\s-]{1,9})[\s,]+([A-Za-z]{2})$/))){ cc=m[2].toLowerCase(); postal=m[1]; }
+    if(cc && postal){
+      try{
+        var zr=await fetch('https://api.zippopotam.us/'+cc+'/'+encodeURIComponent(postal.replace(/\s+/g,'')));
+        if(zr.ok){
+          var zj=await zr.json();
+          var out=(zj.places||[]).map(function(p){
+            return{lat:parseFloat(p.latitude),lon:parseFloat(p.longitude),name:(p['place name']||postal)+(p['state abbreviation']?', '+p['state abbreviation']:(p.state?', '+p.state:''))+' '+postal.trim()+', '+cc.toUpperCase()};
+          });
+          if(out.length) return out;
+        }
+      }catch(e){ /* fall through to name search */ }
     }
-    var r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=5&language=en&format=json');
+    var r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(raw)+'&count=5&language=en&format=json');
     if(!r.ok) throw new Error('Geocoding failed');
     var j=await r.json();
     return(j.results||[]).map(function(x){
@@ -5703,7 +5712,7 @@ window.onload = function() {
     return'<div class="wx-card wx-err-card" id="weatherCard">'
       +'<p class="wx-err-msg">⚠️ '+msg+'</p>'
       +'<div class="wx-search-row" style="margin-top:8px">'
-      +'<input id="wxCityInput" class="wx-city-input" placeholder="'+(isEs?'Ciudad o ZIP':'City or ZIP')+'" type="text" onkeydown="if(event.key===\'Enter\')App.Weather.searchCity()">'
+      +'<input id="wxCityInput" class="wx-city-input" placeholder="'+(isEs?'Ciudad, o ZIP + país':'City, or ZIP + country')+'" type="text" onkeydown="if(event.key===\'Enter\')App.Weather.searchCity()">'
       +'<button class="btn btn-sm btn-primary" onclick="App.Weather.searchCity()">'+(isEs?'Buscar':'Search')+'</button>'
       +'</div>'
       +'<div id="wxSearchResults" class="wx-search-results"></div>'
