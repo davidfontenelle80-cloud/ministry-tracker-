@@ -196,6 +196,7 @@
         moved.push({ type: 'otherCredit', minutes });
       });
       state.creditByMonth = {};
+      rebuildCreditByMonthFromEntries();
 
       state.categories = FIELD_ACTIVITY_TAGS.map(x => ({ ...x }));
       if (!FIELD_IDS.has(state.lastUsedCategory)) state.lastUsedCategory = 'regular';
@@ -236,6 +237,22 @@
       });
       return out;
     }
+    function getCreditEntryTotalForMonth(mk) {
+      return getCreditEntriesForMonth(mk).reduce((a, e) => a + (parseInt(e.minutes, 10) || 0), 0);
+    }
+    function syncCreditByMonth(mk) {
+      if (!mk || !/^\d{4}-\d{2}$/.test(mk)) return;
+      state.creditByMonth = state.creditByMonth || {};
+      const total = getCreditEntryTotalForMonth(mk);
+      if (total > 0) state.creditByMonth[mk] = total;
+      else delete state.creditByMonth[mk];
+    }
+    function rebuildCreditByMonthFromEntries() {
+      state.creditByMonth = {};
+      ensureArray(state.creditEntries).forEach(e => {
+        if (e && e.date) syncCreditByMonth(e.date.slice(0, 7));
+      });
+    }
     function getServiceYearCreditMinutes() {
       const { start, end } = getServiceYearRange();
       const s = ymd(start), e = ymd(end);
@@ -246,7 +263,9 @@
 
     // Patch credit total helper used by existing reports/dashboard shell.
     getMonthCredit = function (mk) {
-      return getCreditEntriesForMonth(mk).reduce((a, e) => a + (parseInt(e.minutes, 10) || 0), 0);
+      const entryTotal = getCreditEntryTotalForMonth(mk);
+      if (entryTotal > 0) return entryTotal;
+      return parseInt((state.creditByMonth || {})[mk], 10) || 0;
     };
 
     const oldCategoryLabel = categoryLabel;
@@ -266,13 +285,17 @@
         type: normalizeCreditType(type) || 'otherCredit',
         note: note || '',
       });
+      syncCreditByMonth(date.slice(0, 7));
       state.sessionsSinceLastBackup = (state.sessionsSinceLastBackup || 0) + 1;
       saveState();
       return true;
     }
 
     function deleteCreditEntry(id) {
+      const entry = ensureArray(state.creditEntries).find(e => e && e.id === id);
+      const mk = entry && entry.date ? entry.date.slice(0, 7) : null;
       state.creditEntries = ensureArray(state.creditEntries).filter(e => e.id !== id);
+      syncCreditByMonth(mk);
       saveState();
       renderAll();
     }
@@ -452,7 +475,10 @@
       const sel = document.getElementById('reportMonth');
       if (sel) {
         const existing = new Set(Array.from(sel.options).map(o => o.value));
-        const creditMonths = [...new Set(ensureArray(state.creditEntries).map(e => (e.date || '').slice(0, 7)).filter(Boolean))].sort().reverse();
+        const creditMonths = [...new Set(
+          ensureArray(state.creditEntries).map(e => (e.date || '').slice(0, 7)).filter(Boolean)
+            .concat(Object.keys(state.creditByMonth || {}))
+        )].sort().reverse();
         creditMonths.forEach(mk => {
           if (existing.has(mk)) return;
           const [y, m] = mk.split('-').map(Number);
@@ -601,10 +627,13 @@
         const saveNote = document.getElementById('creditNote').value.trim();
         if (!saveDate || creditMinutes <= 0) { toast(t('enterTimeRequired')); return; }
         if (existing) {
+          const oldMk = existing.date ? existing.date.slice(0, 7) : null;
           existing.date = saveDate;
           existing.minutes = creditMinutes;
           existing.type = saveType;
           existing.note = saveNote;
+          syncCreditByMonth(oldMk);
+          syncCreditByMonth(saveDate.slice(0, 7));
           saveState();
         } else {
           addCreditEntry(saveDate, creditMinutes, saveType, saveNote);

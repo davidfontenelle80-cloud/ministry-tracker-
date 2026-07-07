@@ -1109,8 +1109,10 @@ function getCreditEntriesForMonth(mk) {
     .filter(e => e && e.date && e.date.startsWith(mk) && (parseInt(e.minutes, 10) || 0) > 0);
 }
 function getMonthCredit(mk) {
-  return getCreditEntriesForMonth(mk)
+  const entryTotal = getCreditEntriesForMonth(mk)
     .reduce((a, e) => a + (parseInt(e.minutes, 10) || 0), 0);
+  if (entryTotal > 0) return entryTotal;
+  return parseInt((state.creditByMonth || {})[mk], 10) || 0;
 }
 function getServiceYearMinutes() {
   const { start, end } = getServiceYearRange();
@@ -3259,7 +3261,9 @@ function renderLogHistory() {
 function renderReports() {
   const sel = document.getElementById('reportMonth');
   const monthSet = new Set([monthKey(new Date())]);
-  state.sessions.forEach(s => monthSet.add(s.date.slice(0,7)));
+  state.sessions.forEach(s => { if (s && s.date) monthSet.add(s.date.slice(0,7)); });
+  (state.creditEntries || []).forEach(e => { if (e && e.date) monthSet.add(e.date.slice(0,7)); });
+  Object.keys(state.creditByMonth || {}).forEach(mk => monthSet.add(mk));
   const months = [...monthSet].sort().reverse();
   sel.innerHTML = months.map(mk => {
     const [y,m] = mk.split('-').map(Number);
@@ -4271,6 +4275,8 @@ function openCreditEditModal() {
   document.getElementById('creditSave').onclick = () => {
     const h = parseFloat(document.getElementById('creditInput').value) || 0;
     const mins = Math.round(h * 60);
+    state.creditEntries = state.creditEntries || [];
+    state.creditByMonth = state.creditByMonth || {};
     state.creditEntries = (state.creditEntries || []).filter(e => !e.date || !e.date.startsWith(mk) || e.id !== 'c_manual_month_' + mk);
     if (mins > 0) {
       state.creditEntries.push({
@@ -4280,6 +4286,9 @@ function openCreditEditModal() {
         type: 'otherCredit',
         note: 'Manual monthly credit total',
       });
+      state.creditByMonth[mk] = mins;
+    } else {
+      delete state.creditByMonth[mk];
     }
     saveState(); closeModal(); renderAll(); toast(t('save'));
   };
