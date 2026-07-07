@@ -332,6 +332,8 @@
         btnDeduct: 'Remove Time',
         btnSetPlan: 'Set Plan',
         btnAddDetailed: 'Add Session',
+        typeHoursLabel: 'Credit hours (type)',
+        typeHoursHint: 'Decimal hours, e.g. 1.5 = 1:30',
       });
       Object.assign(I18N.es, {
         credit: 'Crédito',
@@ -348,6 +350,8 @@
         btnDeduct: 'Quitar Tiempo',
         btnSetPlan: 'Fijar Plan',
         btnAddDetailed: 'Añadir Sesión',
+        typeHoursLabel: 'Horas de crédito (escribir)',
+        typeHoursHint: 'Horas decimales, ej. 1.5 = 1:30',
       });
     }
 
@@ -540,12 +544,12 @@
       openCreditEntryModal((currentReportMonth || monthKey(new Date())) + '-01');
     };
 
-    function openCreditEntryModal(dateStr, editId) {
+    function openCreditEntryModal(dateStr, editId, seed) {
       const existing = editId ? ensureArray(state.creditEntries).find(e => e.id === editId) : null;
-      const date = existing?.date || dateStr || todayStr();
-      const minutes = existing?.minutes || 0;
-      const type = existing?.type || 'ldc';
-      const note = existing?.note || '';
+      const date = (seed && seed.date) || existing?.date || dateStr || todayStr();
+      const minutes = seed ? (seed.minutes || 0) : (existing?.minutes || 0);
+      const type = (seed && seed.type) || existing?.type || 'ldc';
+      const note = (seed && seed.note !== undefined) ? seed.note : (existing?.note || '');
       openModal(`
         <div class="row-between items-center mb-4">
           <div>
@@ -562,6 +566,11 @@
           <div>
             <div class="text-xs font-bold uppercase text-dim mb-2">${t('creditType')}</div>
             <select id="creditType">${CREDIT_TYPES.map(c => `<option value="${c.id}"${c.id === type ? ' selected' : ''}>${escapeHtml(creditLabel(c.id))}</option>`).join('')}</select>
+          </div>
+          <div>
+            <div class="text-xs font-bold uppercase text-dim mb-2">${t('typeHoursLabel')}</div>
+            <input type="number" id="creditHoursInput" inputmode="decimal" step="0.25" min="0" placeholder="0.00" value="${minutes ? (minutes / 60).toFixed(2).replace(/\.?0+$/, '') : ''}" class="credit-v5-btn" style="width:100%;font-family:var(--font-mono,monospace);color:var(--purple);font-weight:700;font-size:18px;text-align:center;" />
+            <div class="text-tiny text-faint mt-1">${t('typeHoursHint')}</div>
           </div>
           <div class="card-flat duration-tile text-center" id="creditDurationTile">
             <div class="text-tiny uppercase tracking-wider text-dim font-bold">${t('durationLabel')}</div>
@@ -584,6 +593,13 @@
       function refreshCreditDuration() {
         const el = document.getElementById('creditDuration');
         if (el) el.textContent = formatHM(creditMinutes || 0);
+      }
+      function readTypedMinutes() {
+        const box = document.getElementById('creditHoursInput');
+        if (!box) return null;
+        const v = parseFloat(box.value);
+        if (isNaN(v) || v <= 0) return null;
+        return Math.round(v * 60);
       }
       function refreshMonthList() {
         const wrap = document.getElementById('creditMonthList');
@@ -608,10 +624,23 @@
         wrap.querySelectorAll('[data-credit-edit]').forEach(btn => btn.onclick = () => openCreditEntryModal(null, btn.dataset.creditEdit));
       }
 
+      const hoursBox = document.getElementById('creditHoursInput');
+      if (hoursBox) hoursBox.addEventListener('input', () => {
+        const m = readTypedMinutes();
+        creditMinutes = m === null ? 0 : m;
+        refreshCreditDuration();
+      });
       document.getElementById('creditDurationTile').onclick = () => {
+        // openDurationWheel calls openModal, which replaces this modal's DOM.
+        // Capture in-progress field values and re-open the credit modal seeded
+        // with the picked minutes so the Save handler stays reachable.
+        const cur = {
+          date: document.getElementById('creditDate').value || date,
+          type: document.getElementById('creditType').value || type,
+          note: document.getElementById('creditNote').value || '',
+        };
         openDurationWheel(creditMinutes || 0, (newMin) => {
-          creditMinutes = newMin;
-          refreshCreditDuration();
+          openCreditEntryModal(dateStr, editId, { date: cur.date, type: cur.type, note: cur.note, minutes: newMin });
         });
       };
       document.getElementById('creditDate').onchange = refreshMonthList;
@@ -625,18 +654,21 @@
         const saveDate = document.getElementById('creditDate').value;
         const saveType = document.getElementById('creditType').value;
         const saveNote = document.getElementById('creditNote').value.trim();
-        if (!saveDate || creditMinutes <= 0) { toast(t('enterTimeRequired')); return; }
+        // Prefer the typed hours box; fall back to the wheel value.
+        const typedMinutes = readTypedMinutes();
+        const saveMinutes = typedMinutes !== null ? typedMinutes : (creditMinutes || 0);
+        if (!saveDate || saveMinutes <= 0) { toast(t('enterTimeRequired')); return; }
         if (existing) {
           const oldMk = existing.date ? existing.date.slice(0, 7) : null;
           existing.date = saveDate;
-          existing.minutes = creditMinutes;
+          existing.minutes = saveMinutes;
           existing.type = saveType;
           existing.note = saveNote;
           syncCreditByMonth(oldMk);
           syncCreditByMonth(saveDate.slice(0, 7));
           saveState();
         } else {
-          addCreditEntry(saveDate, creditMinutes, saveType, saveNote);
+          addCreditEntry(saveDate, saveMinutes, saveType, saveNote);
         }
         vibrate(15); closeModal(); renderAll(); toast(t('save'));
       };
