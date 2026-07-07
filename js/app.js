@@ -5689,11 +5689,17 @@ window.onload = function() {
       +'</div>';
   }
   function renderError(msg){
+    var isEs=state.lang==='es';
     return'<div class="wx-card wx-err-card" id="weatherCard">'
       +'<p class="wx-err-msg">⚠️ '+msg+'</p>'
+      +'<div class="wx-search-row" style="margin-top:8px">'
+      +'<input id="wxCityInput" class="wx-city-input" placeholder="'+(isEs?'Ciudad o ZIP':'City or ZIP')+'" type="text" onkeydown="if(event.key===\'Enter\')App.Weather.searchCity()">'
+      +'<button class="btn btn-sm btn-primary" onclick="App.Weather.searchCity()">'+(isEs?'Buscar':'Search')+'</button>'
+      +'</div>'
+      +'<div id="wxSearchResults" class="wx-search-results"></div>'
       +'<div style="display:flex;gap:8px;margin-top:8px">'
-      +'<button class="btn btn-sm" onclick="App.Weather.retry()">Retry</button>'
-      +'<button class="btn btn-sm" onclick="App.Weather.useGPS()">Use GPS</button>'
+      +'<button class="btn btn-sm" onclick="App.Weather.retry()">'+(isEs?'Reintentar':'Retry')+'</button>'
+      +'<button class="btn btn-sm" onclick="App.Weather.useGPS()">'+(isEs?'Usar GPS':'Use GPS')+'</button>'
       +'</div></div>';
   }
 
