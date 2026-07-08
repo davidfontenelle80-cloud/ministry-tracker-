@@ -1,8 +1,8 @@
 /**
- * sw.js â KHub Boilerplate
+ * sw.js Ã¢ÂÂ KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v70-intl-location-fix';
+const CACHE_VERSION = 'ministry-tracker-v71-notif-ux';
 
 const PRECACHE_URLS = [
   './',

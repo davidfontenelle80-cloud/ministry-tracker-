@@ -1,5 +1,5 @@
 /**
- * app.js — Ministry Tracker
+ * app.js â Ministry Tracker
  * Field service hour tracker for JW congregation. EN/ES bilingual.
  */
 
@@ -11,7 +11,7 @@
 const REMINDER_CHECK_MINUTES = 5;
 
 /* Minimum lead time for a reminder: anything closer than one cron interval
-   can be missed by the next worker check. Referenced everywhere — a future
+   can be missed by the next worker check. Referenced everywhere â a future
    change is this one line. */
 const MIN_REMINDER_LEAD_MINUTES = 5;
 
@@ -67,7 +67,7 @@ const APP_CONFIG = {
     lastBackupISO: null,
     sessionsSinceLastBackup: 0,
     backupBannerDismissed: false,
-    carryOverMin: 0, // deprecated (v64) — kept for backup compatibility, no longer written
+    carryOverMin: 0, // deprecated (v64) â kept for backup compatibility, no longer written
     lastMonthProcessed: null,
     rolloverBackfillJun2026Done: false,
     lastUsedCategory: null,
@@ -79,13 +79,13 @@ const APP_CONFIG = {
     creditByMonth: {},
     categories: [
       { id: 'regular', label_en: 'Door-to-door', label_es: 'Casa en casa' },
-      { id: 'publicWit', label_en: 'Public Witnessing', label_es: 'Predicación pública' },
+      { id: 'publicWit', label_en: 'Public Witnessing', label_es: 'PredicaciÃ³n pÃºblica' },
       { id: 'cartWit', label_en: 'Cart Witnessing', label_es: 'Carrito' },
-      { id: 'informalWit', label_en: 'Informal Witnessing', label_es: 'Predicación informal' },
-      { id: 'specialCampaign', label_en: 'Special Campaign', label_es: 'Campaña especial' },
-      { id: 'other', label_en: 'Other Field Service', label_es: 'Otra predicación' },
+      { id: 'informalWit', label_en: 'Informal Witnessing', label_es: 'PredicaciÃ³n informal' },
+      { id: 'specialCampaign', label_en: 'Special Campaign', label_es: 'CampaÃ±a especial' },
+      { id: 'other', label_en: 'Other Field Service', label_es: 'Otra predicaciÃ³n' },
     ],
-        // Stage C — Ministry Notes & Reminders data model
+        // Stage C â Ministry Notes & Reminders data model
         // Separate from service `categories`. Migration-safe: existing users get [] on first load.
     ministryNoteCategories: [],
     ministryNotes: [],
@@ -197,7 +197,7 @@ const I18N = {
     exported: 'Backup ready', cleared: 'Cleared',
     serviceYearReset: 'New service year started',
     addedMin: 'min added', studyAdded: 'Study added', copied: 'Copied',
-    forgotYesterday: 'Log yesterday →', needToHitWeek: 'to hit week',
+    forgotYesterday: 'Log yesterday â', needToHitWeek: 'to hit week',
     needToHitMonth: 'to hit month', backupOverdue: 'Backup recommended',
     setPlanned: 'Plan hours', clearPlan: 'Clear plan', planForDay: 'Plan for this day',
     remaining: 'left', over: 'over', noPlan: 'No plan',
@@ -241,7 +241,7 @@ const I18N = {
     sessionsThisDay: 'Sessions this day',
     dateLabel: 'Date',
     alreadyLogged: 'Already logged this day',
-    viewEditSessions: 'View / edit sessions →',
+    viewEditSessions: 'View / edit sessions â',
     actionLabel: 'Action',
     addToTotal: 'Add to total',
     setTotal: 'Set total',
@@ -257,7 +257,7 @@ const I18N = {
     openSessionsBtn: 'Open sessions for this day',
     adjustAdd: 'Add to timer',
     adjustSub: 'Subtract from timer',
-    timerAdjustHint: 'Tap +/− to adjust, or tap the time to set directly',
+    timerAdjustHint: 'Tap +/â to adjust, or tap the time to set directly',
     monthlyTargetTitle: 'Monthly target',
     perMonthLabel: 'per month to hit goal',
     aheadByLabel: 'Ahead by',
@@ -279,7 +279,7 @@ const I18N = {
     shareReportTitle: 'Share monthly report',
     shareReportHint: 'Copy puts the text on your clipboard. Send opens the share sheet (Messages, Mail, etc.).',
     shareReportSend: 'Send to app',
-    exportShareSheet: 'Share file (Notes, Files, Mail…)',
+    exportShareSheet: 'Share file (Notes, Files, Mailâ¦)',
     exportDownload: 'Download file',
     exportCopy: 'Copy text to clipboard',
     exportClose: 'Close',
@@ -294,7 +294,7 @@ const I18N = {
     cantDeleteLast: 'Need at least one category',
     invalidName: 'Name required',
     confirm: 'Confirm',
-    // Stage D — Ministry Note Categories
+    // Stage D â Ministry Note Categories
     notesTitle: 'Notes & Reminders',
     notesCategoriesHint: 'Organize your ministry notes by category.',
     notesComingSoon: 'Notes are coming in a future update.',
@@ -307,8 +307,8 @@ const I18N = {
     categoryCount: '{n} categories',
     noCategories: 'No categories yet. Add your first one.',
     confirmDeleteCat: 'Delete this category?',
-    catModalNameEsHint: '(same as above — bilingual editing coming in Stage G)',
-    notesBackBtn: '← Back',
+    catModalNameEsHint: '(same as above â bilingual editing coming in Stage G)',
+    notesBackBtn: 'â Back',
     mnAddNote: '+ Add Note',
     editNote: 'Edit Note',
     deleteNote: 'Delete Note',
@@ -352,10 +352,10 @@ const I18N = {
     reminderScheduled: 'Recordatorio programado',
     reminderSyncSaved: 'Recordatorio guardado',
     reminderSyncFailed: 'Error al sincronizar recordatorio',
-    reminderSyncSkipped: 'Sincronización omitida',
+    reminderSyncSkipped: 'SincronizaciÃ³n omitida',
     notifDenied: 'Notifications disabled. Enable in device Settings.',
     notifUnsupported: 'Notifications not supported on this device',
-    noNotifLabel: 'Due date only — no notification',
+    noNotifLabel: 'Due date only â no notification',
     confirmDeleteNote: 'Delete this note?',
         noteDueDate: 'Due date',
     noteDueTime: 'Due time',
@@ -379,109 +379,109 @@ const I18N = {
     calAddNote: '+ Add Note',
   },
   es: {
-    goodMorning: 'Buenos días', goodAfternoon: 'Buenas tardes', goodEvening: 'Buenas noches',
+    goodMorning: 'Buenos dÃ­as', goodAfternoon: 'Buenas tardes', goodEvening: 'Buenas noches',
     todayProgress: 'Progreso de hoy', todayMini: 'hoy',
-    day: 'Día', month: 'Mes', year: 'Año',
-    quickAdd: 'Añadir minutos', quickAddHint: 'Añade tiempo a hoy. Usa el lápiz para fecha, categoría, cursos o fijar total.', thisWeek: 'Esta semana', logged: 'registrado',
-    serviceYear: 'Año de servicio', projection: 'Proyección',
-    studies: 'Cursos', streak: 'Racha', sessions: 'Sesiones', serviceDays: 'Días de servicio',
+    day: 'DÃ­a', month: 'Mes', year: 'AÃ±o',
+    quickAdd: 'AÃ±adir minutos', quickAddHint: 'AÃ±ade tiempo a hoy. Usa el lÃ¡piz para fecha, categorÃ­a, cursos o fijar total.', thisWeek: 'Esta semana', logged: 'registrado',
+    serviceYear: 'AÃ±o de servicio', projection: 'ProyecciÃ³n',
+    studies: 'Cursos', streak: 'Racha', sessions: 'Sesiones', serviceDays: 'DÃ­as de servicio',
     readyToStart: 'Listo para empezar', inService: 'En servicio',
     start: 'Inicio', stop: 'Parar', note: 'Nota',
-    tapChange: 'toca para cambiar', sessionsOnDay: 'Sesiones de este día',
-    monthlyPlan: 'Plan mensual', tapDayToPlan: 'Toca un día para planear o registrar',
+    tapChange: 'toca para cambiar', sessionsOnDay: 'Sesiones de este dÃ­a',
+    monthlyPlan: 'Plan mensual', tapDayToPlan: 'Toca un dÃ­a para planear o registrar',
     plannedTotal: 'Planeado', goalTotal: 'Meta', actualHours: 'Real', plannedHours: 'Planeado',
     metGoal: 'Cumplido', missed: 'No cumplido', hasPlan: 'Con plan', todaysPlan: 'Plan de hoy',
     planPatterns: 'Patrones del plan',
-    planPatternMissed: 'No cumpliste tu plan los {day} en {count} de las últimas 8 semanas.',
+    planPatternMissed: 'No cumpliste tu plan los {day} en {count} de las Ãºltimas 8 semanas.',
     planPatternMissedShort: '{day}: {count} fallidos',
     todayPlanTitle: 'Plan de hoy',
     todayPlanInProgress: 'En progreso', todayPlanComplete: 'Completo', todayPlanOver: 'Sobre plan',
     todayPlanRemaining: 'restante', todayPlanDone: 'hecho',
-    calTapHint: 'Toca un día para planear o registrar',
-    all: 'Todo', thisMonth: 'Este mes', today: 'Hoy', empty: 'Sin sesiones aún',
+    calTapHint: 'Toca un dÃ­a para planear o registrar',
+    all: 'Todo', thisMonth: 'Este mes', today: 'Hoy', empty: 'Sin sesiones aÃºn',
     searchEmpty: 'No hay sesiones con notas que coincidan con "{q}"',
     searchPlaceholder: 'Buscar notas...',
-    monthlyReport: 'Informe mensual', hours: 'Horas de predicación', credit: 'Crédito',
-    share: 'Compartir', avgMonth: 'Promedio / mes', byCategory: 'Por categoría', tapEdit: 'toca para editar',
+    monthlyReport: 'Informe mensual', hours: 'Horas de predicaciÃ³n', credit: 'CrÃ©dito',
+    share: 'Compartir', avgMonth: 'Promedio / mes', byCategory: 'Por categorÃ­a', tapEdit: 'toca para editar',
     profile: 'Perfil', publisherType: 'Tipo de publicador',
     userNameLabel: 'Tu nombre', userNamePlaceholder: 'Opcional', userNameNew: 'Nuevo',
     pub: 'Publicador', aux: 'Precursor Auxiliar', regular: 'Precursor Regular', special: 'Precursor Especial',
     annual: 'Anual', monthly: 'Mensual', daily: 'Diario',
-    categories: 'Categorías', addCat: 'Añadir', catHint: 'Personaliza etiquetas para sesiones (ej. "Conducir", "Carrito")',
+    categories: 'CategorÃ­as', addCat: 'AÃ±adir', catHint: 'Personaliza etiquetas para sesiones (ej. "Conducir", "Carrito")',
     appearance: 'Apariencia', theme: 'Tema', dark: 'Oscuro', light: 'Claro', auto: 'Auto', language: 'Idioma',
     preferences: 'Preferencias',
-    confirmClose: 'Confirmar al detener el cronómetro',
+    confirmClose: 'Confirmar al detener el cronÃ³metro',
     showStreak: 'Mostrar contador de racha',
     weekStartsMon: 'Semana empieza lunes',
     carryOver: 'Trasladar minutos parciales',
     rolloverLabel: 'Traslado',
-    haptics: 'Vibración táctil',
+    haptics: 'VibraciÃ³n tÃ¡ctil',
     backupReminder: 'Recordatorio mensual de respaldo',
     roundMins: 'Redondear minutos', roundOff: 'Exacto',
-    autoPause: 'Pausa automática (min inactivo, 0 = apagado)',
+    autoPause: 'Pausa automÃ¡tica (min inactivo, 0 = apagado)',
     data: 'Datos', exportBtn: 'Exportar respaldo', backupBtn: 'Respaldo',
     cloudSaveBtn: 'Guardar en la nube', cloudRestoreBtn: 'Restaurar desde la nube', cloudHeader: 'Nube',
-    pastSY: 'Años de servicio anteriores', pastSYNone: 'Aún no hay años archivados.',
-    pastSYHours: 'horas', pastSYStudies: 'cursos', pastSYDays: 'días', pastSYArchived: 'archivado',
+    pastSY: 'AÃ±os de servicio anteriores', pastSYNone: 'AÃºn no hay aÃ±os archivados.',
+    pastSYHours: 'horas', pastSYStudies: 'cursos', pastSYDays: 'dÃ­as', pastSYArchived: 'archivado',
     importBtn: 'Importar desde archivo', pasteImportBtn: 'Pegar texto de respaldo',
     clearMonth: 'Borrar mes actual', clearAll: 'Borrar todos los datos',
-    nav_home: 'Inicio', nav_timer: 'Cronómetro', nav_cal: 'Calendario', nav_log: 'Registro', nav_notes: 'Notas y Recordatorios', nav_reports: 'Informes', nav_settings: 'Ajustes',
+    nav_home: 'Inicio', nav_timer: 'CronÃ³metro', nav_cal: 'Calendario', nav_log: 'Registro', nav_notes: 'Notas y Recordatorios', nav_reports: 'Informes', nav_settings: 'Ajustes',
     logHistory: 'Historial de Registro',
     weekdaysSun: ['D','L','M','M','J','V','S'],
     weekdaysMon: ['L','M','M','J','V','S','D'],
-    weekdaysShortSun: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],
-    weekdaysShortMon: ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],
+    weekdaysShortSun: ['Dom','Lun','Mar','MiÃ©','Jue','Vie','SÃ¡b'],
+    weekdaysShortMon: ['Lun','Mar','MiÃ©','Jue','Vie','SÃ¡b','Dom'],
     months: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
     monthsShort: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
     cancel: 'Cancelar', save: 'Guardar', delete: 'Eliminar', edit: 'Editar', set: 'Establecer',
     importLabel: 'Importar', copyAll: 'Copiar todo', done: 'Listo',
-    confirmDelete: '¿Eliminar esta sesión?',
-    confirmClearMonth: '¿Borrar todos los datos de este mes?',
-    confirmClearAll: '¿Borrar TODOS los datos incluyendo años archivados? No se puede deshacer.',
-    timerRunning: 'El cronómetro está activo',
+    confirmDelete: 'Â¿Eliminar esta sesiÃ³n?',
+    confirmClearMonth: 'Â¿Borrar todos los datos de este mes?',
+    confirmClearAll: 'Â¿Borrar TODOS los datos incluyendo aÃ±os archivados? No se puede deshacer.',
+    timerRunning: 'El cronÃ³metro estÃ¡ activo',
     keepRunning: 'Seguir', saveStop: 'Guardar y detener', discard: 'Descartar',
     pickStart: 'Hora de inicio', pickStop: 'Hora de fin',
-    quickAddSession: 'Añadir sesión rápida', addStudies: 'Cursos realizados',
+    quickAddSession: 'AÃ±adir sesiÃ³n rÃ¡pida', addStudies: 'Cursos realizados',
     saveStudyOnly: 'Guardar solo curso',
     studiesHintReady: 'Toca + antes de iniciar, o guarda solo un curso',
-    studiesHintActive: 'Toca + durante la sesión',
+    studiesHintActive: 'Toca + durante la sesiÃ³n',
     studiesOptional: 'Opcional, deja 0 si no hay',
-    noteOptionalPlaceholder: 'Nota opcional (curso bíblico, revisita, etc.)',
-    addNote: 'Nota (opcional)', selectCategory: 'Categoría',
-    durationLabel: 'Duración',
+    noteOptionalPlaceholder: 'Nota opcional (curso bÃ­blico, revisita, etc.)',
+    addNote: 'Nota (opcional)', selectCategory: 'CategorÃ­a',
+    durationLabel: 'DuraciÃ³n',
     reportText: 'Informe de Servicio del Campo',
     onPace: 'En ritmo', behind: 'Retrasado',
-    importSuccess: 'Respaldo importado', invalidJson: 'Respaldo no válido',
+    importSuccess: 'Respaldo importado', invalidJson: 'Respaldo no vÃ¡lido',
     exported: 'Respaldo listo', cleared: 'Borrado',
-    serviceYearReset: 'Nuevo año de servicio',
-    addedMin: 'min añadidos', studyAdded: 'Curso añadido', copied: 'Copiado',
-    forgotYesterday: 'Registrar ayer →', needToHitWeek: 'para meta semanal',
+    serviceYearReset: 'Nuevo aÃ±o de servicio',
+    addedMin: 'min aÃ±adidos', studyAdded: 'Curso aÃ±adido', copied: 'Copiado',
+    forgotYesterday: 'Registrar ayer â', needToHitWeek: 'para meta semanal',
     needToHitMonth: 'para meta mensual', backupOverdue: 'Se recomienda respaldo',
-    setPlanned: 'Planear horas', clearPlan: 'Quitar plan', planForDay: 'Plan para este día',
+    setPlanned: 'Planear horas', clearPlan: 'Quitar plan', planForDay: 'Plan para este dÃ­a',
     remaining: 'restante', over: 'extra', noPlan: 'Sin plan',
-    dayOptions: 'Opciones del día', logTime: 'Registrar tiempo',
-    startTimerHere: 'Iniciar cronómetro este día',
+    dayOptions: 'Opciones del dÃ­a', logTime: 'Registrar tiempo',
+    startTimerHere: 'Iniciar cronÃ³metro este dÃ­a',
     pasteImportTitle: 'Pegar respaldo',
     pasteImportHint: 'Pega el JSON abajo y toca Importar.',
-    importHint: 'Elige cómo importar tu respaldo.',
-    backupTitle: 'Respaldo y restauración',
-    backupNever: 'Sin respaldo aún. Exporta ahora para estar seguro.',
-    backupRecent: 'Último respaldo',
-    backupOld: 'El respaldo tiene más de 30 días',
+    importHint: 'Elige cÃ³mo importar tu respaldo.',
+    backupTitle: 'Respaldo y restauraciÃ³n',
+    backupNever: 'Sin respaldo aÃºn. Exporta ahora para estar seguro.',
+    backupRecent: 'Ãltimo respaldo',
+    backupOld: 'El respaldo tiene mÃ¡s de 30 dÃ­as',
     backupReminderTitle: 'Hora de respaldar tus datos',
-    backupLastLabel: 'Último respaldo',
-    daysAgoLabel: 'días',
+    backupLastLabel: 'Ãltimo respaldo',
+    daysAgoLabel: 'dÃ­as',
     newSessionsSinceBackup: 'sesiones nuevas desde entonces',
-    backupWhyText: 'Tus datos se guardan en este teléfono, pero si Safari borra los datos del sitio o necesitas cambiar de teléfono, podrías perder todo. Un archivo de respaldo es tu red de seguridad.',
+    backupWhyText: 'Tus datos se guardan en este telÃ©fono, pero si Safari borra los datos del sitio o necesitas cambiar de telÃ©fono, podrÃ­as perder todo. Un archivo de respaldo es tu red de seguridad.',
     backupNowBtn: 'Respaldar ahora',
     backupSkipBtn: 'Omitir por ahora',
-    backupSkipHint: 'Verás una alerta arriba hasta que respaldes',
+    backupSkipHint: 'VerÃ¡s una alerta arriba hasta que respaldes',
     urgentLabel: 'URGENTE',
     backupOverdueShort: 'Respaldo pendiente',
     daysShort: 'd',
     newShort: 'nuevas',
     backupBtnShort: 'Respaldar',
-    durTargetHint: '¿Qué hora se debe ajustar para igualar la nueva duración?',
+    durTargetHint: 'Â¿QuÃ© hora se debe ajustar para igualar la nueva duraciÃ³n?',
     durTargetStart: 'Mover hora de inicio (mantener fin)',
     durTargetStop: 'Mover hora de fin (mantener inicio)',
     wheelHint: 'Desliza para elegir horas y minutos',
@@ -492,30 +492,30 @@ const I18N = {
     tapToEdit: 'toca para ingresar tiempo',
     totalHoursFor: 'Horas totales del',
     btnAdjust: 'Ajustar',
-    btnAdd: 'Añadir',
+    btnAdd: 'AÃ±adir',
     btnDeduct: 'Restar',
     btnSetPlan: 'Plan',
-    btnAddDetailed: 'Añadir sesión',
-    sessionsThisDay: 'Sesiones de este día',
+    btnAddDetailed: 'AÃ±adir sesiÃ³n',
+    sessionsThisDay: 'Sesiones de este dÃ­a',
     dateLabel: 'Fecha',
-    alreadyLogged: 'Ya registrado ese día',
-    viewEditSessions: 'Ver / editar sesiones →',
-    actionLabel: 'Acción',
-    addToTotal: 'Añadir al total',
+    alreadyLogged: 'Ya registrado ese dÃ­a',
+    viewEditSessions: 'Ver / editar sesiones â',
+    actionLabel: 'AcciÃ³n',
+    addToTotal: 'AÃ±adir al total',
     setTotal: 'Establecer total',
-    addAmount: 'Tiempo a añadir',
-    addAmountHelp: 'Añade este tiempo encima del total del día.',
-    newTotal: 'Fijar total del día en',
-    setTotalHelp: 'Fija el total final de este día. La app añade solo la diferencia.',
+    addAmount: 'Tiempo a aÃ±adir',
+    addAmountHelp: 'AÃ±ade este tiempo encima del total del dÃ­a.',
+    newTotal: 'Fijar total del dÃ­a en',
+    setTotalHelp: 'Fija el total final de este dÃ­a. La app aÃ±ade solo la diferencia.',
     newTotalAfter: 'Nuevo total tras guardar',
-    nothingToAdd: 'Nada para añadir',
+    nothingToAdd: 'Nada para aÃ±adir',
     enterTimeRequired: 'Ingresa una cantidad de tiempo antes de usar esta funcion.',
-    setLowerTitle: 'El total ya es más alto',
-    setLowerMsg: 'Este día ya tiene {cur} registrado. No puedes establecer el total en {target} sin editar las sesiones existentes.',
-    openSessionsBtn: 'Abrir sesiones de este día',
-    adjustAdd: 'Añadir al cronómetro',
-    adjustSub: 'Restar del cronómetro',
-    timerAdjustHint: 'Toca +/− para ajustar, o toca el tiempo para fijarlo',
+    setLowerTitle: 'El total ya es mÃ¡s alto',
+    setLowerMsg: 'Este dÃ­a ya tiene {cur} registrado. No puedes establecer el total en {target} sin editar las sesiones existentes.',
+    openSessionsBtn: 'Abrir sesiones de este dÃ­a',
+    adjustAdd: 'AÃ±adir al cronÃ³metro',
+    adjustSub: 'Restar del cronÃ³metro',
+    timerAdjustHint: 'Toca +/â para ajustar, o toca el tiempo para fijarlo',
     monthlyTargetTitle: 'Meta mensual',
     perMonthLabel: 'al mes para cumplir',
     aheadByLabel: 'Adelantado',
@@ -523,61 +523,61 @@ const I18N = {
     rightOnPace: 'Justo a ritmo',
     monthsRemainingLabel: 'meses restantes',
     needThisMonth: 'Necesitas este mes',
-    addTimeWarn: 'El cronómetro ya está corriendo para hoy. ¿Añadir este tiempo encima de la sesión activa?',
-    addAnyway: 'Sí, añadir',
+    addTimeWarn: 'El cronÃ³metro ya estÃ¡ corriendo para hoy. Â¿AÃ±adir este tiempo encima de la sesiÃ³n activa?',
+    addAnyway: 'SÃ­, aÃ±adir',
     exportTitle: 'Exportar respaldo',
-    exportHint: 'En iPhone Safari, las descargas pueden fallar. Usa la opción que funcione:',
+    exportHint: 'En iPhone Safari, las descargas pueden fallar. Usa la opciÃ³n que funcione:',
     backupShareTitle: 'Respaldo y compartir',
-    backupShareHint: 'Guarda tus datos como archivo, restaura desde un respaldo, o comparte una nota rápida.',
+    backupShareHint: 'Guarda tus datos como archivo, restaura desde un respaldo, o comparte una nota rÃ¡pida.',
     saveToFile: 'Guardar archivo',
     importFile: 'Importar archivo',
     shareNote: 'Compartir nota',
-    importConfirmMsg: 'Importar reemplazará tus datos actuales. ¿Continuar?',
+    importConfirmMsg: 'Importar reemplazarÃ¡ tus datos actuales. Â¿Continuar?',
     rawJsonLabel: 'JSON crudo',
     shareReportTitle: 'Compartir reporte mensual',
-    shareReportHint: 'Copiar lo guarda al portapapeles. Enviar abre el menú de compartir (Mensajes, Correo, etc.).',
+    shareReportHint: 'Copiar lo guarda al portapapeles. Enviar abre el menÃº de compartir (Mensajes, Correo, etc.).',
     shareReportSend: 'Enviar a app',
-    exportShareSheet: 'Compartir archivo (Notas, Archivos, Correo…)',
+    exportShareSheet: 'Compartir archivo (Notas, Archivos, Correoâ¦)',
     exportDownload: 'Descargar archivo',
     exportCopy: 'Copiar texto al portapapeles',
     exportClose: 'Cerrar',
-    lastBackup: 'Último respaldo',
+    lastBackup: 'Ãltimo respaldo',
     never: 'nunca',
-    editCredit: 'Editar horas de crédito',
-    creditDesc: 'Actividades teocráticas aprobadas (LDC, Betel, Escuela). Se registran aparte de la predicación.',
-    creditHours: 'Horas de crédito',
-    catNameLabel: 'Nombre (Inglés)',
-    catNameLabelEs: 'Nombre (Español)',
-    catDeleteWarn: '¿Eliminar categoría? Las sesiones existentes mantienen su etiqueta.',
-    cantDeleteLast: 'Necesitas al menos una categoría',
+    editCredit: 'Editar horas de crÃ©dito',
+    creditDesc: 'Actividades teocrÃ¡ticas aprobadas (LDC, Betel, Escuela). Se registran aparte de la predicaciÃ³n.',
+    creditHours: 'Horas de crÃ©dito',
+    catNameLabel: 'Nombre (InglÃ©s)',
+    catNameLabelEs: 'Nombre (EspaÃ±ol)',
+    catDeleteWarn: 'Â¿Eliminar categorÃ­a? Las sesiones existentes mantienen su etiqueta.',
+    cantDeleteLast: 'Necesitas al menos una categorÃ­a',
     invalidName: 'Nombre requerido',
     confirm: 'Confirmar',
-    // Stage D — Ministry Note Categories
+    // Stage D â Ministry Note Categories
     notesTitle: 'Notas y Recordatorios',
-    notesCategoriesHint: 'Organiza tus notas del ministerio por categoría.',
-    notesComingSoon: 'Las notas llegarán en una próxima actualización.',
-    addCategory: 'Agregar categoría',
-    editCategory: 'Editar categoría',
-    deleteCategory: 'Eliminar categoría',
-    categoryName: 'Nombre de la categoría',
-    categoryIcon: 'Ícono (emoji)',
+    notesCategoriesHint: 'Organiza tus notas del ministerio por categorÃ­a.',
+    notesComingSoon: 'Las notas llegarÃ¡n en una prÃ³xima actualizaciÃ³n.',
+    addCategory: 'Agregar categorÃ­a',
+    editCategory: 'Editar categorÃ­a',
+    deleteCategory: 'Eliminar categorÃ­a',
+    categoryName: 'Nombre de la categorÃ­a',
+    categoryIcon: 'Ãcono (emoji)',
     categoryColor: 'Color',
-    categoryCount: '{n} categorías',
-    noCategories: 'Sin categorías. Agrega la primera.',
-    confirmDeleteCat: '¿Eliminar esta categoría?',
-    catModalNameEsHint: '(mismo que arriba — edición bilingüe llega en la Etapa G)',
-    notesBackBtn: '← Atrás',
+    categoryCount: '{n} categorÃ­as',
+    noCategories: 'Sin categorÃ­as. Agrega la primera.',
+    confirmDeleteCat: 'Â¿Eliminar esta categorÃ­a?',
+    catModalNameEsHint: '(mismo que arriba â ediciÃ³n bilingÃ¼e llega en la Etapa G)',
+    notesBackBtn: 'â AtrÃ¡s',
     mnAddNote: '+ Agregar nota',
     editNote: 'Editar nota',
     deleteNote: 'Eliminar nota',
-    noteTitle: 'Título',
+    noteTitle: 'TÃ­tulo',
     noteBody: 'Contenido',
-    noteTitlePlaceholder: 'Título de la nota',
+    noteTitlePlaceholder: 'TÃ­tulo de la nota',
     noteBodyPlaceholder: 'Contenido de la nota...',
-    noNotesInCategory: 'Sin notas aún. Toca + Agregar nota para comenzar.',
-    confirmDeleteNote: '¿Eliminar esta nota?',
-        noteDueDate: 'Fecha límite',
-    noteDueTime: 'Hora límite',
+    noNotesInCategory: 'Sin notas aÃºn. Toca + Agregar nota para comenzar.',
+    confirmDeleteNote: 'Â¿Eliminar esta nota?',
+        noteDueDate: 'Fecha lÃ­mite',
+    noteDueTime: 'Hora lÃ­mite',
     noteReminder: 'Recordatorio',
     deliversAround: 'Se entrega alrededor de las {time}',
     reminderLeadError: 'Elige una hora al menos {min} minutos despu\u00e9s de ahora para que el recordatorio pueda entregarse.',
@@ -586,28 +586,28 @@ const I18N = {
     noteStatus: 'Estado',
     noteCompleted: 'Completado',
     noteArchived: 'Archivado',
-    noteCategory: 'Categoría',
+    noteCategory: 'CategorÃ­a',
     priorityHigh: 'Alto',
     priorityMedium: 'Medio',
     priorityLow: 'Bajo',
     statusOpen: 'Abierto',
     statusInProgress: 'En progreso',
     statusDone: 'Hecho',
-    calNotesForDay: 'Notas de este día',
-    calNoNotesForDay: 'Sin notas para este día.',
+    calNotesForDay: 'Notas de este dÃ­a',
+    calNoNotesForDay: 'Sin notas para este dÃ­a.',
     calAddNote: '+ Agregar nota',
   },
 };
 
 const DEFAULT_MINISTRY_NOTE_CATEGORIES = [
-  { id: 'mnc-1', name: { en: 'Return Visits',     es: 'Revisitas' },             icon: '🔄', color: '#6366f1' },
-  { id: 'mnc-2', name: { en: 'Bible Studies',      es: 'Estudios bíblicos' },    icon: '📖', color: '#10b981' },
-  { id: 'mnc-3', name: { en: 'Interested Persons', es: 'Personas interesadas' }, icon: '👤', color: '#f59e0b' },
-  { id: 'mnc-4', name: { en: 'Calls',              es: 'Llamadas' },             icon: '📞', color: '#3b82f6' },
-  { id: 'mnc-5', name: { en: 'Messages',           es: 'Mensajes' },             icon: '💬', color: '#8b5cf6' },
-  { id: 'mnc-6', name: { en: 'Territory',          es: 'Territorio' },           icon: '🗺️', color: '#ec4899' },
-  { id: 'mnc-7', name: { en: 'Appointments',       es: 'Citas' },                icon: '📅', color: '#14b8a6' },
-  { id: 'mnc-8', name: { en: 'Personal',           es: 'Personal' },             icon: '🙏', color: '#f97316' },
+  { id: 'mnc-1', name: { en: 'Return Visits',     es: 'Revisitas' },             icon: 'ð', color: '#6366f1' },
+  { id: 'mnc-2', name: { en: 'Bible Studies',      es: 'Estudios bÃ­blicos' },    icon: 'ð', color: '#10b981' },
+  { id: 'mnc-3', name: { en: 'Interested Persons', es: 'Personas interesadas' }, icon: 'ð¤', color: '#f59e0b' },
+  { id: 'mnc-4', name: { en: 'Calls',              es: 'Llamadas' },             icon: 'ð', color: '#3b82f6' },
+  { id: 'mnc-5', name: { en: 'Messages',           es: 'Mensajes' },             icon: 'ð¬', color: '#8b5cf6' },
+  { id: 'mnc-6', name: { en: 'Territory',          es: 'Territorio' },           icon: 'ðºï¸', color: '#ec4899' },
+  { id: 'mnc-7', name: { en: 'Appointments',       es: 'Citas' },                icon: 'ð', color: '#14b8a6' },
+  { id: 'mnc-8', name: { en: 'Personal',           es: 'Personal' },             icon: 'ð', color: '#f97316' },
 ];
 
 const CAT_PRESET_COLORS = [
@@ -659,10 +659,10 @@ const I18N_FALLBACKS = {
     reminderScheduled: 'Recordatorio programado',
     reminderSyncSaved: 'Recordatorio guardado',
     reminderSyncFailed: 'Error al sincronizar recordatorio',
-    reminderSyncSkipped: 'Sincronización omitida',
-    notifDenied: 'Notificaciones desactivadas. Actiévalas en Configuración.',
+    reminderSyncSkipped: 'SincronizaciÃ³n omitida',
+    notifDenied: 'Notificaciones desactivadas. ActiÃ©valas en ConfiguraciÃ³n.',
     notifUnsupported: 'Notificaciones no disponibles en este dispositivo',
-    noNotifLabel: 'Solo fecha de vencimiento — sin notificación',
+    noNotifLabel: 'Solo fecha de vencimiento â sin notificaciÃ³n',
   },
 };
 
@@ -739,7 +739,7 @@ function ministryNoteDueLabel(note) {
   if (!note || !note.dueDate) return '';
   const parts = [ministryNoteDateLabel(note.dueDate)];
   if (note.dueTime) parts.push(ministryNoteTimeLabel(note.dueTime));
-  return parts.filter(Boolean).join(' • ');
+  return parts.filter(Boolean).join(' â¢ ');
 }
 
 function ministryNoteStatusLabel(note) {
@@ -863,8 +863,8 @@ function migrateCategories(s) {
   if (!s.categories) { s.categories = APP_CONFIG.defaults.categories; return s; }
   // Fix Spanish label for Public Witnessing if it's the old string
   s.categories.forEach(c => {
-    if (c.id === 'publicWit' && (c.label_es === 'Testificación Pública' || c.label_es === 'Testificación pública')) {
-      c.label_es = 'Predicación pública';
+    if (c.id === 'publicWit' && (c.label_es === 'TestificaciÃ³n PÃºblica' || c.label_es === 'TestificaciÃ³n pÃºblica')) {
+      c.label_es = 'PredicaciÃ³n pÃºblica';
     }
   });
   // Rename old "cart" category into the v5 Cart Witnessing activity tag.
@@ -904,7 +904,7 @@ function daysInMonth(y, m) { return new Date(y, m+1, 0).getDate(); }
 
 function formatHM(mins) {
   if (mins == null || isNaN(mins)) return '0:00';
-  const sign = mins < 0 ? '−' : '';
+  const sign = mins < 0 ? 'â' : '';
   mins = Math.abs(Math.round(mins));
   return `${sign}${Math.floor(mins/60)}:${String(mins%60).padStart(2,'0')}`;
 }
@@ -963,14 +963,14 @@ function processMonthEndRollover() {
   const now = new Date();
   const currentMK = monthKey(now);
 
-  // Already processed this month — nothing to do
+  // Already processed this month â nothing to do
   if (state.lastMonthProcessed === currentMK) return;
 
   // Determine previous month
   const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prevMK = monthKey(prev);
 
-  // September = service-year start → no carry-over; checkServiceYearReset() handles the wipe
+  // September = service-year start â no carry-over; checkServiceYearReset() handles the wipe
   const isSeptFirst = (now.getMonth() === 8);
 
   if (!isSeptFirst && state.carryOver) {
@@ -982,7 +982,7 @@ function processMonthEndRollover() {
       createRolloverSession(currentMK, remainderMins);
     }
   }
-  // state.carryOverMin is deprecated (v64) — kept for backup compatibility, no longer written.
+  // state.carryOverMin is deprecated (v64) â kept for backup compatibility, no longer written.
 
   state.lastMonthProcessed = currentMK;
   saveState();
@@ -1001,7 +1001,7 @@ function trimMinutesFromMonth(mk, mins) {
     if (s.durationMin <= remaining) {
       remaining -= s.durationMin;
       if ((s.studies || 0) > 0 || (s.note || '').trim()) {
-        // Keep the entry — it still carries a study or a note
+        // Keep the entry â it still carries a study or a note
         s.durationMin = 0;
         s.stopISO = s.startISO;
       } else {
@@ -1228,14 +1228,14 @@ function startLiveTick() {
       const totalSoFar = already + elapsedSec/60;
       const remaining = target - totalSoFar;
       if (remaining > 0) {
-        const txt = `· ${formatHM(Math.ceil(remaining))} ${t('remaining')}`;
+        const txt = `Â· ${formatHM(Math.ceil(remaining))} ${t('remaining')}`;
         if (remainEl) { remainEl.textContent = txt; remainEl.classList.remove('hidden'); }
-        if (timerRem) timerRem.textContent = txt.replace('· ', '');
+        if (timerRem) timerRem.textContent = txt.replace('Â· ', '');
         banner.classList.remove('over');
       } else {
-        const txt = `· +${formatHM(Math.floor(-remaining))} ${t('over')}`;
+        const txt = `Â· +${formatHM(Math.floor(-remaining))} ${t('over')}`;
         if (remainEl) { remainEl.textContent = txt; remainEl.classList.remove('hidden'); }
-        if (timerRem) timerRem.textContent = txt.replace('· ', '');
+        if (timerRem) timerRem.textContent = txt.replace('Â· ', '');
         banner.classList.add('over');
       }
     } else {
@@ -1471,7 +1471,7 @@ function renderHome() {
       const remaining = planMinsToday - todayMins;
       const status = document.getElementById('ringPlanStatus');
       if (remaining <= 0) {
-        status.textContent = '✓ ' + t('metGoal');
+        status.textContent = 'â ' + t('metGoal');
         status.style.color = 'var(--accent)';
       } else {
         status.textContent = formatHM(remaining) + ' ' + (t('remaining') || '');
@@ -1483,7 +1483,7 @@ function renderHome() {
   }
 
   const { start } = getServiceYearRange();
-  document.getElementById('homeSYLabel').textContent = `${start.getFullYear()}–${getServiceYearLabel()}`;
+  document.getElementById('homeSYLabel').textContent = `${start.getFullYear()}â${getServiceYearLabel()}`;
   document.getElementById('homeSYHours').textContent = formatHM(syMins);
   document.getElementById('homeSYGoal').textContent = state.annualGoalHrs;
   document.getElementById('homeSYBar').style.width = (syGoalMins ? Math.min(100, (syMins/syGoalMins)*100) : 0) + '%';
@@ -1507,7 +1507,7 @@ function renderHome() {
 
   animateNumberTo('homeStudies', getMonthStudies(mk));
   // Streak can be a number OR an em-dash, so snap rather than animate
-  document.getElementById('homeStreak').textContent = state.showStreak ? getStreak() : '—';
+  document.getElementById('homeStreak').textContent = state.showStreak ? getStreak() : 'â';
   animateNumberTo('homeServiceDays', getMonthServiceDays(mk));
 
   renderWeekBars();
@@ -1580,7 +1580,7 @@ function renderHome() {
   const statusEl = document.getElementById('homeBackupStatus');
   if (statusEl) {
     const newCount = state.sessionsSinceLastBackup || 0;
-    const countSuffix = newCount > 0 ? ` · ${newCount} ${t('newShort')}` : '';
+    const countSuffix = newCount > 0 ? ` Â· ${newCount} ${t('newShort')}` : '';
     if (!state.lastBackupISO) {
       statusEl.textContent = t('backupNever') + countSuffix;
       statusEl.className = 'text-tiny text-amber mt-1 font-semibold';
@@ -1598,7 +1598,7 @@ function renderHome() {
     }
   }
 
-  // Stage J: Weather — refresh card on every home render
+  // Stage J: Weather â refresh card on every home render
   if (typeof App !== 'undefined' && App.Weather && App.Weather._tryInit) App.Weather._tryInit();
 
 }
@@ -1636,7 +1636,7 @@ function renderWeekBars() {
   }).join('');
   const wkEnd = new Date(start); wkEnd.setDate(start.getDate()+6);
   const ms = t('monthsShort');
-  document.getElementById('weekRange').textContent = `${ms[start.getMonth()]} ${start.getDate()} – ${ms[wkEnd.getMonth()]} ${wkEnd.getDate()}`;
+  document.getElementById('weekRange').textContent = `${ms[start.getMonth()]} ${start.getDate()} â ${ms[wkEnd.getMonth()]} ${wkEnd.getDate()}`;
   document.getElementById('weekTotal').textContent = formatHM(total);
 }
 
@@ -1782,7 +1782,7 @@ function renderTimer() {
     mainBtn.className = 'btn btn-primary btn-round mt-5';
     mainIcon.className = 'fa-solid fa-play text-3xl mb-1';
     mainLabel.textContent = t('start');
-    sub.textContent = '—';
+    sub.textContent = 'â';
     const pendingStudies = getPendingStudiesForDate(currentTimerDate);
     document.getElementById('timerStudyCount').textContent = pendingStudies;
     if (studiesHint) studiesHint.textContent = t('studiesHintReady');
@@ -1872,7 +1872,7 @@ function sessionCardHTML(s) {
       <div class="row-between items-start gap-3">
         <div class="flex-1 min-w-0">
           <div class="row gap-2 flex-wrap">
-            <span class="font-mono text-sm font-semibold">${startT} – ${stopT}</span>
+            <span class="font-mono text-sm font-semibold">${startT} â ${stopT}</span>
             <span class="chip chip-accent" style="padding:2px 8px; font-size:10px;">${escapeHtml(cat)}</span>
             ${studies}
           </div>
@@ -1904,7 +1904,7 @@ function calGoMonth(delta) {
 }
 
 function renderCalendar() {
-  // Today's Plan countdown card (G) — show only if today has a plan
+  // Today's Plan countdown card (G) â show only if today has a plan
   const todayKey = todayStr();
   const planToday = getPlannedForDate(todayKey);
   const tpCard = document.getElementById('todayPlanCard');
@@ -1919,7 +1919,7 @@ function renderCalendar() {
       const labelEl = document.getElementById('lbl_todayPlanRemainingLabel');
       const pill = document.getElementById('todayPlanStatusPill');
       if (actualToday >= planToday) {
-        remEl.textContent = '✓';
+        remEl.textContent = 'â';
         remEl.style.color = 'var(--accent)';
         labelEl.textContent = t('todayPlanDone');
         pill.className = 'chip chip-accent text-tiny';
@@ -1958,7 +1958,7 @@ function renderCalendar() {
   const offset = state.weekStartsMon ? (firstDow === 0 ? 6 : firstDow - 1) : firstDow;
   const totalDays = daysInMonth(yr, mo-1);
   const cells = [];
-  // Stage F — dates that have notes (dot indicators)
+  // Stage F â dates that have notes (dot indicators)
   const noteDates = new Set();
   (state.ministryNotes || []).forEach(n => {
     if (n.dueDate) noteDates.add(n.dueDate);
@@ -2092,7 +2092,7 @@ function renderLog() {
   }
 
   const list = document.getElementById('logList');
-  if (!list) return; // Log screen removed in Stage A — log history is in Reports
+  if (!list) return; // Log screen removed in Stage A â log history is in Reports
   if (!filtered.length) {
     const msg = q ? t('searchEmpty').replace('{q}', escapeHtml(q)) : t('empty');
     list.innerHTML = `<div class="card text-center text-faint">${msg}</div>`;
@@ -2163,7 +2163,7 @@ function renderNotes() {
     var cards = cats.map(function(cat) {
       var name = ministryCategoryName(cat);
       var color = cat.color || 'var(--accent)';
-      var icon = cat.icon || '📝';
+      var icon = cat.icon || 'ð';
       var nc = (state.ministryNotes || []).filter(function(mn) { return mn.categoryId === cat.id; }).length;
       return '<div class="card" data-cat-open="' + cat.id + '" style="border:1.5px solid ' + color + '55; border-left:4px solid ' + color +
         '; box-shadow:0 0 0 2px ' + color + '33; display:flex; flex-direction:column; justify-content:space-between; min-height:110px; cursor:pointer;">' +
@@ -2251,19 +2251,19 @@ function renderNotesListView(scr, cat) {
     .filter(ministryNoteMatchesSearch);
   notes = sortMinistryNotes(notes);
   var catName = isAllNotesView ? t('allNotes') : ministryCategoryName(cat);
-  var icon = cat.icon || '📝';
+  var icon = cat.icon || 'ð';
   var noNotesMessage = (currentNotesSearch || currentNotesFilter !== 'active') ? t('noNotesFound') : t('noNotesInCategory');
   var noteCards = notes.length === 0
     ? '<div class="card text-center" style="padding:40px 16px;"><div class="text-faint text-sm">' + escapeHtml(noNotesMessage) + '</div></div>'
     : notes.map(function(note) {
-        var preview = (note.body || '').slice(0, 60) + ((note.body || '').length > 60 ? '…' : '');
+        var preview = (note.body || '').slice(0, 60) + ((note.body || '').length > 60 ? 'â¦' : '');
         var noteCompl = note.completed ? 'opacity:0.55;text-decoration:line-through' : '';
                 var noteBadges = '';
-                if(note.priority==='high') noteBadges+='<span style="background:var(--coral);color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">▲ '+(I18N[state.lang].priorityHigh||'High')+'</span>';
-                if(note.priority==='medium') noteBadges+='<span style="background:#f59e0b;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">◆ '+(I18N[state.lang].priorityMedium||'Medium')+'</span>';
-                if(note.priority==='low') noteBadges+='<span style="background:var(--accent);color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">▼ '+(I18N[state.lang].priorityLow||'Low')+'</span>';
+                if(note.priority==='high') noteBadges+='<span style="background:var(--coral);color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">â² '+(I18N[state.lang].priorityHigh||'High')+'</span>';
+                if(note.priority==='medium') noteBadges+='<span style="background:#f59e0b;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">â '+(I18N[state.lang].priorityMedium||'Medium')+'</span>';
+                if(note.priority==='low') noteBadges+='<span style="background:var(--accent);color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">â¼ '+(I18N[state.lang].priorityLow||'Low')+'</span>';
                 if(note.status&&note.status!=='open'){var _sl={'in-progress':I18N[state.lang].statusInProgress||'In Progress','done':I18N[state.lang].statusDone||'Done'};noteBadges+='<span style="background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">'+(_sl[note.status]||note.status)+'</span>';}
-                if(note.dueDate){var _d=new Date(note.dueDate+'T00:00'),_ms=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],_ds=_ms[_d.getMonth()]+' '+_d.getDate()+(_d.getFullYear()!==new Date().getFullYear()?', '+_d.getFullYear():'');noteBadges+='<span style="background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">📅 '+_ds+'</span>';}
+                if(note.dueDate){var _d=new Date(note.dueDate+'T00:00'),_ms=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],_ds=_ms[_d.getMonth()]+' '+_d.getDate()+(_d.getFullYear()!==new Date().getFullYear()?', '+_d.getFullYear():'');noteBadges+='<span style="background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">ð '+_ds+'</span>';}
                 if(note.archived) noteBadges+='<span style="background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:0.65rem;padding:1px 6px;border-radius:99px;margin-right:3px">'+(I18N[state.lang].noteArchived||'Archived')+'</span>';
                 var badgeRow=noteBadges?'<div style="margin-bottom:4px">'+noteBadges+'</div>':'';
                 var dateStr = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString() : '';
@@ -2386,9 +2386,17 @@ function renderNotesListView(scr, cat) {
 
 function ministryNoteReminderFireAt(note) {
   if (!note) return '';
-  if (note.reminderAt) return new Date(note.reminderAt).toISOString();
-  if (note.dueDate) return new Date(note.dueDate + (note.dueTime ? 'T' + note.dueTime : 'T00:00')).toISOString();
-  return '';
+  var rawDate;
+  if (note.reminderAt) {
+    rawDate = new Date(note.reminderAt);
+  } else if (note.dueDate) {
+    rawDate = new Date(note.dueDate + (note.dueTime ? 'T' + note.dueTime : 'T00:00'));
+  } else {
+    return '';
+  }
+  if (isNaN(rawDate.getTime())) return '';
+  var delivery = computeDeliveryTime(rawDate);
+  return delivery ? delivery.toISOString() : rawDate.toISOString();
 }
 
 function ministryNoteReminderSkipReason(note) {
@@ -2479,7 +2487,7 @@ function showMinistryPushDebug() {
     var health = res[1];
     var r = (dbg && dbg.result) || {};
     function row(k, v) {
-      var val = (v === undefined || v === null || v === '') ? '—' : String(v);
+      var val = (v === undefined || v === null || v === '') ? 'â' : String(v);
       return '<div class="row-between" style="gap:10px;padding:5px 0;border-bottom:1px solid var(--border);">'
         + '<span class="text-xs text-dim" style="white-space:nowrap;">' + escapeHtml(k) + '</span>'
         + '<span class="text-xs" style="word-break:break-all;text-align:right;">' + escapeHtml(val) + '</span></div>';
@@ -2827,9 +2835,13 @@ function openMinistryNoteModal(categoryId, noteId, _calDate) {
           || (note.dueDate || null) !== (ndueDate || null)
           || (note.dueTime || null) !== (ndueTime || null)
           || !note.reminder;
-        if (reminderTimeChanged && (nreminderAt - Date.now() < MIN_REMINDER_LEAD_MINUTES * 60000)) {
-          toast(t('reminderLeadError').replace('{min}', String(MIN_REMINDER_LEAD_MINUTES)));
-          return; // keep the modal open with the entered values intact
+        if (reminderTimeChanged) {
+          var _delivDate = computeDeliveryTime(new Date(nreminderAt));
+          var _delivMs   = _delivDate ? _delivDate.getTime() : nreminderAt;
+          if (_delivMs - Date.now() < MIN_REMINDER_LEAD_MINUTES * 60000) {
+            toast(t('reminderLeadError').replace('{min}', String(MIN_REMINDER_LEAD_MINUTES)));
+            return; // keep the modal open with the entered values intact
+          }
         }
       }
       var npriority = (document.getElementById('mnPrioritySelect') || {}).value || null;
@@ -2852,6 +2864,15 @@ function openMinistryNoteModal(categoryId, noteId, _calDate) {
           dueDate: ndueDate, dueTime: ndueTime, reminder: !!nreminder, reminderAt: nreminderAt || null,
           priority: npriority, status: ncompleted ? 'done' : nstatus, completed: !!ncompleted, archived: !!narchived };
         state.ministryNotes.push(savedNote);
+      }
+      // Sweep-aware delivery hint
+      if (nreminderAt) {
+        var _hDate = computeDeliveryTime(new Date(nreminderAt));
+        if (_hDate) {
+          var _crossDay = _hDate.toDateString() !== new Date().toDateString();
+          var _hStamp = formatDeliveryStamp(_hDate, _crossDay);
+          toast(state.lang === 'es' ? '\u23f0 Se entrega alrededor de las ' + _hStamp : '\u23f0 Delivers around ' + _hStamp);
+        }
       }
       saveState(); closeModal(); renderNotes(); renderCalendar();
       scheduleReminderOnSave(savedNote).catch(function(e) { console.warn('[MinistryTracker] scheduleReminderOnSave error', e); });
@@ -2888,14 +2909,14 @@ function openMinistryNoteModal(categoryId, noteId, _calDate) {
         +'<select id="mnCatSelect" style="background:var(--input-bg,var(--surface));border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm,6px);padding:10px;min-height:44px">'+catOpts+'</select>'
         +'<label style="font-size:0.75rem;color:var(--text-dim)">'+escapeHtml(t2.notePriority||'Priority')+'</label>'
         +'<select id="mnPrioritySelect" style="background:var(--input-bg,var(--surface));border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm,6px);padding:10px;min-height:44px">'
-        +'<option value="">—</option>'
+        +'<option value="">â</option>'
         +'<option value="high">'+escapeHtml(t2.priorityHigh||'High')+'</option>'
         +'<option value="medium">'+escapeHtml(t2.priorityMedium||'Medium')+'</option>'
         +'<option value="low">'+escapeHtml(t2.priorityLow||'Low')+'</option>'
         +'</select>'
         +'<label style="font-size:0.75rem;color:var(--text-dim)">'+escapeHtml(t2.noteStatus||'Status')+'</label>'
         +'<select id="mnStatusSelect" style="background:var(--input-bg,var(--surface));border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm,6px);padding:10px;min-height:44px">'
-        +'<option value="">—</option>'
+        +'<option value="">â</option>'
         +'<option value="open">'+escapeHtml(t2.statusOpen||'Open')+'</option>'
         +'<option value="in-progress">'+escapeHtml(t2.statusInProgress||'In Progress')+'</option>'
         +'<option value="done">'+escapeHtml(t2.statusDone||'Done')+'</option>'
@@ -2962,7 +2983,7 @@ function deleteMinistryNote(noteId) {
     clearMinistryNotePush(removed && removed.id);
   }, { confirmLabel: t('deleteNote'), danger: true });
 }
-/* ── Stage F: Calendar Notes Panel ──────────────────────────────────── */
+/* ââ Stage F: Calendar Notes Panel ââââââââââââââââââââââââââââââââââââ */
 let _calNotesCssInjected = false;
 function _injectCalNotesCss() {
   if (_calNotesCssInjected) return; _calNotesCssInjected = true;
@@ -2994,7 +3015,7 @@ function renderCalendarNotesPanel() {
   const dateLabel = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]))
     .toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US', { month: 'long', day: 'numeric' });
   let h = '<div class="cal-notes-panel">';
-  h += '<div class="cal-notes-panel-hdr">' + t('calNotesForDay') + ' — ' + dateLabel + '</div>';
+  h += '<div class="cal-notes-panel-hdr">' + t('calNotesForDay') + ' â ' + dateLabel + '</div>';
   if (dayNotes.length === 0) {
     h += '<p class="cal-notes-empty">' + t('calNoNotesForDay') + '</p>';
   } else {
@@ -3005,7 +3026,7 @@ function renderCalendarNotesPanel() {
       const scat = sanitizeInlineArg(n.categoryId);
       const ttl = (n.title||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
       const bdy = (n.body||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
-      const bSnip = bdy.length > 80 ? bdy.substring(0,80) + '…' : bdy;
+      const bSnip = bdy.length > 80 ? bdy.substring(0,80) + 'â¦' : bdy;
       h += '<button class="cal-note-item" onclick="openMinistryNoteModal(\'' + scat + '\',\'' + sid + '\')">';
       h += '<span class="cal-note-item-title">' + (ttl || '(' + t('noteTitle') + ')') + '</span>';
       if (bSnip) h += '<span class="cal-note-item-body">' + bSnip + '</span>';
@@ -3031,7 +3052,7 @@ function openCategoryModal(existingCat) {
         ? (existingCat.name[lang] || existingCat.name.en || '')
         : (existingCat.name || ''))
     : '';
-  const currentIcon  = isEdit ? (existingCat.icon  || '📝')     : '📝';
+  const currentIcon  = isEdit ? (existingCat.icon  || 'ð')     : 'ð';
   const currentColor = isEdit ? (existingCat.color || '#6366f1') : '#6366f1';
 
   const swatches = CAT_PRESET_COLORS.map(c => {
@@ -3063,7 +3084,7 @@ function openCategoryModal(existingCat) {
       </div>
       <div>
         <label class="text-xs font-bold uppercase tracking-wider text-dim block mb-1" for="catModalIcon">${t('categoryIcon')}</label>
-        <input type="text" id="catModalIcon" class="input" value="${escapeHtml(currentIcon)}" placeholder="📝" maxlength="4"
+        <input type="text" id="catModalIcon" class="input" value="${escapeHtml(currentIcon)}" placeholder="ð" maxlength="4"
           style="font-size:24px;text-align:center;width:64px;padding:6px 4px;">
         <div class="card card-flat mt-2 mb-2" style="padding:10px;display:flex;align-items:center;gap:10px;">
           <div id="catIconPreview" style="width:42px;height:42px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:22px;">${escapeHtml(currentIcon)}</div>
@@ -3112,7 +3133,7 @@ function openCategoryModal(existingCat) {
 
   document.getElementById('catModalSave').onclick = () => {
     const nameVal  = (document.getElementById('catModalName')?.value || '').trim();
-    const iconVal  = (document.getElementById('catModalIcon')?.value || '').trim() || '📝';
+    const iconVal  = (document.getElementById('catModalIcon')?.value || '').trim() || 'ð';
     const colorVal = document.getElementById('catModalColor')?.value || '#6366f1';
     if (!nameVal) { toast(t('invalidName')); return; }
 
@@ -3201,7 +3222,7 @@ function deleteMinistryNoteCategory(id) {
 }
 
 
-/* ---------- LOG HISTORY (inside Reports — Stage A) ---------- */
+/* ---------- LOG HISTORY (inside Reports â Stage A) ---------- */
 function renderLogHistory() {
   const monthLabel = document.getElementById('logHistoryMonthLabel');
   if (!monthLabel) return;
@@ -3282,7 +3303,7 @@ function renderReports() {
   animateNumberTo('reportServiceDays', serviceDays);
 
   const { start } = getServiceYearRange();
-  document.getElementById('reportSYLabel').textContent = `${start.getFullYear()}–${getServiceYearLabel()}`;
+  document.getElementById('reportSYLabel').textContent = `${start.getFullYear()}â${getServiceYearLabel()}`;
   const syMins = getServiceYearMinutes();
   document.getElementById('reportSYTotal').textContent = formatHM(syMins);
   document.getElementById('reportSYGoalLabel').textContent = state.annualGoalHrs;
@@ -3339,6 +3360,73 @@ function renderReports() {
 }
 
 /* ---------- SETTINGS ---------- */
+// ── Notification status card in Settings ────────────────────────────────
+function _renderMTNotifStatus() {
+  var el = document.getElementById('mtNotifStatus');
+  if (!el) return;
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  var hasPushMgr   = 'PushManager' in window;
+  var hasNotif     = 'Notification' in window;
+  var L = state.lang === 'es';
+  var state6;
+  if (!hasNotif && !hasPushMgr) {
+    state6 = 'unsupported';
+  } else if (isIOS && !isStandalone) {
+    state6 = 'needs-install';
+  } else if (!hasNotif) {
+    state6 = 'unsupported';
+  } else {
+    var perm = Notification.permission;
+    if (perm === 'denied') {
+      state6 = 'denied';
+    } else if (perm === 'default') {
+      state6 = 'default';
+    } else {
+      state6 = localStorage.getItem('ministryPushSubscriptionId') ? 'subscribed' : 'no-subscription';
+    }
+  }
+  var sweep = REMINDER_CHECK_MINUTES;
+  var title = L ? 'Notificaciones' : 'Notifications';
+  var body;
+  if (state6 === 'unsupported') {
+    body = '<p class="text-sm" style="color:var(--text-dim)">' + t('notifUnsupported') + '</p>';
+  } else if (state6 === 'needs-install') {
+    body = '<p class="text-sm" style="color:var(--text-dim)">'
+      + (L ? 'Para recibir notificaciones en iOS, a\u00f1ade esta app a la pantalla de inicio.'
+           : 'To receive notifications on iOS, add this app to your home screen.')
+      + '</p>';
+  } else if (state6 === 'denied') {
+    body = '<p class="text-sm" style="color:var(--coral)">' + t('notifDenied') + '</p>';
+  } else if (state6 === 'default') {
+    body = '<p class="text-sm" style="color:var(--text-dim)">'
+      + (L ? 'Las notificaciones est\u00e1n desactivadas.' : 'Notifications are off.')
+      + '</p>'
+      + '<button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="window.MinistryPush&&window.MinistryPush.subscribe()">'
+      + (L ? 'Activar notificaciones' : 'Enable Notifications')
+      + '</button>';
+  } else if (state6 === 'subscribed') {
+    body = '<p class="text-sm" style="color:var(--accent)">'
+      + (L ? '\u2713 Notificaciones activas' : '\u2713 Notifications active')
+      + '</p>'
+      + '<p class="text-xs" style="color:var(--text-dim);margin-top:4px">'
+      + (L ? '\u23f0 Los recordatorios se entregan cada ' + sweep + '\u202fmin.'
+           : '\u23f0 Reminders deliver on ' + sweep + '\u202fmin sweep intervals.')
+      + '</p>'
+      + '<button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="window.MinistryPush&&window.MinistryPush.sendTestPush()">'
+      + (L ? 'Enviar prueba' : 'Send Test')
+      + '</button>';
+  } else {
+    body = '<p class="text-sm" style="color:var(--text-warning,orange)">'
+      + (L ? 'Permiso concedido, sin suscripci\u00f3n activa.' : 'Permission granted but no active push subscription.')
+      + '</p>'
+      + '<button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="window.MinistryPush&&window.MinistryPush.subscribe()">'
+      + (L ? 'Reconectar' : 'Reconnect Push')
+      + '</button>';
+  }
+  el.innerHTML = '<div class="text-xs uppercase tracking-wider text-dim font-semibold mb-2">' + title + '</div>' + body;
+}
+
 function renderSettings() {
   document.getElementById('setUserName').value = state.userName || '';
   document.getElementById('userNameHintBadge').classList.toggle('hidden', !!state.userNameHintSeen);
@@ -3356,11 +3444,12 @@ function renderSettings() {
   setToggle('togBackupReminder', state.backupReminder);
   document.querySelectorAll('[data-theme-set]').forEach(b => b.classList.toggle('active', b.dataset.themeSet === state.theme));
   document.querySelectorAll('[data-lang-set]').forEach(b => b.classList.toggle('active', b.dataset.langSet === state.lang));
-  document.getElementById('setSchemaInfo').textContent = `schema v${state.schemaVersion} · SY ${getServiceYearLabel()}`;
+  document.getElementById('setSchemaInfo').textContent = `schema v${state.schemaVersion} Â· SY ${getServiceYearLabel()}`;
   const lb = state.lastBackupISO ? new Date(state.lastBackupISO).toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : t('never');
   document.getElementById('lastBackupInfo').textContent = `${t('lastBackup')}: ${lb}`;
   renderCategoryList();
   renderPastServiceYears();
+  _renderMTNotifStatus();
 }
 function setToggle(id, on) {
   const el = document.getElementById(id);
@@ -3417,7 +3506,7 @@ function renderPastServiceYears() {
     return;
   }
   wrap.innerHTML = archives.map(a => {
-    const syLabel = `${a.sy - 1}–${a.sy}`;
+    const syLabel = `${a.sy - 1}â${a.sy}`;
     const archivedLine = a.archivedAt
       ? `<div class="text-tiny text-faint">${t('pastSYArchived')}: ${new Date(a.archivedAt).toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>`
       : '';
@@ -3492,7 +3581,7 @@ function openDurationWheel(initialMin, onPick, options) {
   let studiesCount = Math.max(0, parseInt(options.initialStudies) || 0);
 
   initialMin = Math.max(0, Math.min(99 * 60 + 59, initialMin || 0));
-  // We type up to 4 digits in HHMM order; e.g. "230" → 2:30, "1500" → 15:00, "5" → 0:05
+  // We type up to 4 digits in HHMM order; e.g. "230" â 2:30, "1500" â 15:00, "5" â 0:05
   // Initial value gets pre-loaded as digit string
   let digits = '';
   if (initialMin > 0) {
@@ -3688,7 +3777,7 @@ function openCalendarDayModal(dateStr) {
         </div>
         <div>
           <div class="text-tiny uppercase tracking-wider text-dim font-bold">${t('plannedHours')}</div>
-          <div class="display-num text-2xl font-mono mt-1" style="color: ${planned ? 'var(--blue)' : 'var(--text-faint)'}">${planned ? formatHM(planned) : '—'}</div>
+          <div class="display-num text-2xl font-mono mt-1" style="color: ${planned ? 'var(--blue)' : 'var(--text-faint)'}">${planned ? formatHM(planned) : 'â'}</div>
         </div>
       </div>
       <div class="row justify-center mt-3">${statusHTML}</div>
@@ -3738,7 +3827,7 @@ function openPlanModal(dateStr) {
       <div class="text-tiny uppercase tracking-wider text-dim font-bold mb-2">${t('monthlyPlan')}</div>
       <div class="row-between items-baseline">
         <div><span id="planPreviewVal" class="display-num text-2xl font-mono text-blue">${formatHM(monthPlanned)}</span><span class="text-faint text-sm"> / ${formatHM(monthGoal)}</span></div>
-        <div id="planPreviewDelta" class="font-mono font-bold text-sm">—</div>
+        <div id="planPreviewDelta" class="font-mono font-bold text-sm">â</div>
       </div>
       <div class="progress-track mt-2"><div id="planPreviewBar" class="progress-fill" style="background:var(--blue); width:${monthGoal ? Math.min(100, (monthPlanned/monthGoal)*100) : 0}%;"></div></div>
     </div>
@@ -3873,7 +3962,7 @@ function openEditSessionModal(sessionId, overrides) {
           workingStartISO = newStart.toISOString();
         }
         workingDurMin = newMin;
-        // Re-open the edit modal with updated times — the duration wheel
+        // Re-open the edit modal with updated times â the duration wheel
         // replaced the session edit form, so restore it with new working values.
         openEditSessionModal(sessionId, {
           startISO: workingStartISO,
@@ -4109,7 +4198,7 @@ function addSessionForDate(date, mins, category, note, studies) {
   if (mins <= 0 && (!studies || studies <= 0)) return;
   mins = Math.max(0, mins);
   const d = fromYmd(date);
-  // Anchor the session at noon on that date — picks an arbitrary but valid time
+  // Anchor the session at noon on that date â picks an arbitrary but valid time
   const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0);
   const stop = new Date(start.getTime() + mins * 60000);
   state.sessions.push({
@@ -4338,7 +4427,7 @@ function openBackupReminderModal() {
       </div>
       <div class="font-bold text-xl mb-2">${t('backupReminderTitle')}</div>
       <div class="text-sm text-dim mb-4">
-        ${t('backupLastLabel')}: <strong>${escapeHtml(lastLabel)}</strong> · ${s.daysSince} ${t('daysAgoLabel')}<br/>
+        ${t('backupLastLabel')}: <strong>${escapeHtml(lastLabel)}</strong> Â· ${s.daysSince} ${t('daysAgoLabel')}<br/>
         ${s.newSessions} ${t('newSessionsSinceBackup')}
       </div>
       <div class="text-sm text-dim mb-5" style="line-height:1.4;">
@@ -4380,7 +4469,7 @@ function renderBackupBanner() {
       <i class="fa-solid fa-cloud-arrow-up" style="font-size:16px;"></i>
       <div class="min-w-0 flex-1">
         <div class="text-xs font-bold uppercase tracking-wider">${t('backupOverdueShort')}</div>
-        <div class="text-tiny" style="opacity:0.92;">${s.daysSince}${t('daysShort')} · ${s.newSessions} ${t('newShort')}</div>
+        <div class="text-tiny" style="opacity:0.92;">${s.daysSince}${t('daysShort')} Â· ${s.newSessions} ${t('newShort')}</div>
       </div>
     </div>
     <button class="banner-stop-btn" id="bkpBannerBtn">
@@ -4440,7 +4529,7 @@ function openExportModal() {
       document.body.appendChild(a); a.click();
       setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 300);
       markBackup(); toast(t('exported'));
-    } catch(e) { toast('Save failed — use Copy below as a fallback'); }
+    } catch(e) { toast('Save failed â use Copy below as a fallback'); }
   };
 
   // Import file: prompts confirmation, then triggers file picker
@@ -4472,7 +4561,7 @@ function openExportModal() {
       ta.removeAttribute('readonly');
       ta.focus(); ta.select();
       try { document.execCommand('copy'); markBackup(); toast(t('copied')); }
-      catch(e2) { toast('Copy failed — select the text manually'); }
+      catch(e2) { toast('Copy failed â select the text manually'); }
       ta.setAttribute('readonly', '');
     }
   };
@@ -4547,11 +4636,11 @@ function buildReportText(mk) {
   const credit = getMonthCredit(mk);
   const serviceDays = getMonthServiceDays(mk);
   const dateStamp = new Date().toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  return `${t('reportText')} — ${monthName} ${y}\n\n${t('hours')}: ${formatHM(mins)}\n${t('creditHours')}: ${formatHM(credit)}\n${t('studies')}: ${studies}\n${t('serviceDays')}: ${serviceDays}\n\n— ${dateStamp}`;
+  return `${t('reportText')} â ${monthName} ${y}\n\n${t('hours')}: ${formatHM(mins)}\n${t('creditHours')}: ${formatHM(credit)}\n${t('studies')}: ${studies}\n${t('serviceDays')}: ${serviceDays}\n\nâ ${dateStamp}`;
 }
 
 // Small picker for sharing report text: lets user choose Messages/Mail/etc. OR Copy.
-// Copy bypasses iOS Share Sheet entirely, avoiding the "Save to Files → .txt" path.
+// Copy bypasses iOS Share Sheet entirely, avoiding the "Save to Files â .txt" path.
 function openShareTextPicker(text) {
   const canShare = !!navigator.share;
   openModal(`
@@ -4586,7 +4675,7 @@ function openShareTextPicker(text) {
       await navigator.share({ title: t('monthlyReport'), text });
       closeModal();
     } catch(e) {
-      if (e.name !== 'AbortError') toast('Share failed — use Copy instead');
+      if (e.name !== 'AbortError') toast('Share failed â use Copy instead');
     }
   };
 }
@@ -4686,7 +4775,7 @@ function wireEvents() {
     state.lang = state.lang === 'en' ? 'es' : 'en'; saveState(); renderAll();
   };
   document.getElementById('themeToggle').onclick = () => {
-    // Cycle: auto → light → dark → auto
+    // Cycle: auto â light â dark â auto
     if (state.theme === 'auto') state.theme = 'light';
     else if (state.theme === 'light') state.theme = 'dark';
     else state.theme = 'auto';
@@ -4779,7 +4868,7 @@ function wireEvents() {
     if (!state.activeTimer) return;
     openDurationWheel(0, (addMin) => {
       if (addMin <= 0) return;
-      // Move start back by addMin minutes → elapsed grows by addMin
+      // Move start back by addMin minutes â elapsed grows by addMin
       const newStart = new Date(new Date(state.activeTimer.startISO).getTime() - addMin*60000);
       state.activeTimer.startISO = newStart.toISOString();
       saveState(); vibrate(15); renderTimer();
@@ -4794,11 +4883,11 @@ function wireEvents() {
     openDurationWheel(0, (subMin) => {
       if (subMin <= 0) return;
       const actualSub = Math.min(subMin, elapsedMin);
-      // Move start forward → elapsed shrinks by actualSub minutes
+      // Move start forward â elapsed shrinks by actualSub minutes
       const newStart = new Date(new Date(state.activeTimer.startISO).getTime() + actualSub*60000);
       state.activeTimer.startISO = newStart.toISOString();
       saveState(); vibrate(15); renderTimer();
-      toast(`−${formatHM(actualSub)}`);
+      toast(`â${formatHM(actualSub)}`);
     });
   };
   document.getElementById('timerDisplay').onclick = () => {
@@ -4842,8 +4931,8 @@ function wireEvents() {
       const dx = (e.changedTouches[0]?.clientX ?? startX) - startX;
       const dy = (e.changedTouches[0]?.clientY ?? startY) - startY;
       if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
-      if (dx < 0) calGoMonth(1);  // swipe left → next
-      else        calGoMonth(-1); // swipe right → prev
+      if (dx < 0) calGoMonth(1);  // swipe left â next
+      else        calGoMonth(-1); // swipe right â prev
     }, { passive: true });
   })();
 
@@ -4881,11 +4970,11 @@ function wireEvents() {
       if (newTotal <= 0 && current <= 0 && (!studies || studies <= 0)) { toast(t('enterTimeRequired')); return; }
       if (newTotal === current && !studies) return;
       if (newTotal < current) {
-        // Block — can't go lower without manual edit
+        // Block â can't go lower without manual edit
         const cat = (state.categories[0] || { id: 'regular' }).id;
         openConfirmModal(
           t('setLowerMsg').replace('{cur}', formatHM(current)).replace('{target}', formatHM(newTotal)),
-          () => { /* user picks Open Sessions — just stay; sessions are already listed below */ },
+          () => { /* user picks Open Sessions â just stay; sessions are already listed below */ },
           { confirmLabel: t('openSessionsBtn'), cancelLabel: t('cancel') }
         );
         return;
@@ -4899,7 +4988,7 @@ function wireEvents() {
     }, { showStudies: true });
   };
 
-  // + Add — add the picked amount on top of current
+  // + Add â add the picked amount on top of current
   document.getElementById('adjBtnAdd').onclick = () => {
     const date = adjustSelectedDate;
     openDurationWheel(0, (addMin, studies) => {
@@ -4909,11 +4998,11 @@ function wireEvents() {
       const parts = [];
       if (addMin > 0) parts.push(`+${formatHM(addMin)}`);
       if (studies > 0) parts.push(`+${studies} ${t('studies').toLowerCase()}`);
-      toast(parts.join(' • ') || t('save'));
+      toast(parts.join(' â¢ ') || t('save'));
     }, { showStudies: true });
   };
 
-  // - Deduct — remove time. Strategy: find the latest session(s) and shorten/delete to match
+  // - Deduct â remove time. Strategy: find the latest session(s) and shorten/delete to match
   document.getElementById('adjBtnSub').onclick = () => {
     const date = adjustSelectedDate;
     const current = getDayMinutes(date);
@@ -4922,13 +5011,13 @@ function wireEvents() {
       if (subMin <= 0) return;
       const actualSub = Math.min(subMin, current);
       deductFromDay(date, actualSub);
-      saveState(); vibrate(15); renderAll(); toast(`−${formatHM(actualSub)}`);
+      saveState(); vibrate(15); renderAll(); toast(`â${formatHM(actualSub)}`);
     });
   };
 
   document.getElementById('adjBtnPlan').onclick = () => openPlanModal(adjustSelectedDate);
   document.getElementById('adjBtnAddDetailed').onclick = () => openQuickAddModal(adjustSelectedDate);
-  // Log History (now inside Reports — Stage A)
+  // Log History (now inside Reports â Stage A)
   const logHistoryAddBtn = document.getElementById('logHistoryAddBtn');
   if (logHistoryAddBtn) logHistoryAddBtn.onclick = () => openQuickAddModal(todayStr());
 
@@ -5030,7 +5119,7 @@ function wireEvents() {
     const f = e.target.files[0]; if (f) importJSON(f); e.target.value = '';
   };
 
-  // ── Cloud backup ──────────────────────────────────────────────────────────
+  // ââ Cloud backup ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   (function setupCloudBackup() {
     const APP_ID = 'ministry-tracker';
     const EXACT_KEYS = [APP_CONFIG.storageKey];
@@ -5185,7 +5274,7 @@ function wireEvents() {
     if (homeRestoreBtn && restoreBtn) homeRestoreBtn.onclick = () => restoreBtn.click();
     refreshCloudInfo();
     KHub.CloudAuth.onChange(function () { refreshCloudInfo(); startUserCloudSync(); });
-  })();  // ─────────────────────────────────────────────────────────────────────
+  })();  // âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 
   document.getElementById('btnClearMonth').onclick = () => {
@@ -5263,7 +5352,7 @@ window.onload = function() {
 
 
 
-// ─── Stage J Weather Redesign v57 ───────────────────────────────
+// âââ Stage J Weather Redesign v57 âââââââââââââââââââââââââââââââ
 (function(App) {
   'use strict';
 
@@ -5278,30 +5367,30 @@ window.onload = function() {
   var _advisoryDismissed = false;
 
   var WMO = {
-    0:{en:'Clear sky',es:'Cielo despejado',e:'☀️'},
-    1:{en:'Mainly clear',es:'Mayormente despejado',e:'🌤️'},
-    2:{en:'Partly cloudy',es:'Parcialmente nublado',e:'⛅'},
-    3:{en:'Overcast',es:'Nublado',e:'☁️'},
-    45:{en:'Foggy',es:'Neblina',e:'🌫️'},
-    48:{en:'Icy fog',es:'Niebla helada',e:'🌫️'},
-    51:{en:'Light drizzle',es:'Llovizna ligera',e:'🌦️'},
-    53:{en:'Drizzle',es:'Llovizna',e:'🌦️'},
-    55:{en:'Heavy drizzle',es:'Llovizna intensa',e:'🌦️'},
-    61:{en:'Light rain',es:'Lluvia ligera',e:'🌧️'},
-    63:{en:'Rain',es:'Lluvia',e:'🌧️'},
-    65:{en:'Heavy rain',es:'Lluvia intensa',e:'🌧️'},
-    71:{en:'Light snow',es:'Nieve ligera',e:'🌨️'},
-    73:{en:'Snow',es:'Nieve',e:'🌨️'},
-    75:{en:'Heavy snow',es:'Nieve intensa',e:'🌨️'},
-    80:{en:'Rain showers',es:'Chubascos',e:'🌦️'},
-    81:{en:'Heavy showers',es:'Chubascos fuertes',e:'🌦️'},
-    82:{en:'Violent showers',es:'Chubascos violentos',e:'⛈️'},
-    95:{en:'Thunderstorm',es:'Tormenta',e:'⛈️'},
-    96:{en:'Storm + hail',es:'Tormenta con granizo',e:'⛈️'},
-    99:{en:'Storm + hail',es:'Tormenta con granizo',e:'⛈️'}
+    0:{en:'Clear sky',es:'Cielo despejado',e:'âï¸'},
+    1:{en:'Mainly clear',es:'Mayormente despejado',e:'ð¤ï¸'},
+    2:{en:'Partly cloudy',es:'Parcialmente nublado',e:'â'},
+    3:{en:'Overcast',es:'Nublado',e:'âï¸'},
+    45:{en:'Foggy',es:'Neblina',e:'ð«ï¸'},
+    48:{en:'Icy fog',es:'Niebla helada',e:'ð«ï¸'},
+    51:{en:'Light drizzle',es:'Llovizna ligera',e:'ð¦ï¸'},
+    53:{en:'Drizzle',es:'Llovizna',e:'ð¦ï¸'},
+    55:{en:'Heavy drizzle',es:'Llovizna intensa',e:'ð¦ï¸'},
+    61:{en:'Light rain',es:'Lluvia ligera',e:'ð§ï¸'},
+    63:{en:'Rain',es:'Lluvia',e:'ð§ï¸'},
+    65:{en:'Heavy rain',es:'Lluvia intensa',e:'ð§ï¸'},
+    71:{en:'Light snow',es:'Nieve ligera',e:'ð¨ï¸'},
+    73:{en:'Snow',es:'Nieve',e:'ð¨ï¸'},
+    75:{en:'Heavy snow',es:'Nieve intensa',e:'ð¨ï¸'},
+    80:{en:'Rain showers',es:'Chubascos',e:'ð¦ï¸'},
+    81:{en:'Heavy showers',es:'Chubascos fuertes',e:'ð¦ï¸'},
+    82:{en:'Violent showers',es:'Chubascos violentos',e:'âï¸'},
+    95:{en:'Thunderstorm',es:'Tormenta',e:'âï¸'},
+    96:{en:'Storm + hail',es:'Tormenta con granizo',e:'âï¸'},
+    99:{en:'Storm + hail',es:'Tormenta con granizo',e:'âï¸'}
   };
 
-  function wmo(code){ return WMO[code]||WMO[Math.floor(code/10)*10]||{en:'Unknown',es:'Desconocido',e:'🌡️'}; }
+  function wmo(code){ return WMO[code]||WMO[Math.floor(code/10)*10]||{en:'Unknown',es:'Desconocido',e:'ð¡ï¸'}; }
   function wmoLabel(code,lang){ var w=wmo(code); return w.e+' '+(lang==='es'?w.es:w.en); }
 
   function getUnits(){ return localStorage.getItem(WX_UNITS_KEY)||'F'; }
@@ -5311,8 +5400,8 @@ window.onload = function() {
   function getLang(){ return (typeof state!=='undefined'&&state.lang)?state.lang:'en'; }
 
   function cToF(c){ return c*9/5+32; }
-  function fmtTemp(c){ return getUnits()==='F'?Math.round(cToF(c))+'°F':Math.round(c)+'°C'; }
-  function fmtShort(c){ return getUnits()==='F'?Math.round(cToF(c))+'°':Math.round(c)+'°'; }
+  function fmtTemp(c){ return getUnits()==='F'?Math.round(cToF(c))+'Â°F':Math.round(c)+'Â°C'; }
+  function fmtShort(c){ return getUnits()==='F'?Math.round(cToF(c))+'Â°':Math.round(c)+'Â°'; }
   function fmtWind(kmh){ return getUnits()==='F'?Math.round(kmh*0.621371)+' mph':Math.round(kmh)+' km/h'; }
   function fmtAge(ts){
     var m=Math.floor((Date.now()-ts)/60000);
@@ -5325,7 +5414,7 @@ window.onload = function() {
   function dayName(iso,lang){
     var d=new Date(iso);
     var en=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    var es=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    var es=['Dom','Lun','Mar','MiÃ©','Jue','Vie','SÃ¡b'];
     return(lang==='es'?es:en)[d.getDay()];
   }
 
@@ -5371,10 +5460,10 @@ window.onload = function() {
   function outlook(cur){
     var rain=cur.precipitation_probability||0,temp=cur.temperature_2m,wind=cur.windspeed_10m,code=cur.weathercode;
     if(rain>60||temp>40||temp<5||wind>50||code>=61)
-      return{level:'bad',icon:'⛔',en:'Not ideal for ministry',es:'No ideal para el ministerio',color:'#ef4444'};
+      return{level:'bad',icon:'â',en:'Not ideal for ministry',es:'No ideal para el ministerio',color:'#ef4444'};
     if(rain>30||temp>35||temp<10||wind>30)
-      return{level:'caution',icon:'⚠️',en:'Use caution',es:'Precaución',color:'#f59e0b'};
-    return{level:'good',icon:'✅',en:'Good for ministry',es:'Bueno para el ministerio',color:'#10b981'};
+      return{level:'caution',icon:'â ï¸',en:'Use caution',es:'PrecauciÃ³n',color:'#f59e0b'};
+    return{level:'good',icon:'â',en:'Good for ministry',es:'Bueno para el ministerio',color:'#10b981'};
   }
 
   function buildOutlookNarrative(data,lang){
@@ -5400,7 +5489,7 @@ window.onload = function() {
                :rain>=20?(isEs?'Lluvia posible.':'Slight chance of rain.')
                :(isEs?'Poca o ninguna lluvia.':'Little to no rain.');
     if(isEs){
-      return cond+'. Máx '+high+', Mín '+low+'. '+rainStr+sunStr;
+      return cond+'. MÃ¡x '+high+', MÃ­n '+low+'. '+rainStr+sunStr;
     }
     return cond+'. High '+high+', Low '+low+'. '+rainStr+sunStr;
   }
@@ -5424,7 +5513,7 @@ window.onload = function() {
         :' Sunrise '+fmtTime12(daily.sunrise[0])+', sunset '+fmtTime12(daily.sunset[0])+'.';
     }
     return isEs
-      ?cond+'. Máx '+high+', Mín '+low+'. '+rainStr+sunStr
+      ?cond+'. MÃ¡x '+high+', MÃ­n '+low+'. '+rainStr+sunStr
       :cond+'. High '+high+', Low '+low+'. '+rainStr+sunStr;
   }
 
@@ -5440,8 +5529,8 @@ window.onload = function() {
     if(!features||!features.length||_advisoryDismissed) return'';
     var top=features[0].properties;
     var cls=severityClass(features);
-    var icon=cls.indexOf('extreme')>=0||cls.indexOf('severe')>=0?'🚨':cls.indexOf('moderate')>=0?'⚠️':'ℹ️';
-    var moreHtml=features.length>1?'<span class="wx-adv-more">+'+(features.length-1)+(getLang()==='es'?' más':' more')+'</span>':'';
+    var icon=cls.indexOf('extreme')>=0||cls.indexOf('severe')>=0?'ð¨':cls.indexOf('moderate')>=0?'â ï¸':'â¹ï¸';
+    var moreHtml=features.length>1?'<span class="wx-adv-more">+'+(features.length-1)+(getLang()==='es'?' mÃ¡s':' more')+'</span>':'';
     return'<div class="wx-advisory '+cls+'" id="wxAdvisory">'
       +'<div class="wx-adv-inner">'
       +'<span class="wx-adv-icon">'+icon+'</span>'
@@ -5450,7 +5539,7 @@ window.onload = function() {
       +'<span>'+(top.headline||'')+'</span>'
       +moreHtml
       +'</div>'
-      +'<button class="wx-adv-dismiss" onclick="App.Weather.dismissAdvisory()">✕</button>'
+      +'<button class="wx-adv-dismiss" onclick="App.Weather.dismissAdvisory()">â</button>'
       +'</div></div>';
   }
 
@@ -5467,12 +5556,12 @@ window.onload = function() {
       +'</div>'
       +'<div class="wx-col-right">'
       +'<span class="wx-outlook-pill wx-ol-'+ol.level+'">'+ol.icon+' '+(lang==='es'?ol.es:ol.en)+'</span>'
-      +'<span class="wx-col-loc">📍 '+(data.locationName||'')+'</span>'
-      +'<span class="wx-col-age">↻ '+fmtAge(data.fetchedAt)+'</span>'
+      +'<span class="wx-col-loc">ð '+(data.locationName||'')+'</span>'
+      +'<span class="wx-col-age">â» '+fmtAge(data.fetchedAt)+'</span>'
       +'</div>'
-      +'<span class="wx-chevron">▼</span>'
+      +'<span class="wx-chevron">â¼</span>'
       +'</div>'
-      +'<div class="wx-expand-bar" onclick="App.Weather.toggle()">▼ '+(lang==='es'?'Toca para expandir':'Tap to expand')+'</div>'
+      +'<div class="wx-expand-bar" onclick="App.Weather.toggle()">â¼ '+(lang==='es'?'Toca para expandir':'Tap to expand')+'</div>'
       +'</div>';
   }
 
@@ -5484,25 +5573,25 @@ window.onload = function() {
 
     var sunriseHtml='',sunsetHtml='';
     if(data.daily&&data.daily.sunrise&&data.daily.sunrise[0]){
-      sunriseHtml='<span class="wx-sun-item">🌅 '+fmtTime12(data.daily.sunrise[0])+'</span>';
-      sunsetHtml='<span class="wx-sun-item">🌇 '+fmtTime12(data.daily.sunset[0])+'</span>';
+      sunriseHtml='<span class="wx-sun-item">ð '+fmtTime12(data.daily.sunrise[0])+'</span>';
+      sunsetHtml='<span class="wx-sun-item">ð '+fmtTime12(data.daily.sunset[0])+'</span>';
     }
 
     var uvHtml='';
     if(cur.uv_index!==undefined&&cur.uv_index!==null){
       var uvl=uvLabel(cur.uv_index,lang);
-      uvHtml='<span class="wx-badge" style="color:'+uvl.color+';border-color:'+uvl.color+'">UV '+Math.round(cur.uv_index)+' · '+uvl.txt+'</span>';
+      uvHtml='<span class="wx-badge" style="color:'+uvl.color+';border-color:'+uvl.color+'">UV '+Math.round(cur.uv_index)+' Â· '+uvl.txt+'</span>';
     }
 
     var humHtml='';
     if(cur.relativehumidity_2m!==undefined){
-      humHtml='<span class="wx-feels">💧 '+(isEs?'Humedad ':'Humidity ')+cur.relativehumidity_2m+'%</span>';
+      humHtml='<span class="wx-feels">ð§ '+(isEs?'Humedad ':'Humidity ')+cur.relativehumidity_2m+'%</span>';
     }
 
     var aqiHtml='';
     if(data.aqi!==undefined&&data.aqi!==null){
       var al=aqiLabel(data.aqi,lang);
-      aqiHtml='<span class="wx-badge" style="color:'+al.color+';border-color:'+al.color+'">AQI '+data.aqi+' · '+al.txt+'</span>';
+      aqiHtml='<span class="wx-badge" style="color:'+al.color+';border-color:'+al.color+'">AQI '+data.aqi+' Â· '+al.txt+'</span>';
     }
 
     var now=new Date(),hourlyHtml='',hCount=0;
@@ -5548,11 +5637,11 @@ window.onload = function() {
     return advHtml+'<div class="wx-card wx-expanded" id="weatherCard" style="border-left:4px solid '+ol.color+'">'
       +'<div class="wx-exp-header">'
       +'<div style="display:flex;align-items:center;gap:8px">'
-      +'<button class="wx-collapse-btn" onclick="App.Weather.toggle()">▲ '+(isEs?'Cerrar':'Collapse')+'</button>'
-      +'<span class="wx-col-loc" style="font-size:13px">📍 '+(data.locationName||'')+'</span>'
-      +'<span class="wx-col-age" style="font-size:11px">↻ '+fmtAge(data.fetchedAt)+'</span>'
+      +'<button class="wx-collapse-btn" onclick="App.Weather.toggle()">â² '+(isEs?'Cerrar':'Collapse')+'</button>'
+      +'<span class="wx-col-loc" style="font-size:13px">ð '+(data.locationName||'')+'</span>'
+      +'<span class="wx-col-age" style="font-size:11px">â» '+fmtAge(data.fetchedAt)+'</span>'
       +'</div>'
-      +'<button class="btn btn-sm wx-refresh-btn" onclick="App.Weather.refresh()" title="Refresh">↻</button>'
+      +'<button class="btn btn-sm wx-refresh-btn" onclick="App.Weather.refresh()" title="Refresh">â»</button>'
       +'</div>'
       +(narrative?'<div class="wx-narrative">'+narrative+'</div>':'')
       +'<div class="wx-current">'
@@ -5562,8 +5651,8 @@ window.onload = function() {
       +'<span class="wx-cond-label">'+w.e+' '+(isEs?w.es:w.en)+'</span>'
       +'<span class="wx-feels">'+(isEs?'Se siente como ':'Feels like ')+fmtShort(cur.apparent_temperature)+'</span>'
       +humHtml
-      +'<span class="wx-wind">💨 '+fmtWind(cur.windspeed_10m)+'</span>'
-      +'<span class="wx-precip">💧 '+(cur.precipitation_probability||0)+'% '+(isEs?'lluvia':'rain')+'</span>'
+      +'<span class="wx-wind">ð¨ '+fmtWind(cur.windspeed_10m)+'</span>'
+      +'<span class="wx-precip">ð§ '+(cur.precipitation_probability||0)+'% '+(isEs?'lluvia':'rain')+'</span>'
       +'</div>'
       +'</div>'
       +'<div class="wx-ol-block" style="border-color:'+ol.color+'">'
@@ -5573,20 +5662,20 @@ window.onload = function() {
       +(aqiHtml?'<div style="margin-top:4px">'+aqiHtml+'</div>':'')
       +'</div>'
       +'</div>'
-      +'<div class="wx-section-lbl">'+(isEs?'Próximas horas':'Next hours')+'</div>'
+      +'<div class="wx-section-lbl">'+(isEs?'PrÃ³ximas horas':'Next hours')+'</div>'
       +'<div class="wx-hourly-scroll">'+hourlyHtml+'</div>'
-      +'<div class="wx-section-lbl">7 '+(isEs?'días':'days')+'</div>'
+      +'<div class="wx-section-lbl">7 '+(isEs?'dÃ­as':'days')+'</div>'
       +'<div class="wx-daily">'+dailyHtml+'</div>'
       +'<div class="wx-settings">'
       +'<div class="wx-loc-section">'
       +'<div class="wx-loc-row">'
-      +'<button class="wx-loc-pill" onclick="App.Weather.toggleLocPicker()">📍 '+(isEs?'Cambiar ubicación':'Change location')+' ▾</button>'
+      +'<button class="wx-loc-pill" onclick="App.Weather.toggleLocPicker()">ð '+(isEs?'Cambiar ubicaciÃ³n':'Change location')+' â¾</button>'
       +(savedHtml?'<div class="wx-saved-row">'+savedHtml+'</div>':'')
       +'</div>'
       +'<div id="wxLocPicker" class="wx-loc-picker" hidden>'
-      +'<button class="wx-gps-btn2" onclick="App.Weather.useGPS()">📍 '+(isEs?'Usar mi ubicación':'Use my location')+'</button>'
+      +'<button class="wx-gps-btn2" onclick="App.Weather.useGPS()">ð '+(isEs?'Usar mi ubicaciÃ³n':'Use my location')+'</button>'
       +'<div class="wx-search-row">'
-      +'<input id="wxCityInput" class="wx-city-input" placeholder="'+(isEs?'Ciudad, o ZIP + país':'City, or ZIP + country')+'" type="text" onkeydown="if(event.key===\'Enter\')App.Weather.searchCity()">'
+      +'<input id="wxCityInput" class="wx-city-input" placeholder="'+(isEs?'Ciudad, o ZIP + paÃ­s':'City, or ZIP + country')+'" type="text" onkeydown="if(event.key===\'Enter\')App.Weather.searchCity()">'
       +'<button class="btn btn-sm btn-primary" onclick="App.Weather.searchCity()">'+(isEs?'Buscar':'Search')+'</button>'
       +'</div>'
       +'<div id="wxSearchResults" class="wx-search-results"></div>'
@@ -5594,17 +5683,17 @@ window.onload = function() {
       +'</div>'
       +'<div class="wx-set-title" style="margin-top:14px">'+(isEs?'UNIDADES':'UNITS')+'</div>'
       +'<div class="wx-units-row">'
-      +'<button class="wx-unit-btn'+(units==='F'?' wx-unit-active':'')+'" onclick="App.Weather.setUnits(\'F\')">°F</button>'
-      +'<button class="wx-unit-btn'+(units==='C'?' wx-unit-active':'')+'" onclick="App.Weather.setUnits(\'C\')">°C</button>'
+      +'<button class="wx-unit-btn'+(units==='F'?' wx-unit-active':'')+'" onclick="App.Weather.setUnits(\'F\')">Â°F</button>'
+      +'<button class="wx-unit-btn'+(units==='C'?' wx-unit-active':'')+'" onclick="App.Weather.setUnits(\'C\')">Â°C</button>'
       +'</div>'
-      +'<div class="wx-set-title" style="margin-top:14px">'+(isEs?'SOBRE EL PRONÓSTICO':'ABOUT OUTLOOK')+'</div>'
+      +'<div class="wx-set-title" style="margin-top:14px">'+(isEs?'SOBRE EL PRONÃSTICO':'ABOUT OUTLOOK')+'</div>'
       +'<div class="wx-about-list">'
-      +'<div class="wx-about-item"><span>✅</span><span>'+(isEs?'<strong>Bueno:</strong> Cielos despejados, viento leve, sin lluvia':'<strong>Good:</strong> Clear skies, mild wind, no rain expected')+'</span></div>'
-      +'<div class="wx-about-item"><span>⚠️</span><span>'+(isEs?'<strong>Precaución:</strong> Nubes, posibilidad de lluvia o viento fuerte':'<strong>Caution:</strong> Some clouds, higher rain chance, or strong wind')+'</span></div>'
-      +'<div class="wx-about-item"><span>⛔</span><span>'+(isEs?'<strong>No ideal:</strong> Lluvia, nieve, viento extremo o temperatura extrema':'<strong>Not ideal:</strong> Rain, heavy wind, snow, or extreme temps')+'</span></div>'
+      +'<div class="wx-about-item"><span>â</span><span>'+(isEs?'<strong>Bueno:</strong> Cielos despejados, viento leve, sin lluvia':'<strong>Good:</strong> Clear skies, mild wind, no rain expected')+'</span></div>'
+      +'<div class="wx-about-item"><span>â ï¸</span><span>'+(isEs?'<strong>PrecauciÃ³n:</strong> Nubes, posibilidad de lluvia o viento fuerte':'<strong>Caution:</strong> Some clouds, higher rain chance, or strong wind')+'</span></div>'
+      +'<div class="wx-about-item"><span>â</span><span>'+(isEs?'<strong>No ideal:</strong> Lluvia, nieve, viento extremo o temperatura extrema':'<strong>Not ideal:</strong> Rain, heavy wind, snow, or extreme temps')+'</span></div>'
       +'</div>'
       +'</div>'
-      +'<div class="wx-collapse-bar" onclick="App.Weather.toggle()">▲ '+(isEs?'Toca para cerrar':'Tap to collapse')+'</div>'
+      +'<div class="wx-collapse-bar" onclick="App.Weather.toggle()">â² '+(isEs?'Toca para cerrar':'Tap to collapse')+'</div>'
       +'</div>';
   }
 
@@ -5710,9 +5799,9 @@ window.onload = function() {
   function renderError(msg){
     var isEs=state.lang==='es';
     return'<div class="wx-card wx-err-card" id="weatherCard">'
-      +'<p class="wx-err-msg">⚠️ '+msg+'</p>'
+      +'<p class="wx-err-msg">â ï¸ '+msg+'</p>'
       +'<div class="wx-search-row" style="margin-top:8px">'
-      +'<input id="wxCityInput" class="wx-city-input" placeholder="'+(isEs?'Ciudad, o ZIP + país':'City, or ZIP + country')+'" type="text" onkeydown="if(event.key===\'Enter\')App.Weather.searchCity()">'
+      +'<input id="wxCityInput" class="wx-city-input" placeholder="'+(isEs?'Ciudad, o ZIP + paÃ­s':'City, or ZIP + country')+'" type="text" onkeydown="if(event.key===\'Enter\')App.Weather.searchCity()">'
       +'<button class="btn btn-sm btn-primary" onclick="App.Weather.searchCity()">'+(isEs?'Buscar':'Search')+'</button>'
       +'</div>'
       +'<div id="wxSearchResults" class="wx-search-results"></div>'
@@ -5754,7 +5843,7 @@ window.onload = function() {
         }
         var _wxAgeMs = Date.now() - (cached.fetchedAt || 0);
         if (_wxAgeMs < WX_CACHE_TTL) {
-          // Cache is fresh — skip all network fetches
+          // Cache is fresh â skip all network fetches
           App.Weather._initRunning = false;
           return;
         }
@@ -5810,14 +5899,14 @@ window.onload = function() {
             render(d,adv);
           }catch(err){var el2=getEl();if(el2) el2.innerHTML=renderError(err.message);}
         },
-        function(){var el2=getEl();if(el2) el2.innerHTML=renderError('Location denied — enter a city below');},
+        function(){var el2=getEl();if(el2) el2.innerHTML=renderError('Location denied â enter a city below');},
         {timeout:10000}
       );
     },
 
     async searchCity(){
       var inp=document.getElementById('wxCityInput'),q=inp?inp.value.trim():''; if(!q) return;
-      var res=document.getElementById('wxSearchResults'); if(res) res.innerHTML='<div class="wx-searching">🔍...</div>';
+      var res=document.getElementById('wxSearchResults'); if(res) res.innerHTML='<div class="wx-searching">ð...</div>';
       try{
         var results=await geocodeCity(q);
         if(!results.length){if(res) res.innerHTML='<div class="wx-no-results">No results</div>';return;}
@@ -6018,5 +6107,5 @@ window.onload = function() {
   }
 
 })(window.App=window.App||{});
-// ─── End Stage J Weather Redesign v57 ────────────────────────
+// âââ End Stage J Weather Redesign v57 ââââââââââââââââââââââââ
 

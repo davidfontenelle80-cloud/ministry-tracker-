@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-  <meta name="description" content="Ministry Tracker — field service hour tracker for JW congregation. EN/ES bilingual." />
+  <meta name="description" content="Ministry Tracker â field service hour tracker for JW congregation. EN/ES bilingual." />
   <meta name="theme-color" content="#0b0d12" />
 
   <!-- PWA -->
@@ -45,7 +45,7 @@
        aria-live="polite"
        aria-atomic="true"
        hidden>
-    Update available — <button class="btn btn-sm btn-secondary"
+    Update available â <button class="btn btn-sm btn-secondary"
             onclick="KHub.SW.applyUpdate()">Refresh</button>
   </div>
 
@@ -228,7 +228,7 @@
         </div>
         <div class="text-right text-xs">
           <div class="text-faint" id="lbl_projection">Projection</div>
-          <div id="homeProjection" class="font-mono font-bold text-base">—</div>
+          <div id="homeProjection" class="font-mono font-bold text-base">â</div>
         </div>
       </div>
       <div class="progress-track">
@@ -330,7 +330,7 @@
     <div class="card-lg col items-center" style="text-align: center;">
       <div id="timerStatusLabel" class="text-xs uppercase tracking-wider text-dim font-semibold">Ready to start</div>
       <div id="timerDisplay" class="display-num text-6xl font-mono mt-3 text-accent" style="cursor:pointer;">00:00:00</div>
-      <div id="timerSubtitle" class="text-xs text-faint font-mono mt-1">—</div>
+      <div id="timerSubtitle" class="text-xs text-faint font-mono mt-1">â</div>
       <div id="timerRemaining" class="text-sm font-mono font-bold text-blue mt-1"></div>
 
       <!-- Stopwatch adjusters (only visible when timer is running) -->
@@ -338,7 +338,7 @@
         <button class="btn btn-secondary text-xs" id="timerAdjustSub" style="padding:8px 14px;">
           <i class="fa-solid fa-minus"></i>
         </button>
-        <div class="text-tiny text-faint" id="lbl_timerAdjustHint" style="flex:1;text-align:center;">Tap +/− to adjust</div>
+        <div class="text-tiny text-faint" id="lbl_timerAdjustHint" style="flex:1;text-align:center;">Tap +/â to adjust</div>
         <button class="btn btn-secondary text-xs" id="timerAdjustAdd" style="padding:8px 14px;">
           <i class="fa-solid fa-plus"></i>
         </button>
@@ -393,7 +393,7 @@
             <i class="fa-solid fa-up-right-and-down-left-from-center" style="font-size: 10px;"></i>
           </button>
         </div>
-        <textarea id="timerNoteInline" rows="2" maxlength="500" placeholder="Quick note — tap expand for more room" style="font-size: 14px;"></textarea>
+        <textarea id="timerNoteInline" rows="2" maxlength="500" placeholder="Quick note â tap expand for more room" style="font-size: 14px;"></textarea>
       </div>
     </div>
 
@@ -412,7 +412,7 @@
       <h1 class="screen-title" id="lbl_navCal">Calendar</h1>
     </div>
 
-    <!-- Today's Plan countdown (G) — visible only when today has a plan -->
+    <!-- Today's Plan countdown (G) â visible only when today has a plan -->
     <div id="todayPlanCard" class="card-lg hidden" style="margin-bottom: 16px;">
       <div class="row-between items-start mb-2">
         <div>
@@ -480,7 +480,7 @@
     <div class="cal-weekdays" id="calWeekdays"></div>
     <div class="cal-grid mt-2" id="calGrid"></div>
 
-    <!-- ADJUST TIME CARD — the unified time-entry hub -->
+    <!-- ADJUST TIME CARD â the unified time-entry hub -->
     <div class="card-lg mt-4" id="adjustTimeCard" style="text-align:center;">
       <div class="row-between items-center mb-2">
         <button id="adjDatePrev" class="btn btn-secondary btn-icon" style="width:36px;height:36px;">
@@ -539,7 +539,7 @@
         <div class="row gap-2"><span style="width: 12px; height: 12px; border-radius: 4px; background: var(--blue-soft); border: 1px solid var(--blue);"></span><span class="text-dim" id="lbl_hasPlan">Has plan</span></div>
       </div>
     </div>
-    <!-- Stage F — Calendar Notes Panel -->
+    <!-- Stage F â Calendar Notes Panel -->
     <div id="calNotesPanel" class="hidden"></div>
   </section>
 
@@ -610,11 +610,11 @@
       <div class="grid grid-2 mt-4">
         <div class="card-flat">
           <div class="text-tiny uppercase tracking-wider text-dim font-semibold" id="lbl_avgMonth">Avg / month</div>
-          <div id="reportAvg" class="font-mono text-lg font-bold mt-1">—</div>
+          <div id="reportAvg" class="font-mono text-lg font-bold mt-1">â</div>
         </div>
         <div class="card-flat">
           <div class="text-tiny uppercase tracking-wider text-dim font-semibold" id="lbl_projection2">Projection</div>
-          <div id="reportProj" class="font-mono text-lg font-bold mt-1">—</div>
+          <div id="reportProj" class="font-mono text-lg font-bold mt-1">â</div>
         </div>
       </div>
     </div>
@@ -625,7 +625,7 @@
       <div id="reportCategories" class="stack-3"></div>
     </div>
 
-    <!-- Log History (moved from Log tab — Stage A) -->
+    <!-- Log History (moved from Log tab â Stage A) -->
     <div class="card mt-4" id="logHistorySection">
       <div class="row-between mb-3">
         <div class="text-xs uppercase tracking-wider text-dim font-semibold" id="lbl_logHistory">Log History</div>
@@ -780,6 +780,10 @@
       </div>
     </div>
 
+
+    <!-- Notifications -->
+    <div class="card stack-2" id="mtNotifStatus" style="margin-bottom:16px;"></div>
+
     <!-- Past service years -->
     <div class="card stack-2" style="margin-bottom: 16px;">
       <div class="text-xs uppercase tracking-wider text-dim font-semibold mb-2" id="lbl_pastSY">Past service years</div>
@@ -834,7 +838,7 @@
     </div>
 
     <div class="text-center text-xs text-faint py-4">
-      Ministry Tracker · v4.0 · <span id="setSchemaInfo"></span>
+      Ministry Tracker Â· v4.0 Â· <span id="setSchemaInfo"></span>
     </div>
   </section>
 
@@ -870,7 +874,7 @@
 <div id="modalRoot"></div>
   </div>
 
-  <!-- Firebase SDK (compat — no build step required) -->
+  <!-- Firebase SDK (compat â no build step required) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
