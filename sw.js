@@ -1,8 +1,8 @@
 /**
- * sw.js Ã¢ÂÂ KHub Boilerplate
+ * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v71-notif-ux';
+const CACHE_VERSION = 'ministry-tracker-v72-encoding-fix';
 
 const PRECACHE_URLS = [
   './',
@@ -77,7 +77,7 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) {
     // v60: runtime-cache CDN assets (Font Awesome, Google Fonts) so nav icons
     // and fonts survive offline / CDN hiccups.
-    if (/(^|\.)(cdnjs\.cloudflare\.com|fonts\.googleapis\.com|fonts\.gstatic\.com)$/.test(url.hostname)) {
+    if (/(^|\.).cdnjs\.cloudflare\.com|fonts\.googleapis\.com|fonts\.gstatic\.com)$/.test(url.hostname)) {
       event.respondWith(
         caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
           if (response && (response.status === 200 || response.type === 'opaque')) {
