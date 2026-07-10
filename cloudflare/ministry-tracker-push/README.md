@@ -43,6 +43,10 @@ Not approved until verified:
 
 ## Security rules
 
+Reminder writes, deletes, and test pushes require a per-subscription capability token. The Worker creates a new random token when the browser registers its push subscription, stores it only in KV, and returns it to that browser. The frontend stores the token locally and sends it as a Bearer token for protected requests.
+
+Deploy the Worker before deploying the matching frontend. Existing installations automatically obtain a new token the next time they subscribe or sync a reminder.
+
 Allowed in repo/frontend:
 
 - Worker public URL
