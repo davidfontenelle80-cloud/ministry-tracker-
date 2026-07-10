@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v74-push-auth';
+const CACHE_VERSION = 'ministry-tracker-v75-credit-hours';
 
 const PRECACHE_URLS = [
   './',

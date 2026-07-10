@@ -1104,15 +1104,39 @@ function getMonthServiceDays(mk) {
   }
   return days.size;
 }
+function creditEntryMinutes(entry) {
+  if (!entry || typeof entry !== 'object') return 0;
+  if (Number.isFinite(Number(entry.minutes))) return Math.max(0, Math.round(Number(entry.minutes)));
+  if (Number.isFinite(Number(entry.hours))) return Math.max(0, Math.round(Number(entry.hours) * 60));
+  return 0;
+}
+function legacyCreditMinutes(value) {
+  if (value && typeof value === 'object') {
+    if (Number.isFinite(Number(value.minutes))) return Math.max(0, Math.round(Number(value.minutes)));
+    if (Number.isFinite(Number(value.hours))) return Math.max(0, Math.round(Number(value.hours) * 60));
+    return 0;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) return Math.max(0, Math.round(value));
+  if (typeof value === 'string') {
+    const text = value.trim();
+    const hm = text.match(/^(\d+)\s*:\s*(\d{1,2})$/);
+    if (hm) return Math.max(0, (parseInt(hm[1], 10) * 60) + Math.min(59, parseInt(hm[2], 10)));
+    const hours = parseFloat(text.replace(/\s*(hours?|hrs?|h)\s*$/i, ''));
+    if (Number.isFinite(hours)) return Math.max(0, Math.round(hours * 60));
+  }
+  return 0;
+}
 function getCreditEntriesForMonth(mk) {
   return (Array.isArray(state.creditEntries) ? state.creditEntries : [])
-    .filter(e => e && e.date && e.date.startsWith(mk) && (parseInt(e.minutes, 10) || 0) > 0);
+    .filter(e => e && e.date && e.date.startsWith(mk) && creditEntryMinutes(e) > 0);
 }
 function getMonthCredit(mk) {
-  const entryTotal = getCreditEntriesForMonth(mk)
-    .reduce((a, e) => a + (parseInt(e.minutes, 10) || 0), 0);
+  const entries = getCreditEntriesForMonth(mk);
+  const manual = entries.find(e => e.id === 'c_manual_month_' + mk || e.type === 'manualMonthlyCredit');
+  if (manual) return creditEntryMinutes(manual);
+  const entryTotal = entries.reduce((a, e) => a + creditEntryMinutes(e), 0);
   if (entryTotal > 0) return entryTotal;
-  return parseInt((state.creditByMonth || {})[mk], 10) || 0;
+  return legacyCreditMinutes((state.creditByMonth || {})[mk]);
 }
 function getServiceYearMinutes() {
   const { start, end } = getServiceYearRange();
@@ -4366,14 +4390,15 @@ function openCreditEditModal() {
     const mins = Math.round(h * 60);
     state.creditEntries = state.creditEntries || [];
     state.creditByMonth = state.creditByMonth || {};
-    state.creditEntries = (state.creditEntries || []).filter(e => !e.date || !e.date.startsWith(mk) || e.id !== 'c_manual_month_' + mk);
+    state.creditEntries = (state.creditEntries || []).filter(e => !e.date || !e.date.startsWith(mk));
     if (mins > 0) {
       state.creditEntries.push({
         id: 'c_manual_month_' + mk,
         date: mk + '-01',
         minutes: mins,
-        type: 'otherCredit',
+        type: 'manualMonthlyCredit',
         note: 'Manual monthly credit total',
+        updatedAt: new Date().toISOString(),
       });
       state.creditByMonth[mk] = mins;
     } else {
@@ -6108,4 +6133,3 @@ window.onload = function() {
 
 })(window.App=window.App||{});
 // ─── End Stage J Weather Redesign v57 ────────────────────────
-
