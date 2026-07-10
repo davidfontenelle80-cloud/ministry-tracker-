@@ -59,6 +59,21 @@
     } catch (e) {}
   }
 
+  function getAuthToken() {
+    try { return localStorage.getItem('ministryPushAuthToken') || ''; } catch (e) { return ''; }
+  }
+
+  function setAuthToken(token) {
+    try {
+      if (token) localStorage.setItem('ministryPushAuthToken', token);
+    } catch (e) {}
+  }
+
+  function authHeaders(token) {
+    token = token || getAuthToken();
+    return token ? { Authorization: 'Bearer ' + token } : {};
+  }
+
   function log(action, details) {
     try {
       console.info('[MinistryPush]', action, Object.assign({
@@ -167,6 +182,7 @@
         })
       }).then(function (data) {
         setSubscriptionId(data.id || data.subscriptionId || '');
+        setAuthToken(data.authToken || '');
         log('subscribe:saved', { subscriptionId: data.id || data.subscriptionId || '' });
         return data;
       });
@@ -183,6 +199,7 @@
         postReached = true;
         return jsonFetch(c.workerUrl + '/api/reminders', {
           method: 'POST',
+          headers: authHeaders(subData.authToken),
           body: JSON.stringify({
             app: 'ministry-tracker',
             subscriptionId: subData.id || subData.subscriptionId || getSubscriptionId(),
@@ -225,7 +242,7 @@
     var url = c.workerUrl + '/api/reminders/' + encodeURIComponent(sourceType) + '/' + encodeURIComponent(sourceId);
     url += '?subscriptionId=' + encodeURIComponent(id);
     log('reminder:clear', { sourceType: sourceType, sourceId: sourceId, subscriptionId: id });
-    return jsonFetch(url, { method: 'DELETE' }).catch(function (err) {
+    return jsonFetch(url, { method: 'DELETE', headers: authHeaders() }).catch(function (err) {
       return pushErrorResult('reminder:clear', err);
     });
   }
@@ -237,6 +254,7 @@
       log('test-push:send', { subscriptionId: subData.id || subData.subscriptionId || getSubscriptionId() });
       return jsonFetch(c.workerUrl + '/api/test-push', {
         method: 'POST',
+        headers: authHeaders(subData.authToken),
         body: JSON.stringify({
           app: 'ministry-tracker',
           subscriptionId: subData.id || subData.subscriptionId || getSubscriptionId(),
