@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v73-full-encoding-fix';
+const CACHE_VERSION = 'ministry-tracker-v74-a11y-viewport-zoom';
 
 const PRECACHE_URLS = [
   './',
