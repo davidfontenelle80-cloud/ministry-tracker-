@@ -2,6 +2,8 @@
 
 Field service hour tracker for a JW congregation. Tracks hours by category (regular witnessing, group witnessing, LDC, etc.), monthly/annual goals, streaks, and multi-publisher reports. EN/ES bilingual.
 
+**Zoom:** locked (`user-scalable=no`, `maximum-scale=1.0`) per owner decision — accidental pinches destabilize the app in field use; all text-entry inputs stay ≥16px, so readability and iOS auto-zoom prevention hold regardless (KHub UX-STANDARDS §2).
+
 ## Current Codex Task — Credit Hours Bug
 
 GitHub issue: #2 — Credit hours save but do not stay visible / reflect correctly in Reports.
