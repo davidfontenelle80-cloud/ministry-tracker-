@@ -16,6 +16,53 @@
 
   const STORAGE_KEY = 'khub_lang';
 
+  // Repair legacy built-in note categories that were saved as a single-language
+  // string. This runs before app.js initializes state, so the normal renderer can
+  // select the correct label for the active language without touching custom names.
+  (function migrateLegacyMinistryNoteCategoryNames() {
+    const appStorageKey = 'ministry-tracker-v4';
+    const defaults = {
+      'mnc-1': { en: 'Return Visits', es: 'Revisitas' },
+      'mnc-2': { en: 'Bible Studies', es: 'Estudios bíblicos' },
+      'mnc-3': { en: 'Interested Persons', es: 'Personas interesadas' },
+      'mnc-4': { en: 'Calls', es: 'Llamadas' },
+      'mnc-5': { en: 'Messages', es: 'Mensajes' },
+      'mnc-6': { en: 'Territory', es: 'Territorio' },
+      'mnc-7': { en: 'Appointments', es: 'Citas' },
+      'mnc-8': { en: 'Personal', es: 'Personal' },
+    };
+
+    try {
+      const raw = localStorage.getItem(appStorageKey);
+      if (!raw) return;
+
+      const saved = JSON.parse(raw);
+      if (!Array.isArray(saved.ministryNoteCategories)) return;
+
+      let changed = false;
+      saved.ministryNoteCategories.forEach(category => {
+        const bilingual = category && defaults[category.id];
+        if (!bilingual) return;
+
+        const currentName = category.name;
+        const isLegacyBuiltInString = typeof currentName === 'string' &&
+          (currentName === bilingual.en || currentName === bilingual.es);
+        const isLegacySingleLanguageObject = currentName && typeof currentName === 'object' &&
+          ((currentName.en === bilingual.en && !currentName.es) ||
+           (currentName.es === bilingual.es && !currentName.en));
+
+        if (isLegacyBuiltInString || isLegacySingleLanguageObject) {
+          category.name = { en: bilingual.en, es: bilingual.es };
+          changed = true;
+        }
+      });
+
+      if (changed) localStorage.setItem(appStorageKey, JSON.stringify(saved));
+    } catch (error) {
+      console.warn('[Ministry Tracker] Note-category language migration skipped:', error);
+    }
+  })();
+
   const strings = {
     en: {
       // Navigation / shell
@@ -155,4 +202,3 @@
     document.getElementById('lang-toggle')?.addEventListener('click', toggle);
   });
 })();
-
