@@ -377,6 +377,32 @@ const I18N = {
     calNotesForDay: 'Notes for this day',
     calNoNotesForDay: 'No notes for this day.',
     calAddNote: '+ Add Note',
+    notesTotalCount: '{n} notes',
+    ministryTitle: 'Ministry',
+    addTimeBtn: 'Add time',
+    pushDebug: 'Push diagnostics',
+    pushDebugLastSync: 'Last reminder sync',
+    cloudUnavailable: 'Cloud backup unavailable',
+    cloudAccountBtn: 'Cloud Account',
+    cloudAccountGeneric: 'Cloud account',
+    cloudSignInFirst: 'Sign in to your cloud account first',
+    cloudNoBackup: 'No cloud backup found',
+    cloudStorageUnavailable: 'Cloud backup storage is temporarily unavailable. Your local app data is still saved on this device.',
+    cloudNoDetails: 'Cloud backup failed: no error details returned. Refresh and sign in again.',
+    cloudSignedInAs: 'Signed in: ',
+    cloudSignInBtn: 'Sign in for Cloud Backup',
+    cloudLastSave: 'Last cloud save: ',
+    cloudNotSavedYet: 'Signed in. Not saved to cloud yet',
+    cloudSignInHint: 'Sign in to keep this app separate from other users.',
+    cloudSignOutConfirm: 'Sign out of cloud backup?',
+    signOutBtn: 'Sign out',
+    signedOutToast: 'Signed out',
+    resetEmailSent: 'Password reset email sent',
+    signedInToast: 'Signed in',
+    savedToCloud: 'Saved to cloud',
+    restoredFromCloud: 'Restored from cloud',
+    cloudRestoreConfirm: 'Replace your current data with your signed-in cloud backup? This cannot be undone.',
+    restoreBtnLabel: 'Restore',
   },
   es: {
     goodMorning: 'Buenos días', goodAfternoon: 'Buenas tardes', goodEvening: 'Buenas noches',
@@ -596,6 +622,32 @@ const I18N = {
     calNotesForDay: 'Notas de este día',
     calNoNotesForDay: 'Sin notas para este día.',
     calAddNote: '+ Agregar nota',
+    notesTotalCount: '{n} notas',
+    ministryTitle: 'Ministerio',
+    addTimeBtn: 'Añadir tiempo',
+    pushDebug: 'Diagnóstico de notificaciones',
+    pushDebugLastSync: 'Última sincronización del recordatorio',
+    cloudUnavailable: 'Copia en la nube no disponible',
+    cloudAccountBtn: 'Cuenta de la nube',
+    cloudAccountGeneric: 'Cuenta de la nube',
+    cloudSignInFirst: 'Primero inicia sesión en tu cuenta de la nube',
+    cloudNoBackup: 'No se encontró ninguna copia en la nube',
+    cloudStorageUnavailable: 'El almacenamiento de la copia en la nube no está disponible por el momento. Tus datos siguen guardados en este dispositivo.',
+    cloudNoDetails: 'Falló la copia en la nube sin detalles del error. Actualiza la página e inicia sesión de nuevo.',
+    cloudSignedInAs: 'Sesión iniciada: ',
+    cloudSignInBtn: 'Inicia sesión para la copia en la nube',
+    cloudLastSave: 'Última copia en la nube: ',
+    cloudNotSavedYet: 'Sesión iniciada. Aún no hay copia en la nube',
+    cloudSignInHint: 'Inicia sesión para mantener esta app separada de otros usuarios.',
+    cloudSignOutConfirm: '¿Cerrar la sesión de la copia en la nube?',
+    signOutBtn: 'Cerrar sesión',
+    signedOutToast: 'Sesión cerrada',
+    resetEmailSent: 'Se envió el correo para restablecer la contraseña',
+    signedInToast: 'Sesión iniciada',
+    savedToCloud: 'Guardado en la nube',
+    restoredFromCloud: 'Restaurado desde la nube',
+    cloudRestoreConfirm: '¿Reemplazar tus datos actuales con la copia en la nube de tu cuenta? Esto no se puede deshacer.',
+    restoreBtnLabel: 'Restaurar',
   },
 };
 
@@ -878,6 +930,36 @@ function migrateCategories(s) {
     if (!s.categories.some(c => c.id === 'cartWit')) {
       s.categories.push({ id: 'cartWit', label_en: 'Cart Witnessing', label_es: 'Carrito' });
     }
+  }
+  // One-time repair: built-in ministry note categories (mnc-*) saved with a
+  // single-language name before names became bilingual objects. Only known
+  // default names are rewritten; user-created or renamed categories are never touched.
+  if (Array.isArray(s.ministryNoteCategories)) {
+    const mncDefaults = {
+      'mnc-1': { en: 'Return Visits',      es: 'Revisitas' },
+      'mnc-2': { en: 'Bible Studies',      es: 'Estudios bíblicos' },
+      'mnc-3': { en: 'Interested Persons', es: 'Personas interesadas' },
+      'mnc-4': { en: 'Calls',              es: 'Llamadas' },
+      'mnc-5': { en: 'Messages',           es: 'Mensajes' },
+      'mnc-6': { en: 'Territory',          es: 'Territorio' },
+      'mnc-7': { en: 'Appointments',       es: 'Citas' },
+      'mnc-8': { en: 'Personal',           es: 'Personal' },
+    };
+    s.ministryNoteCategories.forEach(c => {
+      const def = c && mncDefaults[c.id];
+      if (!def) return;
+      const isDefaultVal = v => v === def.en || v === def.es;
+      const n = c.name;
+      if (typeof n === 'string' && isDefaultVal(n)) {
+        c.name = { en: def.en, es: def.es };
+      } else if (n && typeof n === 'object') {
+        const vals = [n.en, n.es].filter(v => typeof v === 'string' && v);
+        const allDefault = vals.length > 0 && vals.every(isDefaultVal);
+        if (allDefault && (n.en !== def.en || n.es !== def.es)) {
+          c.name = { en: def.en, es: def.es };
+        }
+      }
+    });
   }
   return s;
 }
@@ -1345,12 +1427,18 @@ function applyI18n() {
     nav_home: 'nav_home', nav_timer: 'nav_timer', nav_cal: 'nav_cal', nav_notes: 'nav_notes', nav_reports: 'nav_reports',
     lbl_logHistory: 'logHistory',
     liveBannerLabel: 'inService', liveBannerStopLabel: 'stop',
+    lbl_ministryTitle: 'ministryTitle', lbl_addTime: 'addTimeBtn',
   };
   Object.entries(map).forEach(([id, key]) => {
     const el = document.getElementById(id);
     if (el) el.textContent = t(key);
   });
   document.getElementById('langToggle').textContent = (state.lang || 'en').toUpperCase();
+  // Keep the KHub shell i18n (skip link, update notice, error boundary) in sync
+  try {
+    if (window.KHub && KHub.I18n && KHub.I18n.current !== (state.lang || 'en')) KHub.I18n.set(state.lang || 'en');
+  } catch (e) { /* ignore */ }
+  if (typeof window.__mtRefreshCloudInfo === 'function') { try { window.__mtRefreshCloudInfo(); } catch (e) { /* ignore */ } }
   const userNameInput = document.getElementById('setUserName');
   if (userNameInput) userNameInput.placeholder = t('userNamePlaceholder');
   const logHistorySearchEl2 = document.getElementById('logHistorySearch');
@@ -2199,7 +2287,7 @@ function renderNotes() {
         '<button class="btn btn-secondary btn-icon" data-cat-del="' + escapeHtml(cat.id) + '" style="width:40px;height:40px;" aria-label="' + escapeHtml(t('deleteCategory')) + '"><i class="fa-solid fa-trash" style="font-size:11px;color:var(--coral);"></i></button>' +
         '</div></div>' +
         '<div class="font-bold text-base mt-3">' + escapeHtml(name) + '</div>' +
-        '<div class="text-sm text-dim mt-1">' + catNotes.length + ' ' + escapeHtml(t('allNotes').toLowerCase()) + '</div>' +
+        '<div class="text-sm text-dim mt-1">' + escapeHtml(t('notesTotalCount').replace('{n}', catNotes.length)) + '</div>' +
         '<div class="mn-badges"><span class="mn-badge">' + activeCount + ' ' + escapeHtml(t('notesFilterActive')) + '</span>' +
         (dueCount ? '<span class="mn-badge"><i class="fa-regular fa-clock"></i>' + dueCount + '</span>' : '') +
         '</div></div>';
@@ -2210,7 +2298,7 @@ function renderNotes() {
     '<div class="row gap-2" style="flex-wrap:wrap;justify-content:flex-end;">' +
     '<button class="btn btn-secondary" data-all-notes style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('allNotes')) + '</button>' +
     '<button class="btn btn-secondary" data-push-test style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('testPush')) + '</button>' +
-    '<button class="btn btn-secondary" data-push-debug style="font-size:13px;padding:7px 14px;" title="Push debug"><i class="fa-solid fa-stethoscope"></i></button>' +
+    '<button class="btn btn-secondary" data-push-debug style="font-size:13px;padding:7px 14px;" title="' + escapeHtml(t('pushDebug')) + '"><i class="fa-solid fa-stethoscope"></i></button>' +
     '<button class="btn btn-primary" data-add-cat style="font-size:13px;padding:7px 14px;">' +
     '<i class="fa-solid fa-plus"></i><span>' + t('addCategory') + '</span></button></div></div>' +
     gridHTML;
@@ -2350,7 +2438,7 @@ function renderNotesListView(scr, cat) {
     '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:20px;">' + escapeHtml(icon) + '</span>' +
     '<span class="font-semibold text-sm">' + escapeHtml(catName) + '</span></div>' +
     '<button class="btn btn-secondary" data-push-test style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('testPush')) + '</button>' +
-    '<button class="btn btn-secondary" data-push-debug style="font-size:13px;padding:7px 14px;" title="Push debug"><i class="fa-solid fa-stethoscope"></i></button>' +
+    '<button class="btn btn-secondary" data-push-debug style="font-size:13px;padding:7px 14px;" title="' + escapeHtml(t('pushDebug')) + '"><i class="fa-solid fa-stethoscope"></i></button>' +
     '<button class="btn btn-primary" data-mn-add style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('mnAddNote')) + '</button></div>' +
     notesToolbar + noteCards;
   var addBtn = scr.querySelector('[data-mn-add]');
@@ -2493,14 +2581,14 @@ function showMinistryPushDebug() {
         + '<span class="text-xs" style="word-break:break-all;text-align:right;">' + escapeHtml(val) + '</span></div>';
     }
     openModal(
-      '<div class="row-between items-center mb-3"><div class="font-bold text-xl">Push Debug</div>'
+      '<div class="row-between items-center mb-3"><div class="font-bold text-xl">' + escapeHtml(t('pushDebug')) + '</div>'
       + '<button class="btn btn-secondary btn-icon" data-close-modal style="width:38px;height:38px;" aria-label="close"><i class="fa-solid fa-xmark"></i></button></div>'
       + row('workerUrl', d.workerUrl)
       + row('worker /api/health', health)
       + row('permission', d.permission)
       + row('subscriptionId', d.subscriptionId)
       + row('SW controller', (navigator.serviceWorker && navigator.serviceWorker.controller) ? 'active' : 'none')
-      + '<div class="text-xs font-bold uppercase tracking-wider text-dim" style="margin:12px 0 2px;">Last reminder sync</div>'
+      + '<div class="text-xs font-bold uppercase tracking-wider text-dim" style="margin:12px 0 2px;">' + escapeHtml(t('pushDebugLastSync')) + '</div>'
       + row('timestamp', dbg && dbg.timestamp)
       + row('sourceId', dbg && dbg.sourceId)
       + row('fireAt', dbg && dbg.fireAt)
@@ -5136,24 +5224,24 @@ function wireEvents() {
       if (restoreBtn) restoreBtn.disabled = true;
       if (homeSaveBtn) homeSaveBtn.disabled = true;
       if (homeRestoreBtn) homeRestoreBtn.disabled = true;
-      if (infoEl) infoEl.textContent = 'Cloud backup unavailable';
+      if (infoEl) infoEl.textContent = t('cloudUnavailable');
       return;
     }
 
     const accountBtn = document.createElement('button');
     accountBtn.id = 'btnCloudAccount';
     accountBtn.className = 'btn btn-secondary w-full';
-    accountBtn.innerHTML = '<i class="fa-solid fa-user-lock text-blue"></i><span>Cloud Account</span>';
+    accountBtn.innerHTML = '<i class="fa-solid fa-user-lock text-blue"></i><span>' + escapeHtml(t('cloudAccountBtn')) + '</span>';
     if (saveBtn && saveBtn.parentNode) saveBtn.parentNode.insertBefore(accountBtn, saveBtn);
 
     function cloudUser() { return KHub.CloudAuth.currentUser(); }
     function signedIn() { return !!cloudUser(); }
     function cloudErr(e) {
-      if (e && e.code === 'auth-required') return 'Sign in to your cloud account first';
-      if (e && e.message === 'no-backup') return 'No cloud backup found';
-      if (e && e.message === 'cloud-storage-unavailable') return 'Cloud backup storage is temporarily unavailable. Your local app data is still saved on this device.';
+      if (e && e.code === 'auth-required') return t('cloudSignInFirst');
+      if (e && e.message === 'no-backup') return t('cloudNoBackup');
+      if (e && e.message === 'cloud-storage-unavailable') return t('cloudStorageUnavailable');
       if (window.KHub?.CloudAuth?.authMessage) return KHub.CloudAuth.authMessage(e);
-      return (e && (e.message || e.code)) || 'Cloud backup failed: no error details returned. Refresh and sign in again.';
+      return (e && (e.message || e.code)) || t('cloudNoDetails');
     }
     function handleCloudError(e) {
       console.warn('[MinistryCloud] cloud operation failed', e);
@@ -5165,8 +5253,8 @@ function wireEvents() {
       const ts = window.KHub?.CloudBackup?.lastSaved(APP_ID);
       if (accountBtn) {
         accountBtn.innerHTML = user
-          ? '<i class="fa-solid fa-user-check text-accent"></i><span>Signed in: ' + (user.email || 'Cloud account') + '</span>'
-          : '<i class="fa-solid fa-user-lock text-blue"></i><span>Sign in for Cloud Backup</span>';
+          ? '<i class="fa-solid fa-user-check text-accent"></i><span>' + escapeHtml(t('cloudSignedInAs')) + escapeHtml(user.email || t('cloudAccountGeneric')) + '</span>'
+          : '<i class="fa-solid fa-user-lock text-blue"></i><span>' + escapeHtml(t('cloudSignInBtn')) + '</span>';
       }
       if (saveBtn) saveBtn.disabled = false;
       if (restoreBtn) restoreBtn.disabled = false;
@@ -5174,21 +5262,21 @@ function wireEvents() {
       if (homeRestoreBtn) homeRestoreBtn.disabled = false;
       if (infoEl) {
         infoEl.textContent = user
-          ? (ts ? 'Last cloud save: ' + new Date(ts).toLocaleString() : 'Signed in. Not saved to cloud yet')
-          : 'Sign in to keep this app separate from other users.';
+          ? (ts ? t('cloudLastSave') + new Date(ts).toLocaleString((state.lang === 'es') ? 'es-ES' : 'en-US') : t('cloudNotSavedYet'))
+          : t('cloudSignInHint');
       }
     }
     function openAccountDialog() {
       const user = cloudUser();
       if (user) {
-        openConfirmModal('Sign out of cloud backup?', function () {
-          KHub.CloudAuth.signOut().then(function () { toast('Signed out'); refreshCloudInfo(); });
-        }, { confirmLabel: 'Sign out' });
+        openConfirmModal(t('cloudSignOutConfirm'), function () {
+          KHub.CloudAuth.signOut().then(function () { toast(t('signedOutToast')); refreshCloudInfo(); });
+        }, { confirmLabel: t('signOutBtn') });
         return Promise.resolve(null);
       }
       return KHub.CloudAuth.openDialog().then(function (result) {
-        if (result === 'reset-sent') toast('Password reset email sent');
-        else if (result) toast('Signed in');
+        if (result === 'reset-sent') toast(t('resetEmailSent'));
+        else if (result) toast(t('signedInToast'));
         refreshCloudInfo();
         return result;
       }).catch(function () {});
@@ -5248,7 +5336,7 @@ function wireEvents() {
         if (!signedIn()) { openAccountDialog(); return; }
         saveBtn.disabled = true;
         KHub.CloudBackup.save(APP_ID, EXACT_KEYS, PREFIX)
-          .then(() => { toast('Saved to cloud'); refreshCloudInfo(); })
+          .then(() => { toast(t('savedToCloud')); refreshCloudInfo(); })
           .catch(handleCloudError)
           .finally(() => { saveBtn.disabled = !signedIn(); });
       };
@@ -5258,20 +5346,21 @@ function wireEvents() {
       restoreBtn.onclick = () => {
         if (!signedIn()) { openAccountDialog(); return; }
         openConfirmModal(
-          'Replace your current data with your signed-in cloud backup? This cannot be undone.',
+          t('cloudRestoreConfirm'),
           () => {
             restoreBtn.disabled = true;
             KHub.CloudBackup.restore(APP_ID, EXACT_KEYS, PREFIX, () => {
-              toast('Restored from cloud'); location.reload();
+              toast(t('restoredFromCloud')); location.reload();
             }).catch(e => {
               handleCloudError(e); restoreBtn.disabled = !signedIn();
             });
           },
-          { confirmLabel: 'Restore', danger: true }
+          { confirmLabel: t('restoreBtnLabel'), danger: true }
         );
       };
     }
     if (homeRestoreBtn && restoreBtn) homeRestoreBtn.onclick = () => restoreBtn.click();
+    window.__mtRefreshCloudInfo = refreshCloudInfo;
     refreshCloudInfo();
     KHub.CloudAuth.onChange(function () { refreshCloudInfo(); startUserCloudSync(); });
   })();  // ─────────────────────────────────────────────────────────────────────
