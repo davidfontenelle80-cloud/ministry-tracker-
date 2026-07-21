@@ -53,6 +53,40 @@
       close:             'Close',
       loading:           'Loading…',
       noData:            'No data yet.',
+
+      // Shell
+      skipLink:          'Skip to main content',
+
+      // Cloud account dialog
+      cloudAccountTitle: 'Cloud account',
+      cloudDialogHint:   'Sign in with the same email and password on every device. Use Sign in if the email already exists; use Create account only the first time.',
+      createAccount:     'Create account',
+      resetPassword:     'Reset password',
+      enterEmailFirst:   'Enter your email first.',
+      signingIn:         'Signing in...',
+      creatingAccount:   'Creating account...',
+      sendingReset:      'Sending reset email...',
+
+      // Cloud auth errors
+      authUserNotFound:  'No account found for that email.',
+      authWrongPassword: 'Email or password was not correct. Try Sign in with your existing password, or tap Reset password.',
+      authEmailInUse:    'That email already has an account. Tap Sign in instead of Create account.',
+      authWeakPassword:  'Use a password with at least 6 characters.',
+      authInvalidEmail:  'Enter a valid email address.',
+      authCfgNotFound:   'Cloud sign-in is not enabled yet. In Firebase Authentication, enable Email/Password sign-in.',
+      authNetworkFail:   'Cloud sign-in could not reach Firebase. Check your connection and try again.',
+      authTooMany:       'Firebase temporarily blocked sign-in attempts. Wait a few minutes, then try again.',
+      authTimeout:       'Cloud sign-in is taking too long. Check your connection and tap Sign in again.',
+      authPermissionDenied: 'Cloud backup is blocked by Firestore rules. Update rules to allow backups/{appId}/users/{yourUserId}.',
+      authGenericFail:   'Cloud account failed.',
+
+      // Error boundary
+      errorCaught:       'App error caught',
+      errorLabel:        'Error label: ',
+      errorWhere:        'Where: ',
+      errorHelp:         'Send this label and what you tapped before the error.',
+      copyError:         'Copy error',
+      copiedShort:       'Copied',
     },
     es: {
       // Navigation / shell
@@ -90,6 +124,40 @@
       close:             'Cerrar',
       loading:           'Cargando…',
       noData:            'Sin datos aún.',
+
+      // Shell
+      skipLink:          'Saltar al contenido principal',
+
+      // Cloud account dialog
+      cloudAccountTitle: 'Cuenta de la nube',
+      cloudDialogHint:   'Inicia sesión con el mismo correo y contraseña en todos tus dispositivos. Usa Iniciar sesión si el correo ya existe; usa Crear cuenta solo la primera vez.',
+      createAccount:     'Crear cuenta',
+      resetPassword:     'Restablecer contraseña',
+      enterEmailFirst:   'Primero escribe tu correo.',
+      signingIn:         'Iniciando sesión…',
+      creatingAccount:   'Creando la cuenta…',
+      sendingReset:      'Enviando el correo de restablecimiento…',
+
+      // Cloud auth errors
+      authUserNotFound:  'No se encontró ninguna cuenta con ese correo.',
+      authWrongPassword: 'El correo o la contraseña no son correctos. Prueba Iniciar sesión con tu contraseña actual o toca Restablecer contraseña.',
+      authEmailInUse:    'Ese correo ya tiene una cuenta. Toca Iniciar sesión en lugar de Crear cuenta.',
+      authWeakPassword:  'Usa una contraseña de al menos 6 caracteres.',
+      authInvalidEmail:  'Escribe un correo electrónico válido.',
+      authCfgNotFound:   'El inicio de sesión en la nube aún no está habilitado. En Firebase Authentication, habilita el acceso con correo y contraseña.',
+      authNetworkFail:   'No se pudo conectar con Firebase. Revisa tu conexión e inténtalo de nuevo.',
+      authTooMany:       'Firebase bloqueó temporalmente los intentos de inicio de sesión. Espera unos minutos e inténtalo de nuevo.',
+      authTimeout:       'El inicio de sesión está tardando demasiado. Revisa tu conexión y toca Iniciar sesión de nuevo.',
+      authPermissionDenied: 'Las reglas de Firestore bloquean la copia en la nube. Actualiza las reglas para permitir backups/{appId}/users/{yourUserId}.',
+      authGenericFail:   'Falló la cuenta de la nube.',
+
+      // Error boundary
+      errorCaught:       'Se detectó un error en la app',
+      errorLabel:        'Etiqueta del error: ',
+      errorWhere:        'Dónde: ',
+      errorHelp:         'Envía esta etiqueta y qué tocaste antes del error.',
+      copyError:         'Copiar error',
+      copiedShort:       'Copiado',
     },
   };
 
