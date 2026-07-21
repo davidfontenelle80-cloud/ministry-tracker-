@@ -36,7 +36,7 @@
 <body>
 
   <!-- KHub: Skip link (WCAG 2.2) -->
-  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <a class="skip-link" href="#main-content" data-i18n="skipLink">Skip to main content</a>
 
   <!-- KHub: Update notice -->
   <div id="update-notice"
@@ -45,8 +45,8 @@
        aria-live="polite"
        aria-atomic="true"
        hidden>
-    Update available — <button class="btn btn-sm btn-secondary"
-            onclick="KHub.SW.applyUpdate()">Refresh</button>
+    <span data-i18n="updateAvailable">Update available —</span> <button class="btn btn-sm btn-secondary"
+            onclick="KHub.SW.applyUpdate()" data-i18n="refresh">Refresh</button>
   </div>
 
   <!-- KHub: Error boundary -->
@@ -57,10 +57,10 @@
        aria-atomic="true"
        tabindex="-1"
        hidden>
-    <strong>Something went wrong</strong>
+    <strong data-i18n="errorTitle">Something went wrong</strong>
     <p id="error-message"></p>
     <button class="btn btn-sm btn-danger"
-            onclick="KHub.ErrorBoundary.dismiss()">Dismiss</button>
+            onclick="KHub.ErrorBoundary.dismiss()" data-i18n="dismiss">Dismiss</button>
   </div>
 
   <!-- App content -->
@@ -90,7 +90,7 @@
     <div class="screen-header">
       <div>
         <div class="text-sm text-dim font-medium" id="homeGreeting">Good morning</div>
-        <h1 class="screen-title">Ministry</h1>
+        <h1 class="screen-title" id="lbl_ministryTitle">Ministry</h1>
       </div>
       <div class="row gap-2">
         <button id="langToggle" class="btn btn-secondary btn-icon text-xs font-bold">EN</button>
@@ -631,7 +631,7 @@
         <div class="text-xs uppercase tracking-wider text-dim font-semibold" id="lbl_logHistory">Log History</div>
         <button id="logHistoryAddBtn" class="btn btn-primary text-xs" style="padding: 6px 12px;">
           <i class="fa-solid fa-plus"></i>
-          <span>Add time</span>
+          <span id="lbl_addTime">Add time</span>
         </button>
       </div>
       <!-- Search -->
