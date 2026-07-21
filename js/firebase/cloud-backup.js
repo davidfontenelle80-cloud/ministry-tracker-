@@ -5,6 +5,13 @@
 (function () {
   'use strict';
 
+  function kt(key, fallback) {
+    try {
+      var v = window.KHub && window.KHub.I18n && window.KHub.I18n.t(key);
+      return (v && v !== key) ? v : fallback;
+    } catch (e) { return fallback; }
+  }
+
   window.KHub = window.KHub || {};
 
   function getDeviceId() {
@@ -149,17 +156,17 @@
   }
   function authMessage(e) {
     var code = e && (e.code || e.message) || '';
-    if (code.indexOf('auth/user-not-found') !== -1) return 'No account found for that email.';
-    if (code.indexOf('auth/wrong-password') !== -1 || code.indexOf('auth/invalid-credential') !== -1) return 'Email or password was not correct. Try Sign in with your existing password, or tap Reset password.';
-    if (code.indexOf('auth/email-already-in-use') !== -1) return 'That email already has an account. Tap Sign in instead of Create account.';
-    if (code.indexOf('auth/weak-password') !== -1) return 'Use a password with at least 6 characters.';
-    if (code.indexOf('auth/invalid-email') !== -1) return 'Enter a valid email address.';
-    if (code.indexOf('auth/configuration-not-found') !== -1) return 'Cloud sign-in is not enabled yet. In Firebase Authentication, enable Email/Password sign-in.';
-    if (code.indexOf('auth/network-request-failed') !== -1) return 'Cloud sign-in could not reach Firebase. Check your connection and try again.';
-    if (code.indexOf('auth/too-many-requests') !== -1) return 'Firebase temporarily blocked sign-in attempts. Wait a few minutes, then try again.';
-    if (code.indexOf('auth-timeout') !== -1) return 'Cloud sign-in is taking too long. Check your connection and tap Sign in again.';
-    if (code.indexOf('permission-denied') !== -1 || code.indexOf('Missing or insufficient permissions') !== -1) return 'Cloud backup is blocked by Firestore rules. Update rules to allow backups/{appId}/users/{yourUserId}.';
-    return e && e.message ? e.message : 'Cloud account failed.';
+    if (code.indexOf('auth/user-not-found') !== -1) return kt('authUserNotFound', 'No account found for that email.');
+    if (code.indexOf('auth/wrong-password') !== -1 || code.indexOf('auth/invalid-credential') !== -1) return kt('authWrongPassword', 'Email or password was not correct. Try Sign in with your existing password, or tap Reset password.');
+    if (code.indexOf('auth/email-already-in-use') !== -1) return kt('authEmailInUse', 'That email already has an account. Tap Sign in instead of Create account.');
+    if (code.indexOf('auth/weak-password') !== -1) return kt('authWeakPassword', 'Use a password with at least 6 characters.');
+    if (code.indexOf('auth/invalid-email') !== -1) return kt('authInvalidEmail', 'Enter a valid email address.');
+    if (code.indexOf('auth/configuration-not-found') !== -1) return kt('authCfgNotFound', 'Cloud sign-in is not enabled yet. In Firebase Authentication, enable Email/Password sign-in.');
+    if (code.indexOf('auth/network-request-failed') !== -1) return kt('authNetworkFail', 'Cloud sign-in could not reach Firebase. Check your connection and try again.');
+    if (code.indexOf('auth/too-many-requests') !== -1) return kt('authTooMany', 'Firebase temporarily blocked sign-in attempts. Wait a few minutes, then try again.');
+    if (code.indexOf('auth-timeout') !== -1) return kt('authTimeout', 'Cloud sign-in is taking too long. Check your connection and tap Sign in again.');
+    if (code.indexOf('permission-denied') !== -1 || code.indexOf('Missing or insufficient permissions') !== -1) return kt('authPermissionDenied', 'Cloud backup is blocked by Firestore rules. Update rules to allow backups/{appId}/users/{yourUserId}.');
+    return e && e.message ? e.message : kt('authGenericFail', 'Cloud account failed.');
   }
 
   function openAuthDialog(startMode) {
@@ -173,18 +180,18 @@
       overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:18px;';
       overlay.innerHTML =
         '<div style="width:min(420px,100%);background:#fff;color:#111827;border:1px solid #e5e7eb;border-radius:14px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.35);">' +
-          '<h3 id="khubCloudAuthTitle" style="margin:0 0 8px;font-size:18px;color:#111827;">Cloud account</h3>' +
-          '<p style="margin:0 0 12px;color:#4b5563;font-size:13px;line-height:1.4;">Sign in with the same email and password on every device. Use Sign in if the email already exists; use Create account only the first time.</p>' +
-          '<label style="display:block;font-size:13px;font-weight:700;margin:10px 0 6px;color:#374151;">Email</label>' +
+          '<h3 id="khubCloudAuthTitle" style="margin:0 0 8px;font-size:18px;color:#111827;">' + kt('cloudAccountTitle', 'Cloud account') + '</h3>' +
+          '<p style="margin:0 0 12px;color:#4b5563;font-size:13px;line-height:1.4;">' + kt('cloudDialogHint', 'Sign in with the same email and password on every device. Use Sign in if the email already exists; use Create account only the first time.') + '</p>' +
+          '<label style="display:block;font-size:13px;font-weight:700;margin:10px 0 6px;color:#374151;">' + kt('email', 'Email') + '</label>' +
           '<input id="khubCloudEmail" type="email" autocomplete="off" autocapitalize="none" spellcheck="false" style="box-sizing:border-box;width:100%;padding:11px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#111827;">' +
-          '<label id="khubCloudPasswordLabel" style="display:block;font-size:13px;font-weight:700;margin:10px 0 6px;color:#374151;">Password</label>' +
+          '<label id="khubCloudPasswordLabel" style="display:block;font-size:13px;font-weight:700;margin:10px 0 6px;color:#374151;">' + kt('password', 'Password') + '</label>' +
           '<input id="khubCloudPassword" type="password" autocomplete="new-password" style="box-sizing:border-box;width:100%;padding:11px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#111827;">' +
           '<div id="khubCloudAuthError" style="min-height:18px;margin:10px 0;color:#dc2626;font-size:13px;"></div>' +
           '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px;">' +
-            '<button id="khubCloudCancel" type="button" style="padding:10px 12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#111827;">Cancel</button>' +
-            '<button id="khubCloudReset" type="button" style="padding:10px 12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#111827;">Reset password</button>' +
-            '<button id="khubCloudCreate" type="button" style="padding:10px 12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#111827;">Create account</button>' +
-            '<button id="khubCloudSignIn" type="button" style="padding:10px 12px;border-radius:10px;border:0;background:#2563eb;color:white;font-weight:700;">Sign in</button>' +
+            '<button id="khubCloudCancel" type="button" style="padding:10px 12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#111827;">' + kt('cancel', 'Cancel') + '</button>' +
+            '<button id="khubCloudReset" type="button" style="padding:10px 12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#111827;">' + kt('resetPassword', 'Reset password') + '</button>' +
+            '<button id="khubCloudCreate" type="button" style="padding:10px 12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#111827;">' + kt('createAccount', 'Create account') + '</button>' +
+            '<button id="khubCloudSignIn" type="button" style="padding:10px 12px;border-radius:10px;border:0;background:#2563eb;color:white;font-weight:700;">' + kt('signIn', 'Sign in') + '</button>' +
           '</div>' +
         '</div>';
       document.body.appendChild(overlay);
@@ -207,7 +214,7 @@
         var done = false;
         var timeoutId;
         errEl.style.color = '#4b5563';
-        errEl.textContent = waitText || 'Signing in...';
+        errEl.textContent = waitText || kt('signingIn', 'Signing in...');
         busy(true);
         timeoutId = setTimeout(function () {
           if (done) return;
@@ -234,14 +241,14 @@
       document.getElementById('khubCloudCancel').onclick = function () { close(); resolve(null); };
 
       document.getElementById('khubCloudSignIn').onclick = function () {
-        run(function () { return window.KHub.CloudAuth.signIn(emailEl.value, passEl.value); }, 'signed-in', 'Signing in...');
+        run(function () { return window.KHub.CloudAuth.signIn(emailEl.value, passEl.value); }, 'signed-in', kt('signingIn', 'Signing in...'));
       };
       document.getElementById('khubCloudCreate').onclick = function () {
-        run(function () { return window.KHub.CloudAuth.signUp(emailEl.value, passEl.value); }, 'created', 'Creating account...');
+        run(function () { return window.KHub.CloudAuth.signUp(emailEl.value, passEl.value); }, 'created', kt('creatingAccount', 'Creating account...'));
       };
       document.getElementById('khubCloudReset').onclick = function () {
-        if (!emailEl.value.trim()) { errEl.textContent = 'Enter your email first.'; return; }
-        run(function () { return window.KHub.CloudAuth.resetPassword(emailEl.value); }, 'reset-sent', 'Sending reset email...');
+        if (!emailEl.value.trim()) { errEl.textContent = kt('enterEmailFirst', 'Enter your email first.'); return; }
+        run(function () { return window.KHub.CloudAuth.resetPassword(emailEl.value); }, 'reset-sent', kt('sendingReset', 'Sending reset email...'));
       };
       overlay.addEventListener('click', function (e) { if (e.target === overlay) { close(); resolve(null); } });
       emailEl.focus();

@@ -96,7 +96,7 @@
     }
 
     const heading = el.querySelector('strong');
-    if (heading) heading.textContent = ctx.kind === 'JS-ERROR' ? 'App error caught' : ctx.kind.replace(/-/g, ' ');
+    if (heading) heading.textContent = ctx.kind === 'JS-ERROR' ? (window.KHub?.I18n?.t('errorCaught') || 'App error caught') : ctx.kind.replace(/-/g, ' ');
     msg.textContent = ctx.message;
 
     el.querySelectorAll('.error-boundary-footer, .error-boundary-details').forEach(node => node.remove());
@@ -109,7 +109,7 @@
 
     const labelRow = document.createElement('div');
     const labelStrong = document.createElement('strong');
-    labelStrong.textContent = 'Error label: ';
+    labelStrong.textContent = window.KHub?.I18n?.t('errorLabel') || 'Error label: ';
     const labelCode = document.createElement('code');
     labelCode.textContent = ctx.label;
     labelRow.appendChild(labelStrong);
@@ -117,7 +117,7 @@
 
     const whereRow = document.createElement('div');
     const whereStrong = document.createElement('strong');
-    whereStrong.textContent = 'Where: ';
+    whereStrong.textContent = window.KHub?.I18n?.t('errorWhere') || 'Where: ';
     const whereText = document.createElement('span');
     whereText.textContent = ctx.where;
     whereRow.appendChild(whereStrong);
@@ -125,7 +125,7 @@
 
     const help = document.createElement('div');
     help.className = 'error-boundary-help';
-    help.textContent = 'Send this label and what you tapped before the error.';
+    help.textContent = window.KHub?.I18n?.t('errorHelp') || 'Send this label and what you tapped before the error.';
 
     details.appendChild(labelRow);
     details.appendChild(whereRow);
@@ -141,11 +141,11 @@
     const copyBtn = document.createElement('button');
     copyBtn.className = 'btn btn-sm btn-secondary';
     copyBtn.type = 'button';
-    copyBtn.textContent = 'Copy error';
+    copyBtn.textContent = window.KHub?.I18n?.t('copyError') || 'Copy error';
     copyBtn.addEventListener('click', () => {
       copyText(_lastErrorReport).then(() => {
-        copyBtn.textContent = 'Copied';
-        setTimeout(() => { copyBtn.textContent = 'Copy error'; }, 1200);
+        copyBtn.textContent = window.KHub?.I18n?.t('copiedShort') || 'Copied';
+        setTimeout(() => { copyBtn.textContent = window.KHub?.I18n?.t('copyError') || 'Copy error'; }, 1200);
       }).catch(() => console.warn('[KHub.ErrorBoundary] Copy failed'));
     });
     actions.appendChild(copyBtn);
