@@ -391,7 +391,18 @@ async function handleTestPush(request, env) {
     url: '/ministry-tracker-/',
   };
 
-  const result = await sendWebPush(subRecord.subscription, payload, env);
+  let result;
+  try {
+    result = await sendWebPush(subRecord.subscription, payload, env);
+  } catch (error) {
+    // Subscription gone at the push service: prune it and signal the client to
+    // re-subscribe (mirrors the scheduled-reminder cleanup path).
+    if (error && (error.status === 404 || error.status === 410)) {
+      await store.delete(`subscription:${subscriptionId}`);
+      return json({ ok: false, error: 'subscription-expired', expired: true }, 410, headers);
+    }
+    throw error;
+  }
   return json({ ok: true, result }, 200, headers);
 }
 

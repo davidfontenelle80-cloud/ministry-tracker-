@@ -2586,6 +2586,9 @@ function showMinistryPushDebug() {
       + row('workerUrl', d.workerUrl)
       + row('worker /api/health', health)
       + row('permission', d.permission)
+      + row('standalone (installed)', d.standalone === undefined ? '—' : (d.standalone ? 'yes' : 'NO'))
+      + row('Apple iPhone/iPad', d.appleMobile === undefined ? '—' : (d.appleMobile ? 'yes' : 'no'))
+      + row('blocked reason', d.environmentBlock)
       + row('subscriptionId', d.subscriptionId)
       + row('SW controller', (navigator.serviceWorker && navigator.serviceWorker.controller) ? 'active' : 'none')
       + '<div class="text-xs font-bold uppercase tracking-wider text-dim" style="margin:12px 0 2px;">' + escapeHtml(t('pushDebugLastSync')) + '</div>'

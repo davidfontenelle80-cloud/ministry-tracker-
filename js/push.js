@@ -111,8 +111,42 @@
       hasPushManager: 'PushManager' in window,
       hasNotification: 'Notification' in window,
       permission: ('Notification' in window) ? Notification.permission : 'unsupported',
+      appleMobile: isAppleMobile(),
+      standalone: isStandalone(),
+      environmentBlock: environmentBlockMessage() || '',
       subscriptionId: getSubscriptionId()
     });
+  }
+
+  function isAppleMobile() {
+    var ua = navigator.userAgent || '';
+    // iPhone/iPad (incl. iPadOS reporting as MacIntel with touch)
+    return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  function isStandalone() {
+    try {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    } catch (e) { return false; }
+  }
+
+  // Returns a user-facing reason string when push cannot be enabled in the
+  // current environment, or '' when the environment is OK to proceed.
+  function environmentBlockMessage() {
+    var apple = isAppleMobile();
+    var hasApis = ('Notification' in window) && ('PushManager' in window) && ('serviceWorker' in navigator);
+    if (apple && !isStandalone()) {
+      return 'On iPhone/iPad, open this app from its Home Screen icon to enable notifications. If it is not installed yet: in Safari tap Share, then "Add to Home Screen", then open it from that icon.';
+    }
+    if (!hasApis) {
+      return 'This browser does not support notifications.';
+    }
+    if (Notification.permission === 'denied') {
+      return apple
+        ? 'Notifications are blocked for this app. Open iOS Settings > Notifications > Ministry Tracker and allow them. If it is not listed, remove the app from the Home Screen and re-add it from Safari, then try again.'
+        : 'Notifications are blocked. Allow notifications for this site in your browser settings, then try again.';
+    }
+    return '';
   }
 
   function requestNotificationPermissionWithTimeout() {
@@ -134,6 +168,9 @@
     if (!('serviceWorker' in navigator)) return Promise.reject(new Error('Service workers are not supported.'));
     if (!('PushManager' in window)) return Promise.reject(new Error('PushManager is not supported.'));
     if (!('Notification' in window)) return Promise.reject(new Error('Notifications are not supported.'));
+
+    var envMsg = environmentBlockMessage();
+    if (envMsg) return Promise.reject(new Error(envMsg));
 
     var permissionFlow = requestNotificationPermissionWithTimeout();
 
@@ -230,10 +267,25 @@
     });
   }
 
+  // Drop the current (possibly dead) browser subscription and create a fresh
+  // one. Used to self-heal when the push service reports the endpoint is gone.
+  function forceResubscribe() {
+    if (!('serviceWorker' in navigator)) return subscribe();
+    return navigator.serviceWorker.ready.then(function (reg) {
+      return reg.pushManager.getSubscription().then(function (existing) {
+        return existing ? existing.unsubscribe().catch(function () {}) : null;
+      });
+    }).then(function () {
+      try { localStorage.removeItem('ministryPushSubscriptionId'); } catch (e) {}
+      log('test-push:resubscribe-after-expired');
+      return subscribe();
+    });
+  }
+
   function sendTestPush() {
     var c;
     try { c = requireConfigured(); } catch (err) { return Promise.resolve(pushErrorResult('test-push', err)); }
-    return subscribe().then(function (subData) {
+    function postTest(subData) {
       log('test-push:send', { subscriptionId: subData.id || subData.subscriptionId || getSubscriptionId() });
       return jsonFetch(c.workerUrl + '/api/test-push', {
         method: 'POST',
@@ -244,6 +296,12 @@
           body: 'Test reminder notification'
         })
       });
+    }
+    return subscribe().then(postTest).catch(function (err) {
+      // Endpoint expired server-side (410 Gone / 404): re-subscribe once and retry.
+      var expired = err && (err.status === 410 || err.status === 404 || (err.data && err.data.expired));
+      if (expired) return forceResubscribe().then(postTest);
+      throw err;
     }).catch(function (err) {
       return pushErrorResult('test-push', err);
     });
