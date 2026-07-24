@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v76-push-enable-fix';
+const CACHE_VERSION = 'ministry-tracker-v77-push-toggle';
 
 const PRECACHE_URLS = [
   './',
@@ -28,6 +28,7 @@ const PRECACHE_URLS = [
   './js/perf.js',
   './js/push-config.js',
   './js/push.js',
+  './js/push-toggle.js',
   './js/app.js',
   './js/firebase/firebase-config.js',
   './js/firebase/cloud-backup.js',
