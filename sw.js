@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v77-push-toggle';
+const CACHE_VERSION = 'ministry-tracker-v78-bulk-plan';
 
 const PRECACHE_URLS = [
   './',
