@@ -98,6 +98,9 @@ let previousScreen = 'home';
 let currentTimerDate = todayStr();
 let currentCalMonth = monthKey(new Date());
 let adjustSelectedDate = todayStr(); // The day shown in the Adjust Time card
+let planBulkMode = false;
+let planBulkSel = new Set();
+let planBulkHours = '';
 let currentReportMonth = monthKey(new Date());
 let logFilter = 'month';
 let logSearch = ''; // search query for Log notes
@@ -200,6 +203,9 @@ const I18N = {
     forgotYesterday: 'Log yesterday →', needToHitWeek: 'to hit week',
     needToHitMonth: 'to hit month', backupOverdue: 'Backup recommended',
     setPlanned: 'Plan hours', clearPlan: 'Clear plan', planForDay: 'Plan for this day',
+    planMultiple: 'Plan multiple days', planBulkStart: 'Select days', planBulkDone: 'Done',
+    planTapDays: 'Tap days to plan.', planSelectedN: 'selected', planApplyN: 'Apply to {n}',
+    planClearSel: 'Clear', planNoDays: 'Select days first', planApplied: 'Plan applied',
     remaining: 'left', over: 'over', noPlan: 'No plan',
     dayOptions: 'Day options', logTime: 'Log time',
     startTimerHere: 'Start timer for this day',
@@ -484,6 +490,9 @@ const I18N = {
     forgotYesterday: 'Registrar ayer →', needToHitWeek: 'para meta semanal',
     needToHitMonth: 'para meta mensual', backupOverdue: 'Se recomienda respaldo',
     setPlanned: 'Planear horas', clearPlan: 'Quitar plan', planForDay: 'Plan para este día',
+    planMultiple: 'Planear varios días', planBulkStart: 'Seleccionar', planBulkDone: 'Listo',
+    planTapDays: 'Toca días para planear.', planSelectedN: 'sel.', planApplyN: 'Aplicar a {n}',
+    planClearSel: 'Limpiar', planNoDays: 'Selecciona días primero', planApplied: 'Plan aplicado',
     remaining: 'restante', over: 'extra', noPlan: 'Sin plan',
     dayOptions: 'Opciones del día', logTime: 'Registrar tiempo',
     startTimerHere: 'Iniciar cronómetro este día',
@@ -1991,6 +2000,67 @@ function calGoMonth(delta) {
   vibrate(8);
 }
 
+function applyPlanBulk() {
+  if (planBulkSel.size === 0) { toast(t('planNoDays')); return; }
+  const hrs = parseFloat(planBulkHours) || 0;
+  const mins = Math.round(hrs * 60);
+  state.plannedByDate = state.plannedByDate || {};
+  planBulkSel.forEach(function(ds) {
+    if (mins <= 0) delete state.plannedByDate[ds];
+    else state.plannedByDate[ds] = mins;
+  });
+  saveState();
+  vibrate(15);
+  planBulkSel.clear();
+  planBulkHours = '';
+  renderAll();
+  toast(t('planApplied'));
+}
+
+function renderPlanBulkBar() {
+  const grid = document.getElementById('calGrid');
+  if (!grid || !grid.parentNode) return;
+  let bar = document.getElementById('planBulkBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'planBulkBar';
+    bar.className = 'card-flat mb-3';
+    grid.parentNode.insertBefore(bar, grid);
+  }
+  const n = planBulkSel.size;
+  let html = '';
+  html += '<div class="row-between items-center">';
+  html += '<div class="text-xs font-bold uppercase text-dim"><i class="fa-solid fa-bullseye text-blue"></i> ' + t('planMultiple') + '</div>';
+  html += '<button class="btn btn-secondary" id="planBulkToggle" style="width:auto;padding:7px 14px;font-size:13px;">' + (planBulkMode ? t('planBulkDone') : t('planBulkStart')) + '</button>';
+  html += '</div>';
+  if (planBulkMode) {
+    html += '<div class="text-tiny text-faint mt-1">' + t('planTapDays') + ' <b>' + n + '</b> ' + t('planSelectedN') + '</div>';
+    html += '<div class="row gap-2 mt-2 mb-2">';
+    ['0', '1', '2', '3', '4', '6'].forEach(function(pp) { html += '<button class="quick-add-btn" data-planpreset="' + pp + '">' + (pp === '0' ? '0' : pp + 'h') + '</button>'; });
+    html += '</div>';
+    html += '<input type="number" id="planBulkInput" step="0.25" min="0" max="24" placeholder="e.g. 2.5" value="' + planBulkHours + '" />';
+    html += '<div class="text-tiny text-faint mt-1">' + t('hours') + ' (0 = ' + t('clearPlan').toLowerCase() + ')</div>';
+    html += '<div class="row gap-2 mt-3">';
+    html += '<button class="btn btn-secondary flex-1" id="planBulkClear">' + t('planClearSel') + '</button>';
+    html += '<button class="btn btn-primary flex-1" id="planBulkApply">' + t('planApplyN').replace('{n}', n) + '</button>';
+    html += '</div>';
+  }
+  bar.innerHTML = html;
+  document.getElementById('planBulkToggle').onclick = function() {
+    planBulkMode = !planBulkMode;
+    if (!planBulkMode) { planBulkSel.clear(); planBulkHours = ''; }
+    vibrate(8);
+    renderCalendar();
+  };
+  if (planBulkMode) {
+    bar.querySelectorAll('[data-planpreset]').forEach(function(b) { b.onclick = function() { planBulkHours = b.dataset.planpreset; var inp = document.getElementById('planBulkInput'); if (inp) inp.value = planBulkHours; vibrate(8); }; });
+    var inp2 = document.getElementById('planBulkInput');
+    if (inp2) inp2.oninput = function(e) { planBulkHours = e.target.value; };
+    document.getElementById('planBulkClear').onclick = function() { planBulkSel.clear(); vibrate(8); renderCalendar(); };
+    document.getElementById('planBulkApply').onclick = applyPlanBulk;
+  }
+}
+
 function renderCalendar() {
   // Today's Plan countdown card (G) — show only if today has a plan
   const todayKey = todayStr();
@@ -2068,7 +2138,8 @@ function renderCalendar() {
     let cls = 'cal-cell';
     if (isToday) cls += ' today';
     if (isPast) cls += ' past'; // subtle shading for past days (only affects neutral cells via CSS)
-    if (isSelected) cls += ' selected';
+    if (planBulkMode) { if (planBulkSel.has(ds)) cls += ' selected'; }
+    else if (isSelected) cls += ' selected';
     // Simplified palette (G):
     //   green (met) = met plan OR met daily goal (per spec)
     //   red   (missed) = past day with plan and actual < plan
@@ -2089,7 +2160,14 @@ function renderCalendar() {
   grid.innerHTML = cells.join('');
   grid.querySelectorAll('[data-cal-day]').forEach(el => {
     el.onclick = () => {
-      adjustSelectedDate = el.dataset.calDay;
+      const ds = el.dataset.calDay;
+      if (planBulkMode) {
+        if (planBulkSel.has(ds)) planBulkSel.delete(ds); else planBulkSel.add(ds);
+        vibrate(8);
+        renderCalendar();
+        return;
+      }
+      adjustSelectedDate = ds;
       renderCalendar();
       renderAdjustCard();
       // Scroll the Adjust card into view smoothly
@@ -2100,6 +2178,7 @@ function renderCalendar() {
       vibrate(8);
     };
   });
+  renderPlanBulkBar();
 
   const actualMonth = getMonthMinutes(currentCalMonth);
   const plannedMonth = getMonthPlannedTotal(currentCalMonth);
