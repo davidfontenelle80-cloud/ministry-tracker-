@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v78-bulk-plan';
+const CACHE_VERSION = 'ministry-tracker-v79-day-credit-btn';
 
 const PRECACHE_URLS = [
   './',
