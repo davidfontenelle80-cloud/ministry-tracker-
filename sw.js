@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v79-day-credit-btn';
+const CACHE_VERSION = 'ministry-tracker-v80-force-update';
 
 const PRECACHE_URLS = [
   './',
@@ -56,9 +56,13 @@ function notificationRouteMessage(data = {}) {
 }
 
 self.addEventListener('install', event => {
+  // Force the new worker to activate immediately instead of waiting for all
+  // tabs to close — fixes devices getting stuck on an old cached build.
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_VERSION)
-      .then(cache => cache.addAll(PRECACHE_URLS))
+      // allSettled so one missing/renamed asset can't fail the whole install
+      .then(cache => Promise.allSettled(PRECACHE_URLS.map(url => cache.add(url))))
   );
 });
 
