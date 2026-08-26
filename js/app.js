@@ -292,6 +292,7 @@ const I18N = {
     lastBackup: 'Last backup',
     never: 'never',
     editCredit: 'Edit credit hours',
+    btnAddCredit: 'Add credit',
     creditDesc: 'Approved theocratic activities (LDC, Bethel, Pioneer School). Tracked separately from field service totals.',
     creditHours: 'Credit hours',
     catNameLabel: 'Name (English)',
@@ -579,6 +580,7 @@ const I18N = {
     lastBackup: 'Último respaldo',
     never: 'nunca',
     editCredit: 'Editar horas de crédito',
+    btnAddCredit: 'Añadir crédito',
     creditDesc: 'Actividades teocráticas aprobadas (LDC, Betel, Escuela). Se registran aparte de la predicación.',
     creditHours: 'Horas de crédito',
     catNameLabel: 'Nombre (Inglés)',
@@ -1406,7 +1408,7 @@ function applyI18n() {
     lbl_quickAdd: 'quickAdd', lbl_quickAddHint: 'quickAddHint', lbl_thisWeek: 'thisWeek', lbl_logged: 'logged',
     lbl_serviceYear: 'serviceYear', lbl_serviceYear2: 'serviceYear', lbl_projection: 'projection', lbl_projection2: 'projection',
     lbl_studies: 'studies', lbl_studies2: 'studies', lbl_studies3: 'studies', lbl_saveStudyOnly: 'saveStudyOnly', lbl_streak: 'streak', lbl_serviceDays: 'serviceDays', lbl_serviceDays2: 'serviceDays',
-    lbl_note: 'note', lbl_categoryHeader: 'selectCategory', lbl_backupTitle: 'backupTitle', lbl_homeExport: 'exportBtn', lbl_homeImport: 'importBtn', lbl_timerAdjustHint: 'timerAdjustHint', lbl_monthlyTargetTitle: 'monthlyTargetTitle', lbl_perMonthLabel: 'perMonthLabel', lbl_needThisMonth: 'needThisMonth', lbl_totalHoursFor: 'totalHoursFor', lbl_btnAdjust: 'btnAdjust', lbl_btnAdd: 'btnAdd', lbl_btnDeduct: 'btnDeduct', lbl_btnSetPlan: 'btnSetPlan', lbl_btnAddDetailed: 'btnAddDetailed', lbl_sessionsThisDay: 'sessionsThisDay', lbl_navTimer: 'nav_timer', lbl_navCal: 'nav_cal', lbl_navNotes: 'nav_notes', lbl_navReports: 'nav_reports', lbl_navSettings: 'nav_settings',
+    lbl_note: 'note', lbl_categoryHeader: 'selectCategory', lbl_backupTitle: 'backupTitle', lbl_homeExport: 'exportBtn', lbl_homeImport: 'importBtn', lbl_timerAdjustHint: 'timerAdjustHint', lbl_monthlyTargetTitle: 'monthlyTargetTitle', lbl_perMonthLabel: 'perMonthLabel', lbl_needThisMonth: 'needThisMonth', lbl_totalHoursFor: 'totalHoursFor', lbl_btnAdjust: 'btnAdjust', lbl_btnAdd: 'btnAdd', lbl_btnDeduct: 'btnDeduct', lbl_btnSetPlan: 'btnSetPlan', lbl_btnAddDetailed: 'btnAddDetailed', lbl_btnAddCredit: 'btnAddCredit', lbl_sessionsThisDay: 'sessionsThisDay', lbl_navTimer: 'nav_timer', lbl_navCal: 'nav_cal', lbl_navNotes: 'nav_notes', lbl_navReports: 'nav_reports', lbl_navSettings: 'nav_settings',
     lbl_tapChange: 'tapChange', lbl_sessionsOnDay: 'sessionsOnDay',
     lbl_monthlyPlan: 'monthlyPlan', lbl_tapDayToPlan: 'tapDayToPlan',
     lbl_plannedTotal: 'plannedTotal', lbl_goalTotal: 'goalTotal', lbl_actualHours: 'actualHours',
@@ -5187,6 +5189,8 @@ function wireEvents() {
 
   document.getElementById('adjBtnPlan').onclick = () => openPlanModal(adjustSelectedDate);
   document.getElementById('adjBtnAddDetailed').onclick = () => openQuickAddModal(adjustSelectedDate);
+  const _adjCreditBtn = document.getElementById('adjBtnCredit');
+  if (_adjCreditBtn) _adjCreditBtn.onclick = () => { currentReportMonth = (adjustSelectedDate || todayStr()).slice(0, 7); openCreditEditModal(); };
   // Log History (now inside Reports — Stage A)
   const logHistoryAddBtn = document.getElementById('logHistoryAddBtn');
   if (logHistoryAddBtn) logHistoryAddBtn.onclick = () => openQuickAddModal(todayStr());
