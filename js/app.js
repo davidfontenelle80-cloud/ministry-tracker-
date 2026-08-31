@@ -1001,6 +1001,32 @@ function formatHM(mins) {
   mins = Math.abs(Math.round(mins));
   return `${sign}${Math.floor(mins/60)}:${String(mins%60).padStart(2,'0')}`;
 }
+// Parse a plan-hours input into whole minutes.
+// Accepts "H:MM" (2:30 → 150, 2:01 → 121, :30 → 30) as well as a plain
+// integer or decimal number of hours (2 → 120, 2.5 → 150) for backward
+// compatibility with data/values already stored as decimals. Caps at 24h.
+function parseHM(str) {
+  if (str == null) return 0;
+  var s = String(str).trim().replace(',', '.');
+  if (s === '') return 0;
+  var mins;
+  if (s.indexOf(':') >= 0) {
+    var parts = s.split(':');
+    var h = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10);
+    if (isNaN(h)) h = 0;
+    if (isNaN(m)) m = 0;
+    if (m > 59) m = 59;
+    mins = h * 60 + m;
+  } else {
+    var f = parseFloat(s);
+    if (isNaN(f)) return 0;
+    mins = Math.round(f * 60);
+  }
+  if (mins < 0) mins = 0;
+  if (mins > 1440) mins = 1440;
+  return mins;
+}
 function formatHMS(sec) {
   const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
@@ -2004,8 +2030,7 @@ function calGoMonth(delta) {
 
 function applyPlanBulk() {
   if (planBulkSel.size === 0) { toast(t('planNoDays')); return; }
-  const hrs = parseFloat(planBulkHours) || 0;
-  const mins = Math.round(hrs * 60);
+  const mins = parseHM(planBulkHours);
   state.plannedByDate = state.plannedByDate || {};
   planBulkSel.forEach(function(ds) {
     if (mins <= 0) delete state.plannedByDate[ds];
@@ -2027,8 +2052,12 @@ function renderPlanBulkBar() {
     bar = document.createElement('div');
     bar.id = 'planBulkBar';
     bar.className = 'card-flat mb-3';
-    grid.parentNode.insertBefore(bar, grid);
   }
+  // Place the plan box ABOVE the weekday (M–S) header so the weekday row sits
+  // directly on top of the calendar grid and its columns line up with the days.
+  const wkdays = document.getElementById('calWeekdays');
+  const anchor = wkdays || grid;
+  if (bar.nextSibling !== anchor) anchor.parentNode.insertBefore(bar, anchor);
   const n = planBulkSel.size;
   let html = '';
   html += '<div class="row-between items-center">';
@@ -2040,8 +2069,22 @@ function renderPlanBulkBar() {
     html += '<div class="row gap-2 mt-2 mb-2">';
     ['0', '1', '2', '3', '4', '6'].forEach(function(pp) { html += '<button class="quick-add-btn" data-planpreset="' + pp + '">' + (pp === '0' ? '0' : pp + 'h') + '</button>'; });
     html += '</div>';
-    html += '<input type="number" id="planBulkInput" step="0.25" min="0" max="24" placeholder="e.g. 2.5" value="' + planBulkHours + '" />';
-    html += '<div class="text-tiny text-faint mt-1">' + t('hours') + ' (0 = ' + t('clearPlan').toLowerCase() + ')</div>';
+    html += '<input type="text" id="planBulkInput" inputmode="text" autocomplete="off" placeholder="e.g. 2:30" value="' + planBulkHours + '" />';
+    html += '<div class="text-tiny text-faint mt-1">' + t('hours') + ' — H:MM (0 = ' + t('clearPlan').toLowerCase() + ')</div>';
+    // Redundant hours summary right here by the button so it's visible without
+    // scrolling back up to the top Monthly Plan card.
+    var _planned = getMonthPlannedTotal(currentCalMonth);
+    var _goal = Math.round((state.monthlyGoalHrs || 0) * 60);
+    var _actual = getMonthMinutes(currentCalMonth);
+    var _delta = _planned - _goal;
+    var _deltaCls = _delta >= 0 ? 'text-accent' : 'text-coral';
+    var _deltaTxt = (_delta >= 0 ? '+' : '') + formatHM(_delta);
+    html += '<div class="card-flat mt-3" style="padding:10px 12px;">';
+    html += '<div class="row-between text-xs"><span class="text-dim font-semibold">' + t('plannedTotal') + '</span><span class="font-mono text-blue font-bold">' + formatHM(_planned) + '</span></div>';
+    html += '<div class="row-between text-xs mt-1"><span class="text-dim font-semibold">' + t('goalTotal') + '</span><span class="font-mono font-bold">' + formatHM(_goal) + '</span></div>';
+    html += '<div class="row-between text-xs mt-1"><span class="text-dim font-semibold">' + t('actualHours') + '</span><span class="font-mono text-accent font-bold">' + formatHM(_actual) + '</span></div>';
+    html += '<div class="row-between text-xs mt-1"><span class="text-dim font-semibold">' + t('remaining') + '</span><span class="font-mono font-bold ' + _deltaCls + '">' + _deltaTxt + '</span></div>';
+    html += '</div>';
     html += '<div class="row gap-2 mt-3">';
     html += '<button class="btn btn-secondary flex-1" id="planBulkClear">' + t('planClearSel') + '</button>';
     html += '<button class="btn btn-primary flex-1" id="planBulkApply">' + t('planApplyN').replace('{n}', n) + '</button>';
@@ -2055,7 +2098,7 @@ function renderPlanBulkBar() {
     renderCalendar();
   };
   if (planBulkMode) {
-    bar.querySelectorAll('[data-planpreset]').forEach(function(b) { b.onclick = function() { planBulkHours = b.dataset.planpreset; var inp = document.getElementById('planBulkInput'); if (inp) inp.value = planBulkHours; vibrate(8); }; });
+    bar.querySelectorAll('[data-planpreset]').forEach(function(b) { b.onclick = function() { var pp = b.dataset.planpreset; planBulkHours = (pp === '0') ? '0' : pp + ':00'; var inp = document.getElementById('planBulkInput'); if (inp) inp.value = planBulkHours; vibrate(8); }; });
     var inp2 = document.getElementById('planBulkInput');
     if (inp2) inp2.oninput = function(e) { planBulkHours = e.target.value; };
     document.getElementById('planBulkClear').onclick = function() { planBulkSel.clear(); vibrate(8); renderCalendar(); };
@@ -3983,7 +4026,7 @@ function openPlanModal(dateStr) {
   const d = fromYmd(dateStr);
   const dateLbl = d.toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   const currentMins = getPlannedForDate(dateStr);
-  const currentHrs = currentMins ? (currentMins/60).toFixed(2).replace(/\.?0+$/, '') : '';
+  const currentHrs = currentMins ? formatHM(currentMins) : '';
   const mk = dateStr.slice(0,7);
   const monthPlanned = getMonthPlannedTotal(mk);
   const monthGoal = Math.round(state.monthlyGoalHrs * 60);
@@ -4012,14 +4055,14 @@ function openPlanModal(dateStr) {
       <button class="quick-add-btn" data-preset="4">4h</button>
       <button class="quick-add-btn" data-preset="6">6h</button>
     </div>
-    <input type="number" id="planInput" step="0.25" min="0" max="24" placeholder="e.g. 2.5" value="${currentHrs}" />
-    <div class="text-tiny text-faint mt-1">${t('hours')} (0 = ${t('clearPlan').toLowerCase()})</div>
+    <input type="text" id="planInput" inputmode="text" autocomplete="off" placeholder="e.g. 2:30" value="${currentHrs}" />
+    <div class="text-tiny text-faint mt-1">${t('hours')} — H:MM (0 = ${t('clearPlan').toLowerCase()})</div>
     <div class="row gap-2 mt-5">
       <button class="btn btn-secondary flex-1" data-close-modal>${t('cancel')}</button>
       <button class="btn btn-primary flex-1" id="planSaveBtn">${t('save')}</button>
     </div>`);
   function preview(hrs) {
-    const newMins = Math.round((parseFloat(hrs) || 0) * 60);
+    const newMins = parseHM(hrs);
     const total = monthPlanned - currentMins + newMins;
     document.getElementById('planPreviewVal').textContent = formatHM(total);
     const delta = total - monthGoal;
@@ -4030,13 +4073,13 @@ function openPlanModal(dateStr) {
   }
   preview(currentHrs);
   document.querySelectorAll('[data-preset]').forEach(b => b.onclick = () => {
-    document.getElementById('planInput').value = b.dataset.preset; preview(b.dataset.preset); vibrate(8);
+    const pv = b.dataset.preset === '0' ? '0' : b.dataset.preset + ':00';
+    document.getElementById('planInput').value = pv; preview(pv); vibrate(8);
   });
   document.getElementById('planInput').oninput = (e) => preview(e.target.value);
   document.querySelectorAll('[data-close-modal]').forEach(b => b.onclick = closeModal);
   document.getElementById('planSaveBtn').onclick = () => {
-    const hrs = parseFloat(document.getElementById('planInput').value) || 0;
-    const mins = Math.round(hrs * 60);
+    const mins = parseHM(document.getElementById('planInput').value);
     state.plannedByDate = state.plannedByDate || {};
     if (mins <= 0) delete state.plannedByDate[dateStr];
     else state.plannedByDate[dateStr] = mins;
