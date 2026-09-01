@@ -221,10 +221,10 @@
     }
 
     function getCreditEntriesForDate(date) {
-      return ensureArray(state.creditEntries).filter(e => e && e.date === date && (e.minutes || 0) > 0);
+      return ensureArray(getDataForDateKey(date).creditEntries).filter(e => e && e.date === date && (e.minutes || 0) > 0);
     }
     function getCreditEntriesForMonth(mk) {
-      return ensureArray(state.creditEntries).filter(e => e && e.date && e.date.startsWith(mk) && (e.minutes || 0) > 0);
+      return ensureArray(getDataForDateKey(mk + '-01').creditEntries).filter(e => e && e.date && e.date.startsWith(mk) && (e.minutes || 0) > 0);
     }
     function getCreditMinutesForDate(date) {
       return getCreditEntriesForDate(date).reduce((a, e) => a + (parseInt(e.minutes, 10) || 0), 0);
@@ -265,7 +265,8 @@
     getMonthCredit = function (mk) {
       const entryTotal = getCreditEntryTotalForMonth(mk);
       if (entryTotal > 0) return entryTotal;
-      return parseInt((state.creditByMonth || {})[mk], 10) || 0;
+      const source = getDataForDateKey(mk + '-01');
+      return parseInt((source.creditByMonth || {})[mk], 10) || 0;
     };
 
     const oldCategoryLabel = categoryLabel;
@@ -517,7 +518,11 @@
         catCard.insertAdjacentElement('afterend', card);
       }
       const addBtn = document.getElementById('creditBreakdownAdd');
-      if (addBtn) addBtn.onclick = () => openCreditEntryModal((currentReportMonth || monthKey(new Date())) + '-01');
+      if (addBtn) {
+        const readOnly = isArchivedDateKey((currentReportMonth || monthKey(new Date())) + '-01');
+        addBtn.disabled = readOnly;
+        addBtn.onclick = readOnly ? null : () => openCreditEntryModal((currentReportMonth || monthKey(new Date())) + '-01');
+      }
       const list = document.getElementById('creditBreakdownList');
       if (!list) return;
       const breakdown = getCreditBreakdown(currentReportMonth);

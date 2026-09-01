@@ -168,6 +168,7 @@ const I18N = {
     cloudSaveBtn: 'Cloud Save', cloudRestoreBtn: 'Cloud Restore', cloudHeader: 'Cloud',
     pastSY: 'Past service years', pastSYNone: 'No past years archived yet.',
     pastSYHours: 'hours', pastSYStudies: 'studies', pastSYDays: 'days', pastSYArchived: 'archived',
+    previousSY: 'Previous service year', readOnly: 'Read only', archiveFailed: 'The previous service year could not be archived. Your records were not cleared.',
     importBtn: 'Import from File', pasteImportBtn: 'Paste backup text',
     clearMonth: 'Clear current month', clearAll: 'Clear all data',
     nav_home: 'Home', nav_timer: 'Timer', nav_cal: 'Calendar', nav_log: 'Log', nav_notes: 'Notes & Reminders', nav_reports: 'Reports', nav_settings: 'Settings',
@@ -456,6 +457,7 @@ const I18N = {
     cloudSaveBtn: 'Guardar en la nube', cloudRestoreBtn: 'Restaurar desde la nube', cloudHeader: 'Nube',
     pastSY: 'Años de servicio anteriores', pastSYNone: 'Aún no hay años archivados.',
     pastSYHours: 'horas', pastSYStudies: 'cursos', pastSYDays: 'días', pastSYArchived: 'archivado',
+    previousSY: 'Año de servicio anterior', readOnly: 'Solo lectura', archiveFailed: 'No se pudo archivar el año de servicio anterior. Tus registros no se borraron.',
     importBtn: 'Importar desde archivo', pasteImportBtn: 'Pegar texto de respaldo',
     clearMonth: 'Borrar mes actual', clearAll: 'Borrar todos los datos',
     nav_home: 'Inicio', nav_timer: 'Cronómetro', nav_cal: 'Calendario', nav_log: 'Registro', nav_notes: 'Notas y Recordatorios', nav_reports: 'Informes', nav_settings: 'Ajustes',
@@ -993,6 +995,27 @@ function getServiceYearRange(d = new Date()) {
   const start = getServiceYearStart(d);
   return { start, end: new Date(start.getFullYear()+1, 7, 31) };
 }
+function getArchiveForServiceYear(serviceYear) {
+  try {
+    const raw = localStorage.getItem(APP_CONFIG.archivePrefix + serviceYear);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function getArchiveForDateKey(dateKey) {
+  const sy = getServiceYearLabel(fromYmd(String(dateKey).slice(0, 10)));
+  return sy === getServiceYearLabel() ? null : getArchiveForServiceYear(sy);
+}
+function getDataForDateKey(dateKey) { return getArchiveForDateKey(dateKey) || state; }
+function isArchivedDateKey(dateKey) { return !!getArchiveForDateKey(dateKey); }
+function pruneArchivesExcept(serviceYear) {
+  const keepKey = APP_CONFIG.archivePrefix + serviceYear;
+  const remove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(APP_CONFIG.archivePrefix) && key !== keepKey) remove.push(key);
+  }
+  remove.forEach(key => localStorage.removeItem(key));
+}
 function daysInMonth(y, m) { return new Date(y, m+1, 0).getDate(); }
 
 function formatHM(mins) {
@@ -1064,7 +1087,15 @@ function checkServiceYearReset() {
       archivedAt: new Date().toISOString(),
       serviceYear: state.lastClearedServiceYear,
     };
-    try { localStorage.setItem(archKey, JSON.stringify(archive)); } catch(e){ /* ignore */ }
+    try {
+      const serialized = JSON.stringify(archive);
+      localStorage.setItem(archKey, serialized);
+      if (localStorage.getItem(archKey) !== serialized) throw new Error('archive-verification-failed');
+    } catch(e) {
+      console.error('service year archive failed', e);
+      toast(t('archiveFailed'));
+      return false;
+    }
     state.sessions = [];
     state.studiesByDate = {};
     state.creditEntries = [];
@@ -1072,8 +1103,12 @@ function checkServiceYearReset() {
     state.plannedByDate = {};
     state.lastClearedServiceYear = currentSY;
     saveState();
+    pruneArchivesExcept(currentSY - 1);
     toast(t('serviceYearReset'));
+    return true;
   }
+  pruneArchivesExcept(currentSY - 1);
+  return true;
 }
 
 
@@ -1206,17 +1241,17 @@ function getAllArchives() {
 
 /* ===== AGGREGATIONS ===== */
 function isRolloverSession(s) { return !!s && s.type === 'rollover'; }
-function getSessionsForDate(d) { return state.sessions.filter(s => s.date === d && s.stopISO); }
+function getSessionsForDate(d) { return (getDataForDateKey(d).sessions || []).filter(s => s.date === d && s.stopISO); }
 function getDayMinutes(d) { return getSessionsForDate(d).filter(s => !isRolloverSession(s)).reduce((a,s) => a + (s.durationMin||0), 0); }
 function getMonthMinutes(mk) {
-  return state.sessions.filter(s => s.date.startsWith(mk) && s.stopISO).reduce((a,s) => a + (s.durationMin||0), 0);
+  return (getDataForDateKey(mk + '-01').sessions || []).filter(s => s.date.startsWith(mk) && s.stopISO).reduce((a,s) => a + (s.durationMin||0), 0);
 }
-function getMonthSessions(mk) { return state.sessions.filter(s => s.date.startsWith(mk) && s.stopISO); }
+function getMonthSessions(mk) { return (getDataForDateKey(mk + '-01').sessions || []).filter(s => s.date.startsWith(mk) && s.stopISO); }
 function getMonthStudies(mk) { return getMonthSessions(mk).reduce((a,s) => a + (s.studies||0), 0); }
 // Unique dates with any logged minutes this month: the "Service days" stat.
 function getMonthServiceDays(mk) {
   const days = new Set();
-  for (const s of state.sessions) {
+  for (const s of (getDataForDateKey(mk + '-01').sessions || [])) {
     if (s.date && s.date.startsWith(mk) && s.stopISO && (s.durationMin || 0) > 0 && !isRolloverSession(s)) {
       days.add(s.date);
     }
@@ -1224,14 +1259,16 @@ function getMonthServiceDays(mk) {
   return days.size;
 }
 function getCreditEntriesForMonth(mk) {
-  return (Array.isArray(state.creditEntries) ? state.creditEntries : [])
+  const source = getDataForDateKey(mk + '-01');
+  return (Array.isArray(source.creditEntries) ? source.creditEntries : [])
     .filter(e => e && e.date && e.date.startsWith(mk) && (parseInt(e.minutes, 10) || 0) > 0);
 }
 function getMonthCredit(mk) {
   const entryTotal = getCreditEntriesForMonth(mk)
     .reduce((a, e) => a + (parseInt(e.minutes, 10) || 0), 0);
   if (entryTotal > 0) return entryTotal;
-  return parseInt((state.creditByMonth || {})[mk], 10) || 0;
+  const source = getDataForDateKey(mk + '-01');
+  return parseInt((source.creditByMonth || {})[mk], 10) || 0;
 }
 function getServiceYearMinutes() {
   const { start, end } = getServiceYearRange();
@@ -1258,10 +1295,10 @@ function getWeekMinutes() {
   const s = ymd(start), e = ymd(end);
   return state.sessions.filter(x => x.date >= s && x.date <= e && x.stopISO && !isRolloverSession(x)).reduce((a,x) => a + (x.durationMin||0), 0);
 }
-function getPlannedForDate(d) { return (state.plannedByDate || {})[d] || 0; }
+function getPlannedForDate(d) { return (getDataForDateKey(d).plannedByDate || {})[d] || 0; }
 function getMonthPlannedTotal(mk) {
   let total = 0;
-  Object.entries(state.plannedByDate || {}).forEach(([d, m]) => { if (d.startsWith(mk)) total += m; });
+  Object.entries(getDataForDateKey(mk + '-01').plannedByDate || {}).forEach(([d, m]) => { if (d.startsWith(mk)) total += m; });
   return total;
 }
 function getPendingStudiesForDate(date) {
@@ -1986,14 +2023,14 @@ function renderCategoryChipRow() {
   });
 }
 
-function sessionCardHTML(s) {
+function sessionCardHTML(s, readOnly = false) {
   const startT = new Date(s.startISO).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   const stopT = new Date(s.stopISO).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   const cat = isRolloverSession(s) ? t('rolloverLabel') : categoryLabel(s.category);
   const studies = s.studies ? `<span class="chip chip-amber" style="padding:2px 8px; font-size:10px;"><i class="fa-solid fa-book"></i>${s.studies}</span>` : '';
   const note = s.note ? `<div class="text-xs text-faint mt-2" style="font-style:italic;">"${escapeHtml(s.note)}"</div>` : '';
   return `
-    <button class="session-row" data-edit-session="${s.id}">
+    <button class="session-row" ${readOnly ? 'disabled aria-disabled="true"' : `data-edit-session="${s.id}"`}>
       <div class="row-between items-start gap-3">
         <div class="flex-1 min-w-0">
           <div class="row gap-2 flex-wrap">
@@ -2016,7 +2053,12 @@ function escapeHtml(s) {
 /* ---------- CALENDAR ---------- */
 function calGoMonth(delta) {
   const [y,m] = currentCalMonth.split('-').map(Number);
-  currentCalMonth = monthKey(new Date(y, m - 1 + delta, 1));
+  const candidate = monthKey(new Date(y, m - 1 + delta, 1));
+  const currentStart = getServiceYearStart();
+  const earliest = monthKey(new Date(currentStart.getFullYear() - 1, 8, 1));
+  const latest = monthKey(getServiceYearRange().end);
+  if (candidate < earliest || candidate > latest) return;
+  currentCalMonth = candidate;
   const grid = document.getElementById('calGrid');
   if (grid) {
     grid.classList.remove('cal-slide-in-left', 'cal-slide-in-right');
@@ -2150,6 +2192,13 @@ function renderCalendar() {
   }
 
   const [yr, mo] = currentCalMonth.split('-').map(Number);
+  const archivedMonth = isArchivedDateKey(currentCalMonth + '-01');
+  const currentStart = getServiceYearStart();
+  const earliestRetainedMonth = monthKey(new Date(currentStart.getFullYear() - 1, 8, 1));
+  const calPrev = document.getElementById('calPrev');
+  const calNext = document.getElementById('calNext');
+  if (calPrev) calPrev.disabled = currentCalMonth <= earliestRetainedMonth;
+  if (calNext) calNext.disabled = currentCalMonth >= monthKey(getServiceYearRange().end);
   const monthDate = new Date(yr, mo-1, 1);
   document.getElementById('calMonthLabel').textContent = `${t('months')[mo-1]} ${yr}`;
 
@@ -2228,7 +2277,7 @@ function renderCalendar() {
   const actualMonth = getMonthMinutes(currentCalMonth);
   const plannedMonth = getMonthPlannedTotal(currentCalMonth);
   const goal = Math.round(state.monthlyGoalHrs * 60);
-  document.getElementById('calMonthSummary').textContent = `${formatHM(actualMonth)} / ${formatHM(goal)}`;
+  document.getElementById('calMonthSummary').textContent = `${formatHM(actualMonth)} / ${formatHM(goal)}${archivedMonth ? ` · ${t('previousSY')} · ${t('readOnly')}` : ''}`;
   document.getElementById('calPlannedVal').textContent = formatHM(plannedMonth);
   document.getElementById('calActualVal').textContent = formatHM(actualMonth);
   document.getElementById('calGoalVal').textContent = formatHM(goal);
@@ -2256,6 +2305,7 @@ function renderAdjustCard() {
 
   const total = getDayMinutes(date);
   const planned = getPlannedForDate(date);
+  const readOnly = isArchivedDateKey(date);
   document.getElementById('adjTotalDisplay').textContent = formatHM(total);
 
   // Planned note
@@ -2279,11 +2329,16 @@ function renderAdjustCard() {
   if (sessions.length === 0) {
     list.innerHTML = `<div class="card-flat text-faint text-sm text-center" style="padding:14px;">${t('empty')}</div>`;
   } else {
-    list.innerHTML = sessions.map(sessionCardHTML).join('');
+    list.innerHTML = sessions.map(s => sessionCardHTML(s, readOnly)).join('');
     list.querySelectorAll('[data-edit-session]').forEach(el => {
       el.onclick = () => openEditSessionModal(el.dataset.editSession);
     });
   }
+  ['adjBtnSet','adjBtnAdd','adjBtnSub','adjBtnPlan','adjBtnAddDetailed'].forEach(id => {
+    const button = document.getElementById(id);
+    if (button) button.disabled = readOnly;
+  });
+  if (labelEl) labelEl.title = readOnly ? `${t('previousSY')} · ${t('readOnly')}` : '';
 }
 
 /* ---------- LOG ---------- */
@@ -3447,8 +3502,16 @@ function renderLogHistory() {
   // Disable Next button when already at current month
   const nextBtn = document.getElementById('logHistoryNext');
   if (nextBtn) nextBtn.disabled = logHistoryMonth >= monthKey(new Date());
+  const prevBtn = document.getElementById('logHistoryPrev');
+  const currentStart = getServiceYearStart();
+  const earliestRetainedMonth = monthKey(new Date(currentStart.getFullYear() - 1, 8, 1));
+  if (prevBtn) prevBtn.disabled = logHistoryMonth <= earliestRetainedMonth;
 
-  const all = state.sessions.filter(s => s.stopISO).sort((a,b) => b.startISO.localeCompare(a.startISO));
+  const historySource = getDataForDateKey(logHistoryMonth + '-01');
+  const historyReadOnly = historySource !== state;
+  const all = (historySource.sessions || []).filter(s => s.stopISO).sort((a,b) => b.startISO.localeCompare(a.startISO));
+  const addBtn = document.getElementById('logHistoryAddBtn');
+  if (addBtn) addBtn.disabled = historyReadOnly;
   let filtered = all.filter(s => s.date.startsWith(logHistoryMonth));
 
   const q = (logHistorySearch || '').trim().toLowerCase();
@@ -3476,13 +3539,13 @@ function renderLogHistory() {
           <span class="text-xs font-bold uppercase tracking-wider text-dim">${dateLbl}</span>
           <div class="row gap-2 items-center">
             <span class="text-xs font-mono font-bold text-accent">${formatHM(dayMins)}</span>
-            <button class="btn btn-secondary text-xs" style="padding:6px 10px;" data-lh-add-date="${dk}">
+            ${historyReadOnly ? `<span class="text-tiny text-faint">${t('readOnly')}</span>` : `<button class="btn btn-secondary text-xs" style="padding:6px 10px;" data-lh-add-date="${dk}">
               <i class="fa-solid fa-plus text-accent"></i>
               <span>Add</span>
-            </button>
+            </button>`}
           </div>
         </div>
-        <div class="stack-2">${groups[dk].map(sessionCardHTML).join('')}</div>
+        <div class="stack-2">${groups[dk].map(s => sessionCardHTML(s, historyReadOnly)).join('')}</div>
       </div>`;
   }).join('');
   list.querySelectorAll('[data-lh-add-date]').forEach(el => {
@@ -3497,9 +3560,17 @@ function renderLogHistory() {
 function renderReports() {
   const sel = document.getElementById('reportMonth');
   const monthSet = new Set([monthKey(new Date())]);
+  const currentStart = getServiceYearStart();
+  for (let i = -12; i < 12; i++) monthSet.add(monthKey(new Date(currentStart.getFullYear(), currentStart.getMonth() + i, 1)));
   state.sessions.forEach(s => { if (s && s.date) monthSet.add(s.date.slice(0,7)); });
   (state.creditEntries || []).forEach(e => { if (e && e.date) monthSet.add(e.date.slice(0,7)); });
   Object.keys(state.creditByMonth || {}).forEach(mk => monthSet.add(mk));
+  const previousArchive = getArchiveForServiceYear(getServiceYearLabel() - 1);
+  if (previousArchive) {
+    (previousArchive.sessions || []).forEach(s => { if (s && s.date) monthSet.add(s.date.slice(0,7)); });
+    (previousArchive.creditEntries || []).forEach(e => { if (e && e.date) monthSet.add(e.date.slice(0,7)); });
+    Object.keys(previousArchive.creditByMonth || {}).forEach(mk => monthSet.add(mk));
+  }
   const months = [...monthSet].sort().reverse();
   sel.innerHTML = months.map(mk => {
     const [y,m] = mk.split('-').map(Number);
@@ -3517,9 +3588,13 @@ function renderReports() {
   animateMinutesTo('reportCredit', credit);
   animateNumberTo('reportServiceDays', serviceDays);
 
-  const { start } = getServiceYearRange();
-  document.getElementById('reportSYLabel').textContent = `${start.getFullYear()}–${getServiceYearLabel()}`;
-  const syMins = getServiceYearMinutes();
+  const selectedDate = new Date(Number(currentReportMonth.slice(0,4)), Number(currentReportMonth.slice(5,7)) - 1, 1);
+  const { start, end: selectedSYEnd } = getServiceYearRange(selectedDate);
+  const selectedSY = getServiceYearLabel(selectedDate);
+  document.getElementById('reportSYLabel').textContent = `${start.getFullYear()}–${selectedSY}${selectedSY !== getServiceYearLabel() ? ` · ${t('previousSY')} · ${t('readOnly')}` : ''}`;
+  const sySource = getDataForDateKey(currentReportMonth + '-01');
+  const syStartKey = ymd(start), syEndKey = ymd(selectedSYEnd);
+  const syMins = (sySource.sessions || []).filter(x => x.date >= syStartKey && x.date <= syEndKey && x.stopISO).reduce((a,x) => a + (x.durationMin || 0), 0);
   document.getElementById('reportSYTotal').textContent = formatHM(syMins);
   document.getElementById('reportSYGoalLabel').textContent = state.annualGoalHrs;
 
@@ -3545,10 +3620,10 @@ function renderReports() {
 
   const elapsedMonths = Math.max(1, bars.filter(b => b.mins > 0).length);
   document.getElementById('reportAvg').textContent = formatHM(Math.round(syMins/elapsedMonths));
-  const { start: syStart, end: syEnd } = getServiceYearRange();
+  const { start: syStart, end: syEnd } = getServiceYearRange(selectedDate);
   const totalDays = Math.round((syEnd - syStart)/86400000) + 1;
   const elapsedDays = Math.max(1, Math.round((new Date() - syStart)/86400000) + 1);
-  document.getElementById('reportProj').textContent = formatHM(Math.round((syMins/elapsedDays) * totalDays));
+  document.getElementById('reportProj').textContent = selectedSY < getServiceYearLabel() ? formatHM(syMins) : formatHM(Math.round((syMins/elapsedDays) * totalDays));
 
   // Categories
   const sessions = getMonthSessions(currentReportMonth);
@@ -3559,6 +3634,8 @@ function renderReports() {
   });
   const total = Object.values(catTotals).reduce((a,b) => a+b, 0);
   const catEl = document.getElementById('reportCategories');
+  const creditBtn = document.getElementById('reportCreditBtn');
+  if (creditBtn) creditBtn.disabled = selectedSY !== getServiceYearLabel();
   if (!total) { catEl.innerHTML = `<div class="text-faint text-sm text-center py-4">${t('empty')}</div>`; return; }
   const colors = ['var(--accent)','var(--blue)','var(--amber)','var(--purple)','var(--coral)'];
   catEl.innerHTML = Object.entries(catTotals).sort((a,b) => b[1]-a[1]).map(([cat, m], i) => {
@@ -5271,7 +5348,12 @@ function wireEvents() {
     };
   }
 
-  document.getElementById('reportMonth').onchange = (e) => { currentReportMonth = e.target.value; renderReports(); };
+  document.getElementById('reportMonth').onchange = (e) => {
+    currentReportMonth = e.target.value;
+    logHistoryMonth = currentReportMonth;
+    renderReports();
+    renderLogHistory();
+  };
   document.getElementById('reportShare').onclick = () => {
     const text = buildReportText(currentReportMonth);
     openShareTextPicker(text);
