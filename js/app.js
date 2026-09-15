@@ -129,6 +129,7 @@ const I18N = {
     studies: 'Studies', streak: 'Streak', sessions: 'Sessions', serviceDays: 'Service days',
     readyToStart: 'Ready to start', inService: 'In service',
     start: 'Start', stop: 'Stop', note: 'Note',
+    pause: 'Pause', resume: 'Resume', paused: 'Paused',
     tapChange: 'tap to change', sessionsOnDay: 'Sessions on this day',
     monthlyPlan: 'Monthly plan', tapDayToPlan: 'Tap any day to plan or log',
     plannedTotal: 'Planned', goalTotal: 'Goal', actualHours: 'Actual', plannedHours: 'Planned',
@@ -413,6 +414,7 @@ const I18N = {
     studies: 'Cursos', streak: 'Racha', sessions: 'Sesiones', serviceDays: 'Días de servicio',
     readyToStart: 'Listo para empezar', inService: 'En servicio',
     start: 'Inicio', stop: 'Parar', note: 'Nota',
+    pause: 'Pausar', resume: 'Reanudar', paused: 'Pausado',
     tapChange: 'toca para cambiar', sessionsOnDay: 'Sesiones de este día',
     monthlyPlan: 'Plan mensual', tapDayToPlan: 'Toca un día para planear o registrar',
     plannedTotal: 'Planeado', goalTotal: 'Meta', actualHours: 'Real', plannedHours: 'Planeado',
@@ -1237,6 +1239,15 @@ function setPendingStudiesForDate(date, count) {
 }
 
 /* ===== TIMER ===== */
+// While running, elapsed is measured against "now". While paused, it's frozen
+// against the moment pauseTimer() was called (activeTimer.pausedAt), so elapsed
+// time does not keep growing while the app is closed or backgrounded.
+function timerRefMs(activeTimer) {
+  return activeTimer.pausedAt ? new Date(activeTimer.pausedAt).getTime() : Date.now();
+}
+function getActiveElapsedSec(activeTimer) {
+  return Math.max(0, Math.floor((timerRefMs(activeTimer) - new Date(activeTimer.startISO).getTime()) / 1000));
+}
 function startTimer(dateStr) {
   if (state.activeTimer) return;
   const timerDate = dateStr || todayStr();
@@ -1257,7 +1268,9 @@ function startTimer(dateStr) {
 function stopTimer(opts = { save: true }) {
   if (!state.activeTimer) return;
   if (opts.save) {
-    const stopISO = new Date().toISOString();
+    // If paused, stop at the moment it was paused, not "now" — otherwise time
+    // spent paused (possibly with the app closed) would be counted as elapsed.
+    const stopISO = state.activeTimer.pausedAt || new Date().toISOString();
     let mins = roundMins(minutesBetween(state.activeTimer.startISO, stopISO));
     if (mins > 0) {
       state.sessions.push({
@@ -1282,6 +1295,26 @@ function stopTimer(opts = { save: true }) {
   state.activeTimer = null;
   saveState(); stopLiveTick(); renderAll();
 }
+// Pause: freeze elapsed at the current instant. The live tick keeps running
+// (cheap) but getActiveElapsedSec() reports a constant value once paused, so
+// the display stops advancing — including across a full close/reopen, since
+// pausedAt is part of `state` and persists to localStorage like everything else.
+function pauseTimer() {
+  if (!state.activeTimer || state.activeTimer.pausedAt) return;
+  state.activeTimer.pausedAt = new Date().toISOString();
+  saveState(); vibrate(15); renderAll();
+}
+// Resume: shift startISO forward by the paused duration so elapsed continues
+// seamlessly from the frozen value, whether resumed a second later or after
+// closing and reopening the app days later.
+function resumeTimer() {
+  const at = state.activeTimer;
+  if (!at || !at.pausedAt) return;
+  const pausedMs = Date.now() - new Date(at.pausedAt).getTime();
+  at.startISO = new Date(new Date(at.startISO).getTime() + pausedMs).toISOString();
+  at.pausedAt = null;
+  saveState(); vibrate(15); renderAll();
+}
 function startLiveTick() {
   stopLiveTick();
   document.getElementById('liveBanner').classList.remove('hidden');
@@ -1290,12 +1323,22 @@ function startLiveTick() {
   renderBackupBanner();
   liveTickInterval = setInterval(() => {
     if (!state.activeTimer) { stopLiveTick(); return; }
-    const elapsedSec = Math.floor((Date.now() - new Date(state.activeTimer.startISO))/1000);
+    const isPaused = !!state.activeTimer.pausedAt;
+    const elapsedSec = getActiveElapsedSec(state.activeTimer);
     const display = formatHMS(elapsedSec);
     const liveEl = document.getElementById('liveBannerTime');
     const timerEl = document.getElementById('timerDisplay');
     if (liveEl) liveEl.textContent = display;
     if (timerEl && currentScreen === 'timer') timerEl.textContent = display;
+
+    const labelEl = document.getElementById('liveBannerLabel');
+    if (labelEl) labelEl.textContent = isPaused ? t('paused') : t('inService');
+    const dotEl = document.querySelector('#liveBanner .live-dot');
+    if (dotEl) dotEl.classList.toggle('paused', isPaused);
+    const pauseIconEl = document.getElementById('liveBannerPauseIcon');
+    const pauseLabelEl = document.getElementById('liveBannerPauseLabel');
+    if (pauseIconEl) pauseIconEl.className = isPaused ? 'fa-solid fa-play' : 'fa-solid fa-pause';
+    if (pauseLabelEl) pauseLabelEl.textContent = isPaused ? t('resume') : t('pause');
 
     const date = state.activeTimer.date;
     const already = getDayMinutes(date);
@@ -1327,7 +1370,7 @@ function startLiveTick() {
     }
 
     const ap = parseInt(state.autoPauseMin) || 0;
-    if (ap > 0 && (Date.now() - lastInteraction) > ap*60000) {
+    if (!isPaused && ap > 0 && (Date.now() - lastInteraction) > ap*60000) {
       stopTimer({ save: true });
       toast(t('stop'));
     }
@@ -1842,12 +1885,15 @@ function renderTimer() {
   const studyOnlySave = document.getElementById('timerStudyOnlySave');
 
   const adjusters = document.getElementById('timerAdjusters');
+  const pauseBtn = document.getElementById('timerPauseBtn');
+  const pauseIcon = document.getElementById('timerPauseIcon');
   if (isActiveHere) {
-    status.textContent = t('inService');
-    status.style.color = 'var(--accent)';
-    const sec = Math.floor((Date.now() - new Date(state.activeTimer.startISO))/1000);
+    const isPaused = !!state.activeTimer.pausedAt;
+    status.textContent = isPaused ? t('paused') : t('inService');
+    status.style.color = isPaused ? 'var(--amber)' : 'var(--accent)';
+    const sec = getActiveElapsedSec(state.activeTimer);
     display.textContent = formatHMS(sec);
-    mainBtn.className = 'btn btn-coral btn-round mt-5';
+    mainBtn.className = 'btn btn-coral btn-round';
     mainIcon.className = 'fa-solid fa-stop text-3xl mb-1';
     mainLabel.textContent = t('stop');
     const t1 = new Date(state.activeTimer.startISO);
@@ -1863,11 +1909,17 @@ function renderTimer() {
     studiesPanel.classList.remove('hidden');
     document.getElementById('timerNotePanel').classList.remove('hidden');
     if (adjusters) adjusters.classList.remove('hidden');
+    if (pauseBtn) {
+      pauseBtn.classList.remove('hidden');
+      pauseBtn.setAttribute('aria-label', isPaused ? t('resume') : t('pause'));
+      pauseBtn.className = `btn btn-round-sm ${isPaused ? 'btn-primary' : 'btn-secondary'}`;
+    }
+    if (pauseIcon) pauseIcon.className = isPaused ? 'fa-solid fa-play' : 'fa-solid fa-pause';
   } else {
     status.textContent = isAnyActive ? `${t('inService')} (${state.activeTimer.date})` : t('readyToStart');
     status.style.color = '';
     display.textContent = '00:00:00';
-    mainBtn.className = 'btn btn-primary btn-round mt-5';
+    mainBtn.className = 'btn btn-primary btn-round';
     mainIcon.className = 'fa-solid fa-play text-3xl mb-1';
     mainLabel.textContent = t('start');
     sub.textContent = '—';
@@ -1880,6 +1932,7 @@ function renderTimer() {
     studiesPanel.classList.toggle('hidden', isAnyActive);
     document.getElementById('timerNotePanel').classList.add('hidden');
     if (adjusters) adjusters.classList.add('hidden');
+    if (pauseBtn) pauseBtn.classList.add('hidden');
   }
   renderCategoryChipRow();
 
@@ -4884,6 +4937,10 @@ function wireEvents() {
   });
   document.getElementById('quickAddCustom').onclick = () => openQuickAddModal();
   document.getElementById('liveBannerStop').onclick = () => state.confirmClose ? openConfirmCloseTimer() : stopTimer({save: true});
+  document.getElementById('liveBannerPause').onclick = () => {
+    if (!state.activeTimer) return;
+    if (state.activeTimer.pausedAt) resumeTimer(); else pauseTimer();
+  };
   document.getElementById('timerSettings').onclick = () => switchScreen('settings');
   document.getElementById('homeSettingsBtn').onclick = () => switchScreen('settings');
   document.getElementById('settingsBackBtn').onclick = () => {
@@ -4897,6 +4954,10 @@ function wireEvents() {
   document.getElementById('timerMainBtn').onclick = () => {
     if (state.activeTimer) state.confirmClose ? openConfirmCloseTimer() : stopTimer({save: true});
     else startTimer(currentTimerDate);
+  };
+  document.getElementById('timerPauseBtn').onclick = () => {
+    if (!state.activeTimer || state.activeTimer.date !== currentTimerDate) return;
+    if (state.activeTimer.pausedAt) resumeTimer(); else pauseTimer();
   };
   // Studies stepper works before Start and during an active timer.
   document.getElementById('timerStudyPlus').onclick = () => {
@@ -4968,7 +5029,7 @@ function wireEvents() {
   };
   document.getElementById('timerAdjustSub').onclick = () => {
     if (!state.activeTimer) return;
-    const elapsedSec = Math.floor((Date.now() - new Date(state.activeTimer.startISO))/1000);
+    const elapsedSec = getActiveElapsedSec(state.activeTimer);
     const elapsedMin = Math.floor(elapsedSec / 60);
     if (elapsedMin <= 0) { toast(t('nothingToAdd')); return; }
     openDurationWheel(0, (subMin) => {
@@ -4983,11 +5044,12 @@ function wireEvents() {
   };
   document.getElementById('timerDisplay').onclick = () => {
     if (!state.activeTimer) return;
-    const elapsedSec = Math.floor((Date.now() - new Date(state.activeTimer.startISO))/1000);
+    const elapsedSec = getActiveElapsedSec(state.activeTimer);
     const elapsedMin = Math.round(elapsedSec / 60);
     openDurationWheel(elapsedMin, (newElapsedMin) => {
-      // Set start so that elapsed = newElapsedMin
-      const newStart = new Date(Date.now() - newElapsedMin*60000);
+      // Set start so that elapsed = newElapsedMin, relative to the same
+      // reference point used to display it (frozen pausedAt if paused).
+      const newStart = new Date(timerRefMs(state.activeTimer) - newElapsedMin*60000);
       state.activeTimer.startISO = newStart.toISOString();
       saveState(); vibrate(15); renderTimer();
       toast(t('save'));

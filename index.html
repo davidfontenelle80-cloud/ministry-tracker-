@@ -77,9 +77,14 @@
       <div id="liveBannerTime" class="font-mono text-base font-bold">00:00:00</div>
     </div>
   </div>
-  <button id="liveBannerStop" class="banner-stop-btn">
-    <i class="fa-solid fa-stop"></i> <span id="liveBannerStopLabel">Stop</span>
-  </button>
+  <div class="row gap-2" style="flex-shrink:0;">
+    <button id="liveBannerPause" class="banner-stop-btn" aria-label="Pause">
+      <i id="liveBannerPauseIcon" class="fa-solid fa-pause"></i> <span id="liveBannerPauseLabel">Pause</span>
+    </button>
+    <button id="liveBannerStop" class="banner-stop-btn">
+      <i class="fa-solid fa-stop"></i> <span id="liveBannerStopLabel">Stop</span>
+    </button>
+  </div>
 </div>
 
 <!-- APP ROOT -->
@@ -344,10 +349,15 @@
         </button>
       </div>
 
-      <button id="timerMainBtn" class="btn btn-primary btn-round mt-5">
-        <i id="timerMainIcon" class="fa-solid fa-play text-3xl mb-1"></i>
-        <span id="timerMainLabel" class="text-xs font-bold uppercase tracking-wider">Start</span>
-      </button>
+      <div class="row gap-3 items-center mt-5">
+        <button id="timerPauseBtn" class="btn btn-secondary btn-round-sm hidden" aria-label="Pause">
+          <i id="timerPauseIcon" class="fa-solid fa-pause"></i>
+        </button>
+        <button id="timerMainBtn" class="btn btn-primary btn-round">
+          <i id="timerMainIcon" class="fa-solid fa-play text-3xl mb-1"></i>
+          <span id="timerMainLabel" class="text-xs font-bold uppercase tracking-wider">Start</span>
+        </button>
+      </div>
 
       <button id="timerPlanChip" class="chip mt-4"></button>
 
