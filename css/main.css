@@ -723,6 +723,7 @@
     flex-shrink: 0;
   }
   @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .live-dot.paused { animation: none; opacity: 0.5; }
 
   /* One-time discovery hint for new settings fields */
   .hint-badge {
