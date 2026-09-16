@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v81-service-year-history';
+const CACHE_VERSION = 'ministry-tracker-v82-pause-resume';
 
 const PRECACHE_URLS = [
   './',
