@@ -1322,6 +1322,22 @@ function timerRefMs(activeTimer) {
 function getActiveElapsedSec(activeTimer) {
   return Math.max(0, Math.floor((timerRefMs(activeTimer) - new Date(activeTimer.startISO).getTime()) / 1000));
 }
+// Keeps the live banner's Paused/In-service label and Pause/Resume button in sync
+// with activeTimer.pausedAt and the current language. Called both from the 1s tick
+// and synchronously from applyI18n(), so a language toggle or any other renderAll()
+// while paused never shows a stale/wrong-language label even for a moment.
+function syncLiveBannerPauseUI() {
+  if (!state.activeTimer) return;
+  const isPaused = !!state.activeTimer.pausedAt;
+  const labelEl = document.getElementById('liveBannerLabel');
+  if (labelEl) labelEl.textContent = isPaused ? t('paused') : t('inService');
+  const dotEl = document.querySelector('#liveBanner .live-dot');
+  if (dotEl) dotEl.classList.toggle('paused', isPaused);
+  const pauseIconEl = document.getElementById('liveBannerPauseIcon');
+  const pauseLabelEl = document.getElementById('liveBannerPauseLabel');
+  if (pauseIconEl) pauseIconEl.className = isPaused ? 'fa-solid fa-play' : 'fa-solid fa-pause';
+  if (pauseLabelEl) pauseLabelEl.textContent = isPaused ? t('resume') : t('pause');
+}
 function startTimer(dateStr) {
   if (state.activeTimer) return;
   const timerDate = dateStr || todayStr();
@@ -1405,14 +1421,7 @@ function startLiveTick() {
     if (liveEl) liveEl.textContent = display;
     if (timerEl && currentScreen === 'timer') timerEl.textContent = display;
 
-    const labelEl = document.getElementById('liveBannerLabel');
-    if (labelEl) labelEl.textContent = isPaused ? t('paused') : t('inService');
-    const dotEl = document.querySelector('#liveBanner .live-dot');
-    if (dotEl) dotEl.classList.toggle('paused', isPaused);
-    const pauseIconEl = document.getElementById('liveBannerPauseIcon');
-    const pauseLabelEl = document.getElementById('liveBannerPauseLabel');
-    if (pauseIconEl) pauseIconEl.className = isPaused ? 'fa-solid fa-play' : 'fa-solid fa-pause';
-    if (pauseLabelEl) pauseLabelEl.textContent = isPaused ? t('resume') : t('pause');
+    syncLiveBannerPauseUI();
 
     const date = state.activeTimer.date;
     const already = getDayMinutes(date);
@@ -1543,13 +1552,17 @@ function applyI18n() {
     lbl_clearMonth: 'clearMonth', lbl_clearAll: 'clearAll',
     nav_home: 'nav_home', nav_timer: 'nav_timer', nav_cal: 'nav_cal', nav_notes: 'nav_notes', nav_reports: 'nav_reports',
     lbl_logHistory: 'logHistory',
-    liveBannerLabel: 'inService', liveBannerStopLabel: 'stop',
+    liveBannerStopLabel: 'stop',
     lbl_ministryTitle: 'ministryTitle', lbl_addTime: 'addTimeBtn',
   };
   Object.entries(map).forEach(([id, key]) => {
     const el = document.getElementById(id);
     if (el) el.textContent = t(key);
   });
+  // Paused/In-service is state-dependent (not a fixed string), so it's synced separately
+  // rather than through the static map above — otherwise it would always be reset to
+  // "In service" here and only self-correct on the next 1s tick.
+  syncLiveBannerPauseUI();
   document.getElementById('langToggle').textContent = (state.lang || 'en').toUpperCase();
   // Keep the KHub shell i18n (skip link, update notice, error boundary) in sync
   try {
