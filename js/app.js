@@ -1750,22 +1750,30 @@ function renderHome() {
   const syMinsSoFar = syMins; // already computed above
   const remainingNeeded = Math.max(0, goalMins - syMinsSoFar);
 
-  // Calculate months remaining in the current service year (including current)
+  // Count full months after the current partial month.
+  // Example: Sep 22 -> Oct through Aug = 11 full months remaining.
   const { start: syStart2, end: syEnd2 } = getServiceYearRange();
   const nowD = new Date();
   let monthsRemaining = 0;
-  let cursor = new Date(nowD.getFullYear(), nowD.getMonth(), 1);
+  let cursor = new Date(nowD.getFullYear(), nowD.getMonth() + 1, 1);
   while (cursor <= syEnd2) {
     monthsRemaining++;
     cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
   }
-  monthsRemaining = Math.max(1, monthsRemaining); // never zero
+  // In the final service-year month there are no future full months, so use the
+  // current month as the last remaining month instead of dividing by zero.
+  monthsRemaining = Math.max(1, monthsRemaining);
 
   const perMonthNeeded = remainingNeeded / monthsRemaining;
 
-  // Need this month = perMonthNeeded - already logged this month
+  // "Need this month" is based on the configured monthly goal. The annual
+  // remaining balance already subtracts time logged this month, so subtracting
+  // it again from perMonthNeeded would double-count the current month's time.
   const monthMinsForCalc = getMonthMinutes(mk);
-  const needThisMonth = Math.max(0, perMonthNeeded - monthMinsForCalc);
+  const needThisMonth = Math.min(
+    remainingNeeded,
+    Math.max(0, monthGoalMins - monthMinsForCalc)
+  );
 
   // Ahead/behind: compare service-year-so-far to where you "should be"
   // by this point in the year (expected portion of goal).
