@@ -1,10 +1,6 @@
 name: encoding-check
 
-# Fails the build if any source file contains double-encoded UTF-8 (mojibake):
-# C1 control characters (U+0080–U+009F) or the U+FFFD replacement character.
-# Zero dependencies — runs on bare node, so this same workflow drops into any
-# KHub app repo whether or not it has a package.json.
-
+# Fails the build on broken UTF-8 or invalid JavaScript in the app shell modules.
 on:
   push:
     branches: [main]
@@ -21,3 +17,8 @@ jobs:
           node-version: '20'
       - name: Check for mojibake / broken encoding
         run: node scripts/check-encoding.mjs .
+      - name: Check JavaScript syntax
+        run: |
+          node --check js/organizer.js
+          node --check js/push-config.js
+          node --check sw.js
