@@ -71,7 +71,8 @@
   function telUrl(phone){return digits(phone).length>=7?'tel:'+String(phone).replace(/[^\d+]/g,''):'';}
   function coord(n){return String(+Number(n).toFixed(6));}
   function hasCoords(v){
-    return !!v && Number.isFinite(Number(v.lat)) && Number.isFinite(Number(v.lng));
+    return !!v && v.lat!==null && v.lat!==undefined && v.lat!=='' && v.lng!==null && v.lng!==undefined && v.lng!=='' &&
+      Number.isFinite(Number(v.lat)) && Number.isFinite(Number(v.lng));
   }
   function navigationTarget(v){
     if(!v)return '';
@@ -471,7 +472,7 @@
   function forwardGeocode(query){
     query=String(query||'').trim();
     if(!query)return Promise.resolve([]);
-    var exact=state.ministryRevisits.find(function(v){return String(v.address||'').trim().toLowerCase()===query.toLowerCase();});
+    var exact=state.ministryRevisits.find(function(v){return hasCoords(v)&&String(v.address||'').trim().toLowerCase()===query.toLowerCase();});
     if(exact){
       return Promise.resolve([{lat:exact.lat,lng:exact.lng,address:exact.address,fullAddress:exact.address,accuracy:null,source:'saved'}]);
     }
