@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v88-address-first-return-visits';
+const CACHE_VERSION = 'ministry-tracker-v89-organizer-studies-dashboard';
 
 const PRECACHE_URLS = [
   './',
@@ -14,6 +14,7 @@ const PRECACHE_URLS = [
   './css/responsive.css',
   './css/notes-card-borders.css',
   './css/revisits.css',
+  './css/organizer.css',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './js/config.js',
@@ -33,6 +34,7 @@ const PRECACHE_URLS = [
   './js/app.js',
   './js/revisit-map.js',
   './js/revisits.js',
+  './js/organizer.js',
   './js/firebase/firebase-config.js',
   './js/firebase/cloud-backup.js',
 ];
