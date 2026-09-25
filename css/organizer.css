@@ -16,7 +16,7 @@
 .org-chevron{color:var(--text-faint);font-size:12px;flex:0 0 auto;}
 .org-badge{display:inline-flex;align-items:center;min-height:24px;padding:3px 8px;border-radius:999px;background:var(--surface-sub);border:1px solid var(--border);font-weight:800;color:var(--text-dim);}
 .org-badge.is-today{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,var(--border));}
-.org-badge.is-overdue{background:var(--coral-soft);color:var(--coral);border-color:color-mix(in srgb,var(--coral) 35%,var(--border));}
+.org-badge.is-overdue{background:var(--amber-soft);color:var(--amber);border-color:color-mix(in srgb,var(--amber) 42%,var(--border));}
 .org-badge.is-complete{opacity:.7;}
 .org-person-card{border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:12px;}
 .org-person-open>div{min-width:0;flex:1;}
@@ -30,7 +30,7 @@
 .org-dashboard-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
 .org-dashboard-section{display:flex;flex-direction:column;gap:6px;padding-top:10px;margin-top:10px;border-top:1px solid var(--border);}
 .org-dashboard-section>strong{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);}
-.org-overdue-label{color:var(--coral)!important;}
+.org-overdue-label{color:var(--amber)!important;}
 .org-dashboard-item{width:100%;display:grid;grid-template-columns:36px minmax(0,1fr) 14px;gap:10px;align-items:center;border:0;border-radius:12px;background:var(--surface-sub);color:var(--text);padding:10px;text-align:left;}
 .org-dashboard-icon{width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;}
 .org-dashboard-copy{display:flex;flex-direction:column;gap:2px;min-width:0;}
