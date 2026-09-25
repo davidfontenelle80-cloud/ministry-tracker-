@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v90-person-card-entry';
+const CACHE_VERSION = 'ministry-tracker-v91-person-card-entry';
 
 const PRECACHE_URLS = [
   './',
