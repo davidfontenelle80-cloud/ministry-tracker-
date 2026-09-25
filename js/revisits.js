@@ -454,6 +454,10 @@
   function forwardGeocode(query){
     query=String(query||'').trim();
     if(!query)return Promise.resolve([]);
+    var exact=state.ministryRevisits.find(function(v){return String(v.address||'').trim().toLowerCase()===query.toLowerCase();});
+    if(exact){
+      return Promise.resolve([{lat:exact.lat,lng:exact.lng,address:exact.address,fullAddress:exact.address,accuracy:null,source:'saved'}]);
+    }
     if(!navigator.onLine){
       toast(L('Address search needs an internet connection.','La búsqueda de direcciones necesita conexión a internet.'));
       return Promise.resolve([]);
