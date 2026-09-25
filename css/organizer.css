@@ -56,3 +56,29 @@
   .rv-top-tabs .rv-top-tab{font-size:11px;padding:8px 4px;gap:4px;}
   .rv-top-tabs .rv-top-tab i{font-size:12px;}
 }
+
+.person-field-hint{
+  display:block;
+  margin-top:5px;
+  color:var(--text-dim);
+  font-size:11px;
+  line-height:1.4;
+}
+.person-missing-phone{
+  width:100%;
+  display:grid;
+  grid-template-columns:24px minmax(0,1fr) 12px;
+  gap:9px;
+  align-items:center;
+  padding:11px 12px;
+  border:1px dashed color-mix(in srgb,var(--accent) 42%,var(--border));
+  border-radius:13px;
+  background:var(--accent-soft);
+  color:var(--accent);
+  text-align:left;
+  font-weight:700;
+  font-size:12px;
+}
+.person-missing-phone span{line-height:1.35;}
+.person-phone-prompt{border-style:dashed;}
+.rv-place-link.is-static{cursor:default;}
