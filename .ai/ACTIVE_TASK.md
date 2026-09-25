@@ -4,48 +4,45 @@
 READY FOR REVIEW
 
 ## Task
-Integrate the standalone Revisita workflow into Ministry Tracker under the existing Notes screen as a separate **Notes | Revisits** experience.
+Bring the integrated Ministry Revisits experience closer to the standalone Revisita workflow, especially GPS/location behavior, manual address entry, verification, and navigation handoff.
 
 Requested by David in chat on 2026-09-25 with explicit authorization to implement.
 
 ## Scope delivered
-- Keep ordinary Ministry notes intact and separate from revisit records.
-- Add a simple Revisits experience with Today, Map, and All views.
-- GPS "use my location" flow plus tap-to-place and moveable map pins.
-- OpenStreetMap map with active/today/all/nearby filters.
-- Return-visit cards with Call, Directions, Open, and Log Visit actions.
-- Visit history, what was left, next topic, and quick +1 week / +2 weeks / +1 month rescheduling.
-- Add-to-calendar workflow with iPhone/ICS alarms and Google Calendar handoff.
-- Optional 5-minute app push reminder using Ministry's existing notification infrastructure.
-- Include revisit state automatically in Ministry's existing local/cloud backup payload.
-- One-time import option for data already stored by the standalone Revisita app on the same origin.
-- English/Spanish UI and dark/light theme compatibility.
-- Cache new assets and viewed OpenStreetMap tiles in the PWA service worker.
+- Revisits requests the device location automatically the first time the Revisits experience is opened during an app session.
+- When permission is granted, the map opens centered on the user's current GPS position.
+- Tapping **Use my location** always makes a fresh browser geolocation request so the browser/OS can prompt for permission when needed.
+- GPS-created visits now go through the same map confirmation step as manually placed pins instead of skipping verification.
+- The confirmation panel shows the reverse-geocoded address, coordinates, and GPS accuracy when available.
+- Added **Enter an address** when creating a revisit.
+- Manual address search geocodes the address and then requires visual pin verification on the map before the visit form opens.
+- Existing revisit addresses can be re-searched on the map to move/verify the saved pin.
+- Address/location text on revisit cards is tappable and starts the navigation flow.
+- Directions can launch Google Maps, Apple Maps, or Waze.
+- By default the navigation popup asks which map app to use; the user can remember a choice for future taps.
+- Existing Today / Map / All views, visit history, calendar handoff, push reminder, import and cloud-backup behavior remain intact.
+- PWA cache version bumped so installed devices receive the updated revisit code and styles.
 
 ## Files changed
-- index.html
-- css/revisits.css
-- js/revisit-map.js
 - js/revisits.js
+- css/revisits.css
 - sw.js
 - .ai/ACTIVE_TASK.md
 
 ## Verification completed
-- Classic JavaScript syntax compilation passed for js/revisit-map.js.
-- Classic JavaScript syntax compilation passed for js/revisits.js.
-- Service worker syntax compilation passed after cache-list validation.
-- Branch is based directly on current main and has no base divergence.
-- Confirmed index.html includes the new stylesheet, Notes/Revisits selector, and both revisit scripts.
-- Confirmed existing Ministry cloud backup serializes the entire ministry-tracker-v4 state, so revisit state is included without a second cloud store.
+- Classic JavaScript syntax compilation passes for js/revisits.js.
+- Service worker syntax compilation passes.
+- Confirmed manual address search, GPS confirmation, navigation chooser, and tappable-location handlers are present on the feature branch.
+- This branch starts from current main.
 
-## Still needs real-device smoke test
-This chat environment cannot exercise iPhone GPS permission prompts, launch the native Calendar app, or receive a real Web Push notification. On the deployed build, verify:
-1. Notes still works normally.
-2. Revisits -> New -> Here requests GPS and opens the new-visit form.
-3. Revisits -> Map allows tap/confirm/move pin.
-4. Calendar opens with the correct visit/date and a 5-minute alarm in ICS mode.
-5. A timed visit with the app-reminder checkbox schedules and receives the push notification.
-6. Dark/light and EN/ES both render correctly.
+## Real-device smoke test still recommended
+1. Open Notes -> Revisits on iPhone/Android and verify the browser/OS location permission appears when permission has not yet been granted.
+2. Confirm the map centers on the current location after permission is granted.
+3. Tap **Use my location**, verify the accuracy/address/coordinates, then confirm the pin.
+4. Create a revisit by manually entering an address and verify the map pin before saving.
+5. Tap a saved address/location and verify the Google Maps / Apple Maps navigation chooser.
+6. Check that remembering a navigation app sends later taps directly to that app.
+7. Verify existing calendar and 5-minute push reminder behavior still works.
 
 ## Review
 Supervisor: David
