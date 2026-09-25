@@ -491,6 +491,12 @@
   .bottom-nav {
     position: fixed; bottom: 0; left: 0; right: 0;
     max-width: 480px;
+    /* iOS standalone PWAs can occasionally leave fixed UI anchored to a stale
+       keyboard-sized visual viewport after an input sheet closes. JS sets this
+       recovery shift only when the nav is clearly stranded above screen bottom. */
+    transform: translate3d(0, var(--bottom-nav-recovery-shift, 0px), 0);
+    -webkit-transform: translate3d(0, var(--bottom-nav-recovery-shift, 0px), 0);
+    will-change: transform;
     margin: 0 auto;
     z-index: 40;
     background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
