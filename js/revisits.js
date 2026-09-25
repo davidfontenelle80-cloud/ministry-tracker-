@@ -119,6 +119,7 @@
       dueTime:/^\d{2}:\d{2}$/.test(v.dueTime||'')?v.dueTime:'',
       notify5Min:v.notify5Min!==false,
       reminderMinutes:Number.isFinite(Number(v.reminderMinutes))?Math.max(0,Number(v.reminderMinutes)):5,
+      snoozedUntil:String(v.snoozedUntil||''),
       status:v.status==='completed'?'completed':'active',
       completedAt:v.status==='completed'?(v.completedAt||null):null,
       history:Array.isArray(v.history)?v.history:[],
@@ -1010,6 +1011,7 @@
       dueDate:due,dueTime:time,
       notify5Min:dialog('rvVisitNotify').checked,
       reminderMinutes:Math.max(0,Number(dialog('rvVisitReminderMinutes').value)||0),
+      snoozedUntil:'',
       calendarSlot:prev?prev.calendarSlot:'',
       calendarSeq:prev?prev.calendarSeq:0,
       status:prev?prev.status:'active',
@@ -1057,6 +1059,7 @@
       history:(v.history||[]).concat([entry]),
       leftWith:entry.leftWith||v.leftWith,
       nextTopic:dialog('rvLogNextTopic').value.trim(),
+      snoozedUntil:'',
       updatedAt:nowIso()
     });
     if(ended){next.status='completed';next.completedAt=entry.completedAt;next.dueDate='';next.dueTime='';}
@@ -1078,7 +1081,8 @@
     var at=new Date(v.dueDate+'T'+v.dueTime+':00');
     if(isNaN(at.getTime()))return Promise.resolve({ok:false,skipped:'invalid-time'});
     var mins=Math.max(0,Number(v.reminderMinutes)||0);
-    var fire=new Date(at.getTime()-mins*60000);
+    var snooze=v.snoozedUntil?new Date(v.snoozedUntil):null;
+    var fire=snooze&&!isNaN(snooze.getTime())&&snooze.getTime()>Date.now()+30000?snooze:new Date(at.getTime()-mins*60000);
     if(fire.getTime()<=Date.now()+30000){
       clearPush(v.id);
       toast(L('This Return Visit is too soon for the selected reminder time.','Esta revisita está demasiado cerca para el tiempo de aviso seleccionado.'));
@@ -1261,13 +1265,21 @@
   }
 
   function routeNotification(route){
-    if(!route||route.sourceType!=='revisit')return;
+    if(!route||route.sourceType!=='revisit'||!route.sourceId)return;
     setTimeout(function(){
       if(typeof global.switchScreen==='function')global.switchScreen('notes');
       activate('revisits');
-      if(route.sourceId&&global.MinistryOrganizer&&typeof global.MinistryOrganizer.showNotificationQuickCard==='function'){
+      if(route.notificationAction==='snooze'&&global.MinistryOrganizer&&typeof global.MinistryOrganizer.snoozeReminder==='function'){
+        global.MinistryOrganizer.snoozeReminder('revisit',route.sourceId,15);
+        return;
+      }
+      if(route.notificationAction==='done'){
+        openLog(route.sourceId);
+        return;
+      }
+      if(global.MinistryOrganizer&&typeof global.MinistryOrganizer.showNotificationQuickCard==='function'){
         global.MinistryOrganizer.showNotificationQuickCard('revisit',route.sourceId);
-      }else if(route.sourceId)openEditor(route.sourceId);
+      }else openEditor(route.sourceId);
     },120);
   }
   if(global.KHub&&typeof global.KHub.on==='function')global.KHub.on('notification:route',routeNotification);
@@ -1276,6 +1288,7 @@
     init:init,
     activate:function(){if(typeof global.switchScreen==='function')global.switchScreen('notes');activate('revisits');},
     open:function(id){activate('revisits');openEditor(id);},
+    log:function(id){activate('revisits');openLog(id);},
     render:render
   };
   global.addEventListener('load',init);
