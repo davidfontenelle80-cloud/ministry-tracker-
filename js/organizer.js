@@ -365,10 +365,13 @@
   }
 
   function navigationUrl(record){
-    var target=String(record&&record.address||'').trim();if(!target)return '';
+    if(!record)return '';
+    var hasCoords=record.lat!==null&&record.lat!==undefined&&record.lat!==''&&record.lng!==null&&record.lng!==undefined&&record.lng!==''&&Number.isFinite(Number(record.lat))&&Number.isFinite(Number(record.lng));
+    var target=hasCoords?(Number(record.lat).toFixed(6)+','+Number(record.lng).toFixed(6)):String(record.address||record.reference||'').trim();
+    if(!target)return '';
     var app=(state.revisitSettings&&state.revisitSettings.navApp)||'auto';
     if(app==='auto'||app==='ask')app=isIOS()?'apple':'google';
-    if(app==='waze')return 'https://waze.com/ul?q='+encodeURIComponent(target)+'&navigate=yes';
+    if(app==='waze')return hasCoords?'https://waze.com/ul?ll='+encodeURIComponent(target)+'&navigate=yes':'https://waze.com/ul?q='+encodeURIComponent(target)+'&navigate=yes';
     if(app==='apple')return 'https://maps.apple.com/?daddr='+encodeURIComponent(target)+'&dirflg=d';
     return 'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(target)+'&travelmode=driving';
   }
