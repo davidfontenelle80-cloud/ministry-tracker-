@@ -190,3 +190,37 @@ Review status: NOT REVIEWED
 - sw.js syntax passes.
 - Static order checks confirm both person forms place Name → Phone → Address before schedule/optional details.
 - Static checks confirm Return Visit directions are conditional and both person types have missing-phone prompts.
+
+
+## Today + overdue + reminder action refinement — 2026-09-25
+- Notes still open on **Today** by default.
+- The Today view now renders in two visual groups:
+  1. today's notes, sorted by due date/time
+  2. **Needs Attention** directly underneath for overdue notes
+- Overdue note cards use an amber/orange attention treatment and show the original due date/time.
+- The Overdue filter shows a small count badge when overdue items exist.
+- Mobile filter tabs keep their text labels visible instead of relying on icons alone.
+- Other filters remain available: Today, Upcoming, Overdue, All.
+- Push notification workflow now supports:
+  - **Done** for Notes
+  - **Log Visit** for Return Visits
+  - **Log Study** for Bible Studies
+  - **Snooze 15m**
+  - **Dismiss**
+- Dismiss closes the notification/quick card without deleting or completing the underlying record.
+- Snooze schedules a fresh push 15 minutes later and keeps the record in its existing Today/Overdue position.
+- Tapping a normal notification opens the in-app quick reminder card for Notes, Return Visits, and Bible Studies.
+- Native notification action buttons are supplied when the platform supports Web Push actions; if the OS does not display them, the in-app quick card provides the same controls.
+- Return Visit and Bible Study snooze state is preserved so subsequent reminder sync does not overwrite a future snooze.
+- PWA cache bumped to **v92-today-reminder-actions**.
+
+### Verification targets
+- Today notes sort by time and overdue notes render underneath.
+- Overdue cards and badge use amber/orange attention styling.
+- Mobile filter labels remain readable.
+- Normal notification tap opens a quick card.
+- Note Done marks the note complete.
+- Return Visit Done routes to Log Visit.
+- Bible Study Done routes to Log Study.
+- Snooze 15m reschedules without changing the record's due date/time.
+- Dismiss closes the alert and leaves the record untouched.

@@ -33,6 +33,7 @@
         screen: 'notes',
         sourceType: u.searchParams.get('sourceType') || 'ministry-note',
         sourceId: u.searchParams.get('sourceId') || '',
+        notificationAction: u.searchParams.get('notificationAction') || '',
         url: u.href,
       };
     } catch (e) {
@@ -64,6 +65,7 @@
         u.searchParams.delete('screen');
         u.searchParams.delete('sourceType');
         u.searchParams.delete('sourceId');
+        u.searchParams.delete('notificationAction');
         if (u.hash === '#notification') u.hash = '';
         history.replaceState(null, '', u.pathname + u.search + u.hash);
       }
@@ -78,9 +80,6 @@
     }
     try {
       window.switchScreen('notes');
-      if (route.sourceType === 'ministry-note' && route.sourceId && typeof window.openMinistryNoteModal === 'function') {
-        setTimeout(() => window.openMinistryNoteModal('', route.sourceId), 250);
-      }
       clearPendingNotificationRoute();
       emit('notification:route', route);
       return true;

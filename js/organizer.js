@@ -68,6 +68,7 @@
     out.completed=Boolean(n.completed||n.status==='done'||n.status==='completed');
     out.status=out.completed?'done':'open';
     out.archived=Boolean(n.archived);
+    out.snoozedUntil=String(n.snoozedUntil||'');
     out.createdAt=n.createdAt||nowIso();
     out.updatedAt=n.updatedAt||out.createdAt;
     return out;
@@ -88,6 +89,7 @@
       notify:s.notify!==false,
       reminderMinutes:reminderMinutes(s,15),
       repeatWeekly:Boolean(s.repeatWeekly),
+      snoozedUntil:String(s.snoozedUntil||''),
       status:s.status==='completed'?'completed':'active',
       history:Array.isArray(s.history)?s.history:[],
       createdAt:s.createdAt||nowIso(),
@@ -125,15 +127,17 @@
     if(sl)sl.textContent=L('Bible Studies','Estudios bíblicos');
   }
 
-  function filterTabs(kind,current){
+  function filterTabs(kind,current,records){
     var labels=[
       ['today','fa-calendar-day',L('Today','Hoy')],
       ['upcoming','fa-clock',L('Upcoming','Próximos')],
       ['overdue','fa-triangle-exclamation',L('Overdue','Atrasados')],
       ['all','fa-layer-group',L('All','Todos')]
     ];
+    var overdueCount=(records||[]).filter(function(v){return scheduleBucket(v)==='overdue';}).length;
     return '<div class="org-filter-tabs" role="tablist">'+labels.map(function(x){
-      return '<button class="org-filter-tab'+(current===x[0]?' is-active':'')+'" type="button" data-org-'+kind+'-filter="'+x[0]+'"><i class="fa-solid '+x[1]+'"></i><span>'+esc(x[2])+'</span></button>';
+      var count=x[0]==='overdue'&&overdueCount?'<b class="org-filter-count">'+overdueCount+'</b>':'';
+      return '<button class="org-filter-tab'+(current===x[0]?' is-active':'')+'" type="button" data-org-'+kind+'-filter="'+x[0]+'"><i class="fa-solid '+x[1]+'"></i><span>'+esc(x[2])+'</span>'+count+'</button>';
     }).join('')+'</div>';
   }
   function statusBadge(v){
@@ -153,21 +157,41 @@
   }
 
   function noteCard(n){
-    return '<button class="org-note-card" type="button" data-org-open-note="'+esc(n.id)+'">'+
+    var bucket=scheduleBucket(n);
+    var when='';
+    if(bucket==='overdue'&&n.dueDate){
+      when='<span class="org-overdue-when"><i class="fa-regular fa-calendar"></i> '+esc(L('Due ','Venció ')+fmtDate(n.dueDate,true)+(n.dueTime?' · '+fmtTime(n.dueTime):''))+'</span>';
+    }else if(n.dueTime){
+      when='<span><i class="fa-regular fa-clock"></i> '+esc(fmtTime(n.dueTime))+'</span>';
+    }
+    return '<button class="org-note-card'+(bucket==='overdue'?' is-overdue':'')+'" type="button" data-org-open-note="'+esc(n.id)+'">'+
       '<div class="org-card-main"><div class="org-card-title">'+esc(n.title||L('Untitled note','Nota sin título'))+'</div>'+
-      '<div class="org-card-meta">'+statusBadge(n)+(n.dueTime?'<span><i class="fa-regular fa-clock"></i> '+esc(fmtTime(n.dueTime))+'</span>':'')+
+      '<div class="org-card-meta">'+statusBadge(n)+when+
       (n.reminder?'<span title="'+esc(L('Push reminder','Aviso push'))+'"><i class="fa-solid fa-bell"></i></span>':'')+'</div></div>'+
       '<i class="fa-solid fa-chevron-right org-chevron"></i></button>';
   }
   function renderNotes(){
     ensureState();
     var root=notesRoot();if(!root)return;
-    var items=filtered(state.ministryNotes||[],noteFilter);
+    var all=(state.ministryNotes||[]).filter(function(n){return !n.archived;});
+    var items=filtered(all,noteFilter);
+    var listHtml='';
+    if(noteFilter==='today'){
+      var todayItems=filtered(all,'today');
+      var overdueItems=filtered(all,'overdue');
+      if(todayItems.length)listHtml+=todayItems.map(noteCard).join('');
+      else listHtml+='<div class="org-empty org-today-empty"><i class="fa-regular fa-circle-check"></i> '+esc(L('Nothing else scheduled for today.','No hay nada más programado para hoy.'))+'</div>';
+      if(overdueItems.length){
+        listHtml+='<div class="org-needs-attention"><div class="org-needs-attention-head"><span><i class="fa-solid fa-triangle-exclamation"></i> '+esc(L('Needs Attention','Necesita atención'))+'</span><small>'+esc(L('Overdue items stay here until you handle them.','Los elementos atrasados permanecen aquí hasta que los atiendas.'))+'</small></div>'+overdueItems.map(noteCard).join('')+'</div>';
+      }
+    }else{
+      listHtml=items.length?items.map(noteCard).join(''):'<div class="org-empty">'+esc(L('Nothing here yet.','Todavía no hay nada aquí.'))+'</div>';
+    }
     root.innerHTML='<div class="org-shell">'+
       '<div class="org-heading"><div><h2>'+esc(L('Notes','Notas'))+'</h2><p>'+esc(L('Simple notes and reminders. The note body stays hidden until you open the card.','Notas y recordatorios simples. El contenido queda oculto hasta que abras la tarjeta.'))+'</p></div>'+
       '<button class="btn btn-primary" type="button" data-org-add-note><i class="fa-solid fa-plus"></i>'+esc(L('Add Note','Añadir nota'))+'</button></div>'+
-      filterTabs('note',noteFilter)+
-      '<div class="org-card-list">'+(items.length?items.map(noteCard).join(''):'<div class="org-empty">'+esc(L('Nothing here yet.','Todavía no hay nada aquí.'))+'</div>')+'</div>'+
+      filterTabs('note',noteFilter,all)+
+      '<div class="org-card-list">'+listHtml+'</div>'+
       '</div>';
   }
 
@@ -191,7 +215,7 @@
     root.innerHTML='<div class="org-shell">'+
       '<div class="org-heading"><div><h2>'+esc(L('Bible Studies','Estudios bíblicos'))+'</h2><p>'+esc(L('One card per student, with schedule, contact, reminders and study history.','Una tarjeta por estudiante, con horario, contacto, recordatorios e historial.'))+'</p></div>'+
       '<button class="btn btn-primary" type="button" data-org-add-study><i class="fa-solid fa-plus"></i>'+esc(L('New Study','Nuevo estudio'))+'</button></div>'+
-      filterTabs('study',studyFilter)+
+      filterTabs('study',studyFilter,state.ministryBibleStudies||[])+
       '<div class="org-card-list">'+(items.length?items.map(studyCard).join(''):'<div class="org-empty">'+esc(L('No Bible Studies in this view.','No hay estudios bíblicos en esta vista.'))+'</div>')+'</div>'+
       '</div>';
   }
@@ -205,7 +229,7 @@
       '<dialog id="orgStudyDetail" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2 id="orgStudyDetailName"></h2><div id="orgStudyDetailSchedule" class="rv-muted"></div></div><button class="rv-icon-btn" data-org-close="orgStudyDetail">×</button></div><button id="orgStudyAddress" class="rv-view-place" type="button" data-org-study-detail-directions><i class="fa-solid fa-location-dot"></i><span></span></button><div id="orgStudyContact" class="org-contact-actions"></div><button id="orgStudyAddPhone" class="person-missing-phone" type="button" data-org-study-add-phone-detail hidden><i class="fa-solid fa-phone-plus"></i><span>'+esc(L('Add a phone number to enable Call, Text and WhatsApp','Añade un teléfono para activar Llamar, Texto y WhatsApp'))+'</span><i class="fa-solid fa-chevron-right"></i></button><dl id="orgStudyDetails" class="rv-view-details"></dl><div id="orgStudyHistory" class="rv-history" hidden></div><div class="org-detail-actions"><button class="btn btn-primary" data-org-study-log><i class="fa-solid fa-check"></i>'+esc(L('Log Study','Registrar estudio'))+'</button><button class="btn btn-secondary" data-org-study-calendar><i class="fa-solid fa-calendar-plus"></i>'+esc(L('Calendar','Calendario'))+'</button><button class="btn btn-secondary" data-org-study-reminder><i class="fa-solid fa-bell"></i>'+esc(L('Set Reminder','Poner aviso'))+'</button><button class="btn btn-secondary" data-org-study-edit><i class="fa-solid fa-pen"></i>'+esc(L('Edit','Editar'))+'</button><button class="btn btn-secondary rv-danger" data-org-study-delete><i class="fa-solid fa-trash"></i>'+esc(L('Delete','Eliminar'))+'</button></div></div></dialog>'+
       '<dialog id="orgStudyEdit" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Bible Study','Estudio bíblico'))+'</h2></div><button class="rv-icon-btn" data-org-close="orgStudyEdit">×</button></div><form id="orgStudyForm" class="rv-form"><input id="orgStudyId" type="hidden"><label class="rv-field"><span>'+esc(L('Name','Nombre'))+' *</span><input id="orgStudyName" maxlength="120" required autocomplete="name"></label><label class="rv-field"><span>'+esc(L('Phone number','Número de teléfono'))+'</span><input id="orgStudyPhone" type="tel" maxlength="50" autocomplete="tel" placeholder="'+esc(L('Recommended','Recomendado'))+'"><small class="person-field-hint">'+esc(L('Add it now to enable Call, Text and WhatsApp after saving.','Añádelo ahora para activar Llamar, Texto y WhatsApp después de guardar.'))+'</small></label><label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><input id="orgStudyAddressInput" maxlength="240" autocomplete="street-address"></label><fieldset class="rv-schedule-box"><legend>'+esc(L('Next study','Próximo estudio'))+'</legend><div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Date','Fecha'))+'</span><input id="orgStudyDate" type="date"></label><label class="rv-field"><span>'+esc(L('Time','Hora'))+'</span><input id="orgStudyTime" type="time" step="60"></label></div><label class="rv-check"><input id="orgStudyWeekly" type="checkbox"><span>'+esc(L('Usually repeats weekly','Normalmente se repite cada semana'))+'</span></label><label class="rv-check"><input id="orgStudyNotify" type="checkbox"><span>'+esc(L('Push reminder','Recordatorio push'))+'</span></label><label class="rv-field"><span>'+esc(L('Minutes before','Minutos antes'))+'</span><input id="orgStudyReminderMinutes" type="number" min="0" max="10080" step="1" value="15"></label><label class="rv-check"><input id="orgStudyCalendarOnSave" type="checkbox"><span>'+esc(L('Add to calendar after saving','Añadir al calendario al guardar'))+'</span></label></fieldset><details id="orgStudyMoreDetails" class="rv-more-details"><summary>'+esc(L('More details (optional)','Más detalles (opcional)'))+'</summary><div class="rv-more-details-body"><label class="rv-field"><span>'+esc(L('Email','Correo electrónico'))+'</span><input id="orgStudyEmail" type="email" maxlength="160" autocomplete="email"></label><div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Publication / material','Publicación / material'))+'</span><input id="orgStudyPublication" maxlength="160"></label><label class="rv-field"><span>'+esc(L('Lesson / chapter','Lección / capítulo'))+'</span><input id="orgStudyLesson" maxlength="120"></label></div><label class="rv-field"><span>'+esc(L('Study notes','Notas del estudio'))+'</span><textarea id="orgStudyNotes" rows="5" maxlength="2000"></textarea></label></div></details><div class="rv-dialog-actions"><button class="btn btn-secondary" type="button" data-org-close="orgStudyEdit">'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" type="submit"><i class="fa-solid fa-check"></i>'+esc(L('Save','Guardar'))+'</button></div></form></div></dialog>'+
       '<dialog id="orgStudyLog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Log Bible Study','Registrar estudio bíblico'))+'</h2><div id="orgStudyLogName" class="rv-muted"></div></div><button class="rv-icon-btn" data-org-close="orgStudyLog">×</button></div><form id="orgStudyLogForm" class="rv-form"><label class="rv-field"><span>'+esc(L('What did you cover?','¿Qué estudiaron?'))+'</span><textarea id="orgStudyLogNote" rows="4" maxlength="1200"></textarea></label><div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Publication / material','Publicación / material'))+'</span><input id="orgStudyLogPublication" maxlength="160"></label><label class="rv-field"><span>'+esc(L('Lesson / chapter','Lección / capítulo'))+'</span><input id="orgStudyLogLesson" maxlength="120"></label></div><div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Next date','Próxima fecha'))+'</span><input id="orgStudyLogDate" type="date"></label><label class="rv-field"><span>'+esc(L('Next time','Próxima hora'))+'</span><input id="orgStudyLogTime" type="time" step="60"></label></div><div class="rv-dialog-actions"><button class="btn btn-secondary" type="button" data-org-close="orgStudyLog">'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" type="submit">'+esc(L('Save','Guardar'))+'</button></div></form></div></dialog>'+
-      '<dialog id="orgNotificationQuick" class="rv-dialog org-quick-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><div class="org-eyebrow" id="orgQuickType"></div><h2 id="orgQuickTitle"></h2><div id="orgQuickSchedule" class="rv-muted"></div></div><button class="rv-icon-btn" data-org-close="orgNotificationQuick">×</button></div><div id="orgQuickPlace" class="org-quick-place"></div><div id="orgQuickActions" class="org-quick-actions"></div></div></dialog>';
+      '<dialog id="orgNotificationQuick" class="rv-dialog org-quick-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><div class="org-eyebrow" id="orgQuickType"></div><h2 id="orgQuickTitle"></h2><div id="orgQuickSchedule" class="rv-muted"></div></div><button class="rv-icon-btn" data-org-close="orgNotificationQuick">×</button></div><div id="orgQuickPlace" class="org-quick-place"></div><div id="orgQuickActions" class="org-quick-actions"></div><div id="orgQuickReminderActions" class="org-reminder-actions"></div></div></dialog>';
     document.body.appendChild(host);
     bindDialogs();
   }
@@ -314,10 +338,15 @@
     if(isNaN(at.getTime()))return null;
     return new Date(at.getTime()-Math.max(0,Number(minutes)||0)*60000);
   }
+  function futureSnooze(v){
+    if(!v||!v.snoozedUntil)return null;
+    var d=new Date(v.snoozedUntil);
+    return !isNaN(d.getTime())&&d.getTime()>Date.now()+30000?d:null;
+  }
   function syncNotePush(n){
     if(!global.MinistryPush)return Promise.resolve({ok:false});
     if(n.completed||!n.reminder||!n.dueDate||!n.dueTime)return global.MinistryPush.clearReminder('ministry-note',n.id);
-    var fire=pushFireAt(n,n.reminderMinutes);
+    var fire=futureSnooze(n)||pushFireAt(n,n.reminderMinutes);
     if(!fire||fire.getTime()<=Date.now()+30000){global.MinistryPush.clearReminder('ministry-note',n.id);return Promise.resolve({ok:false,skipped:'too-soon'});}
     n.reminderAt=fire.toISOString();
     saveState();
@@ -326,7 +355,7 @@
   function syncStudyPush(s){
     if(!global.MinistryPush)return Promise.resolve({ok:false});
     if(s.status==='completed'||!s.notify||!s.dueDate||!s.dueTime)return global.MinistryPush.clearReminder('bible-study',s.id);
-    var fire=pushFireAt(s,s.reminderMinutes);
+    var fire=futureSnooze(s)||pushFireAt(s,s.reminderMinutes);
     if(!fire||fire.getTime()<=Date.now()+30000){global.MinistryPush.clearReminder('bible-study',s.id);return Promise.resolve({ok:false,skipped:'too-soon'});}
     return global.MinistryPush.syncReminder('bible-study',s.id,L('Bible Study: ','Estudio bíblico: ')+s.name,scheduleText(s),fire.toISOString());
   }
@@ -394,6 +423,7 @@
       id:id,title:D('orgNoteTitle').value.trim(),body:D('orgNoteBody').value,
       dueDate:D('orgNoteDate').value||'',dueTime:D('orgNoteDate').value?(D('orgNoteTime').value||''):'',
       reminder:D('orgNoteReminder').checked,reminderMinutes:Math.max(0,Number(D('orgNoteReminderMinutes').value)||0),
+      snoozedUntil:'',
       updatedAt:nowIso(),createdAt:prev?prev.createdAt:nowIso()
     }));
     if(prev)state.ministryNotes=state.ministryNotes.map(function(x){return x.id===id?n:x;});else state.ministryNotes.push(n);
@@ -420,6 +450,7 @@
       address:D('orgStudyAddressInput').value.trim(),publication:D('orgStudyPublication').value.trim(),lesson:D('orgStudyLesson').value.trim(),
       notes:D('orgStudyNotes').value.trim(),dueDate:D('orgStudyDate').value||'',dueTime:D('orgStudyDate').value?(D('orgStudyTime').value||''):'',
       repeatWeekly:D('orgStudyWeekly').checked,notify:D('orgStudyNotify').checked,reminderMinutes:Math.max(0,Number(D('orgStudyReminderMinutes').value)||0),
+      snoozedUntil:'',
       status:prev?prev.status:'active',history:prev?prev.history:[],createdAt:prev?prev.createdAt:nowIso(),updatedAt:nowIso()
     });
     if(prev)state.ministryBibleStudies=state.ministryBibleStudies.map(function(x){return x.id===id?s:x;});else state.ministryBibleStudies.push(s);
@@ -431,7 +462,7 @@
     e.preventDefault();var s=studyById(activeStudyId);if(!s)return;
     var nextDate=D('orgStudyLogDate').value||'',nextTime=nextDate?(D('orgStudyLogTime').value||''):'';
     var h={completedAt:nowIso(),note:D('orgStudyLogNote').value.trim(),publication:D('orgStudyLogPublication').value.trim(),lesson:D('orgStudyLogLesson').value.trim()};
-    var next=normalizeStudy(Object.assign({},s,{history:(s.history||[]).concat([h]),publication:h.publication||s.publication,lesson:h.lesson||s.lesson,dueDate:nextDate,dueTime:nextTime,updatedAt:nowIso()}));
+    var next=normalizeStudy(Object.assign({},s,{history:(s.history||[]).concat([h]),publication:h.publication||s.publication,lesson:h.lesson||s.lesson,dueDate:nextDate,dueTime:nextTime,snoozedUntil:'',updatedAt:nowIso()}));
     state.ministryBibleStudies=state.ministryBibleStudies.map(function(x){return x.id===s.id?next:x;});
     persist();closeDialog('orgStudyLog');renderStudies();syncStudyPush(next);openStudyDetail(next.id);
   }
@@ -495,24 +526,82 @@
     if(type==='bible-study'){if(typeof global.switchScreen==='function')global.switchScreen('notes');showOnly('studies');renderStudies();setTimeout(function(){openStudyDetail(id);},80);}
   }
   function quickRecord(sourceType,id){
+    if(sourceType==='ministry-note')return (state.ministryNotes||[]).find(function(x){return x.id===id;});
     if(sourceType==='revisit')return (state.ministryRevisits||[]).find(function(x){return x.id===id;});
     if(sourceType==='bible-study')return studyById(id);
     return null;
   }
+  function reminderTitle(sourceType,rec){
+    if(sourceType==='ministry-note')return rec.title||L('Note','Nota');
+    if(sourceType==='revisit')return L('Return Visit: ','Revisita: ')+(rec.name||'');
+    return L('Bible Study: ','Estudio bíblico: ')+(rec.name||'');
+  }
+  function reminderBody(sourceType,rec){
+    if(sourceType==='ministry-note')return scheduleText(rec);
+    return [scheduleText(rec),rec.address||rec.reference||''].filter(Boolean).join(' · ');
+  }
+  function snoozeReminder(sourceType,id,minutes){
+    ensureState();
+    var rec=quickRecord(sourceType,id);if(!rec||!global.MinistryPush)return Promise.resolve({ok:false,skipped:'missing'});
+    minutes=Math.max(1,Number(minutes)||15);
+    var fire=new Date(Date.now()+minutes*60000),iso=fire.toISOString();
+    if(sourceType==='ministry-note'){
+      rec=normalizeNote(Object.assign({},rec,{reminder:true,snoozedUntil:iso,reminderAt:iso,updatedAt:nowIso()}));
+      state.ministryNotes=state.ministryNotes.map(function(x){return x.id===id?rec:x;});
+    }else if(sourceType==='bible-study'){
+      rec=normalizeStudy(Object.assign({},rec,{notify:true,snoozedUntil:iso,updatedAt:nowIso()}));
+      state.ministryBibleStudies=state.ministryBibleStudies.map(function(x){return x.id===id?rec:x;});
+    }else if(sourceType==='revisit'){
+      rec=Object.assign({},rec,{notify5Min:true,snoozedUntil:iso,updatedAt:nowIso()});
+      state.ministryRevisits=state.ministryRevisits.map(function(x){return x.id===id?rec:x;});
+    }
+    persist();
+    return global.MinistryPush.syncReminder(sourceType,id,reminderTitle(sourceType,rec),reminderBody(sourceType,rec),iso).then(function(result){
+      if(!result||result.ok!==false)toast(L('Snoozed for ','Pospuesto por ')+minutes+L(' minutes.',' minutos.'));
+      return result;
+    });
+  }
+  function completeNotificationItem(sourceType,id){
+    if(sourceType==='ministry-note'){
+      var n=(state.ministryNotes||[]).find(function(x){return x.id===id;});if(!n)return;
+      n=normalizeNote(Object.assign({},n,{completed:true,status:'done',reminder:false,snoozedUntil:'',updatedAt:nowIso()}));
+      state.ministryNotes=state.ministryNotes.map(function(x){return x.id===id?n:x;});
+      persist();
+      if(global.MinistryPush)global.MinistryPush.clearReminder('ministry-note',id);
+      renderNotes();closeDialog('orgNotificationQuick');toast(L('Marked done.','Marcado como hecho.'));
+      return;
+    }
+    closeDialog('orgNotificationQuick');
+    if(sourceType==='revisit'&&global.MinistryRevisits&&typeof global.MinistryRevisits.log==='function'){global.MinistryRevisits.log(id);return;}
+    if(sourceType==='bible-study'){openStudyLog(id);}
+  }
+  function handleNotificationAction(sourceType,id,action){
+    if(!sourceType||!id)return false;
+    if(action==='snooze'){snoozeReminder(sourceType,id,15);return true;}
+    if(action==='done'){completeNotificationItem(sourceType,id);return true;}
+    return false;
+  }
   function showNotificationQuickCard(sourceType,id){
     ensureDialogs();ensureState();
-    var rec=quickRecord(sourceType,id);if(!rec){openRecord(sourceType,id);return;}
+    var rec=quickRecord(sourceType,id);if(!rec){openRecord(sourceType==='ministry-note'?'note':sourceType,id);return;}
     activeStudyId=sourceType==='bible-study'?id:activeStudyId;
-    D('orgQuickType').textContent=sourceType==='revisit'?L('Return Visit reminder','Recordatorio de revisita'):L('Bible Study reminder','Recordatorio de estudio bíblico');
-    D('orgQuickTitle').textContent=rec.name||'';
+    activeNoteId=sourceType==='ministry-note'?id:activeNoteId;
+    var isNote=sourceType==='ministry-note',isRevisit=sourceType==='revisit';
+    D('orgQuickType').textContent=isNote?L('Note reminder','Recordatorio de nota'):isRevisit?L('Return Visit reminder','Recordatorio de revisita'):L('Bible Study reminder','Recordatorio de estudio bíblico');
+    D('orgQuickTitle').textContent=isNote?(rec.title||L('Untitled note','Nota sin título')):(rec.name||'');
     D('orgQuickSchedule').textContent=scheduleText(rec);
-    D('orgQuickPlace').textContent=rec.address||rec.reference||'';
+    D('orgQuickPlace').textContent=isNote?'':(rec.address||rec.reference||'');
     var acts=[];
-    var quickHasCoords=rec.lat!==null&&rec.lat!==undefined&&rec.lat!==''&&rec.lng!==null&&rec.lng!==undefined&&rec.lng!==''&&Number.isFinite(Number(rec.lat))&&Number.isFinite(Number(rec.lng));
-    if(rec.address||quickHasCoords)acts.push('<button class="btn btn-primary" type="button" data-org-quick-nav="'+sourceType+'" data-org-id="'+esc(id)+'"><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Navigate','Navegar'))+'</button>');
-    if(telUrl(rec.phone))acts.push('<a class="btn btn-primary" href="'+esc(telUrl(rec.phone))+'"><i class="fa-solid fa-phone"></i>'+esc(L('Call','Llamar'))+'</a>');
+    var quickHasCoords=!isNote&&rec.lat!==null&&rec.lat!==undefined&&rec.lat!==''&&rec.lng!==null&&rec.lng!==undefined&&rec.lng!==''&&Number.isFinite(Number(rec.lat))&&Number.isFinite(Number(rec.lng));
+    if(!isNote&&(rec.address||quickHasCoords))acts.push('<button class="btn btn-primary" type="button" data-org-quick-nav="'+sourceType+'" data-org-id="'+esc(id)+'"><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Navigate','Navegar'))+'</button>');
+    if(!isNote&&telUrl(rec.phone))acts.push('<a class="btn btn-primary" href="'+esc(telUrl(rec.phone))+'"><i class="fa-solid fa-phone"></i>'+esc(L('Call','Llamar'))+'</a>');
     acts.push('<button class="btn btn-secondary" type="button" data-org-quick-open="'+sourceType+'" data-org-id="'+esc(id)+'"><i class="fa-solid fa-arrow-up-right-from-square"></i>'+esc(L('Full Card','Tarjeta completa'))+'</button>');
     D('orgQuickActions').innerHTML=acts.join('');
+    var doneLabel=isNote?L('Done','Hecho'):isRevisit?L('Log Visit','Registrar visita'):L('Log Study','Registrar estudio');
+    D('orgQuickReminderActions').innerHTML=
+      '<button class="btn btn-secondary" type="button" data-org-quick-done="'+sourceType+'" data-org-id="'+esc(id)+'"><i class="fa-solid fa-check"></i>'+esc(doneLabel)+'</button>'+
+      '<button class="btn btn-secondary" type="button" data-org-quick-snooze="'+sourceType+'" data-org-id="'+esc(id)+'"><i class="fa-solid fa-clock-rotate-left"></i>'+esc(L('Snooze 15m','Posponer 15m'))+'</button>'+
+      '<button class="btn btn-secondary" type="button" data-org-quick-dismiss><i class="fa-solid fa-xmark"></i>'+esc(L('Dismiss','Descartar'))+'</button>';
     showDialog('orgNotificationQuick');
   }
 
@@ -547,16 +636,24 @@
       var db=e.target.closest('[data-org-dashboard-open]');if(db){openRecord(db.dataset.orgDashboardOpen,db.dataset.orgId);return;}
       if(e.target.closest('[data-org-open-organizer]')){if(typeof global.switchScreen==='function')global.switchScreen('notes');showOnly('notes');renderNotes();return;}
       var qn=e.target.closest('[data-org-quick-nav]');if(qn){var qr=quickRecord(qn.dataset.orgQuickNav,qn.dataset.orgId);if(qr)openDirections(qr);return;}
-      var qo=e.target.closest('[data-org-quick-open]');if(qo){closeDialog('orgNotificationQuick');openRecord(qo.dataset.orgQuickOpen,qo.dataset.orgId);return;}
+      var qo=e.target.closest('[data-org-quick-open]');if(qo){closeDialog('orgNotificationQuick');openRecord(qo.dataset.orgQuickOpen==='ministry-note'?'note':qo.dataset.orgQuickOpen,qo.dataset.orgId);return;}
+      var qdone=e.target.closest('[data-org-quick-done]');if(qdone){completeNotificationItem(qdone.dataset.orgQuickDone,qdone.dataset.orgId);return;}
+      var qs=e.target.closest('[data-org-quick-snooze]');if(qs){snoozeReminder(qs.dataset.orgQuickSnooze,qs.dataset.orgId,15).finally(function(){closeDialog('orgNotificationQuick');});return;}
+      if(e.target.closest('[data-org-quick-dismiss]')){closeDialog('orgNotificationQuick');return;}
       if(e.target.closest('#langToggle'))setTimeout(function(){var h=document.getElementById('orgDialogsHost');if(h)h.remove();ensureDialogs();renderNotes();renderStudies();refreshDashboard();},50);
     },true);
   }
 
   function routeNotification(route){
-    if(!route)return;
-    if(route.sourceType==='bible-study'&&route.sourceId){
-      setTimeout(function(){if(typeof global.switchScreen==='function')global.switchScreen('notes');showOnly('studies');renderStudies();showNotificationQuickCard('bible-study',route.sourceId);},150);
-    }
+    if(!route||!route.sourceId)return;
+    if(route.sourceType!=='ministry-note'&&route.sourceType!=='bible-study')return;
+    setTimeout(function(){
+      if(typeof global.switchScreen==='function')global.switchScreen('notes');
+      if(route.sourceType==='bible-study'){showOnly('studies');renderStudies();}
+      else{showOnly('notes');renderNotes();}
+      if(handleNotificationAction(route.sourceType,route.sourceId,route.notificationAction||''))return;
+      showNotificationQuickCard(route.sourceType,route.sourceId);
+    },150);
   }
 
   function init(){
@@ -585,7 +682,9 @@
     openNote:openNoteDetail,
     openStudy:openStudyDetail,
     refreshDashboard:refreshDashboard,
-    showNotificationQuickCard:showNotificationQuickCard
+    showNotificationQuickCard:showNotificationQuickCard,
+    snoozeReminder:snoozeReminder,
+    handleNotificationAction:handleNotificationAction
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
   else init();
