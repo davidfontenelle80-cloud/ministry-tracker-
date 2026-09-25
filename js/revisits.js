@@ -1074,7 +1074,7 @@
         pendingLocation=null;pendingTypedAddress='';movePinId='';
         if(map)map.setDraft(null,null);
         refreshConfirmPanel();
-        if(cancelledMove)openEditor(cancelledMove);
+        if(cancelledMove)openEditor(cancelledMove,null,{edit:true});
         return;
       }
       if(e.target.closest('[data-rv-confirm-pin]')){
@@ -1086,7 +1086,7 @@
           if(old){
             var moved=Object.assign({},old,{lat:p.lat,lng:p.lng,address:p.address||old.address,updatedAt:nowIso()});
             state.ministryRevisits=state.ministryRevisits.map(function(x){return x.id===move?moved:x;});
-            persist();render();openEditor(move);toast(L('Pin moved.','Ubicación actualizada.'));
+            persist();render();openEditor(move,null,{edit:true});toast(L('Pin moved.','Ubicación actualizada.'));
           }
         }else{
           render();openEditor(null,p);
