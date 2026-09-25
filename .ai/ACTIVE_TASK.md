@@ -1,65 +1,86 @@
 # ACTIVE TASK
 
 ## Status
-READY FOR REVIEW
+IMPLEMENTED ON FEATURE BRANCH — QA / REVIEW
 
 ## Task
-Streamline Notes now that Return Visits has its own dedicated tab, and make the Return Visit workflow address-first with the map optional.
+Redesign the Ministry Notes area into three simple card-based sections and connect scheduled items to the Home dashboard and push-notification routing.
 
 Requested by David in chat on 2026-09-25.
 
-## Scope delivered
-- Removed the old built-in **Return Visits / Revisitas** category from Notes.
-- Existing notes that were stored in that old category are preserved and moved to **All Notes / no category**.
-- Removed developer-only **Test Push** and **Push diagnostics** controls from the normal Notes UI.
-- Updated Notes helper text so Notes is clearly for general ministry notes, while Return Visits is separate.
-- A Return Visit can now be saved with a typed address **without requiring a map pin**.
-- New address flow:
-  - type the address
-  - **Continue** directly to the person/household Return Visit form
-  - or choose **Find on map** to locate/verify a pin
-- **Find on map** now always produces a visible outcome:
-  - best address match opens on the map for pin verification
-  - if no match is found, the map opens so the user can place the pin manually
-- Address-only Return Visits can still use Directions / navigation from the app; Google Maps, Apple Maps, and Waze receive the saved address when no GPS pin exists.
-- Address-only Return Visits continue to support:
-  - person/household name
-  - notes
-  - phone / WhatsApp
-  - next topic
-  - visit history
-  - return date/time
-  - app reminder
-  - calendar handoff
-- Calendar events no longer generate fake 0,0 coordinates when a Return Visit has only an address.
-- Map views show only Return Visits that actually have a pin.
-- Existing address-only Return Visits can later be geocoded, viewed on the map, and assigned/moved to a pin.
-- PWA cache bumped to v88.
+## Target workflow
+Top tabs:
+- **Notes / Notas**
+- **Return Visits / Revisitas**
+- **Bible Studies / Estudios bíblicos**
+
+### Notes
+- No category grid.
+- One card per note.
+- Card shows title/subject; note body stays private by default.
+- Optional preview toggle.
+- All / Today / Upcoming / Overdue filters.
+- Date/time, configurable push reminder lead time, optional phone-calendar handoff.
+- Completed/delete controls.
+- Existing Calendar note taps continue to open the same note through the new editor.
+
+### Return Visits
+- Preserve the existing Revisita-style person/household workflow, address-first flow, GPS/map pin, history, reminders, calendar and navigation.
+- Add contact actions: Call, Text, WhatsApp and Email when corresponding data exists.
+- Email is stored separately so the existing Return Visit record format remains compatible with Revisita imports.
+- Notification tap shows a small quick-action card first: Navigate, Call, Open full card.
+
+### Bible Studies
+- New dedicated tab using one card per student.
+- Name, phone, email, address, material/publication, next lesson/topic and notes.
+- Next study date/time, configurable push reminder lead time, repeat-weekly option and optional phone-calendar handoff.
+- Call, Text, WhatsApp, Email, Directions and Calendar actions.
+- Log Study flow records history and schedules the next study or ends the study.
+- Existing notes in the old built-in Bible Studies category are migrated into Bible Study cards instead of being deleted.
+
+### Home dashboard
+- A compact Schedule & Reminders card automatically reads the same underlying records.
+- Shows Overdue, Today and the next Upcoming items from Notes, Return Visits and Bible Studies.
+- Hidden when there is nothing scheduled.
+- Tapping an item opens the exact note/person/student record.
+
+### Notifications
+- Notes use source type `organizer-note` and open the exact note.
+- Bible Studies use source type `bible-study` and open the quick-action card.
+- Return Visits keep source type `revisit` and open the quick-action card before the full Return Visit card.
+- Existing push infrastructure and Cloudflare worker are reused; no parallel reminder service was created.
+
+## Data / migration
+- Existing `ministryNotes` records are retained.
+- Existing Bible Study notes (`mnc-2`) are migrated once to `ministryBibleStudies` and removed from the generic Notes list.
+- Existing Notes categories are cleared because Notes is now card-based rather than category-based.
+- `ministryBibleStudies` and `ministryContactMeta` live in the same Ministry state blob, so existing local persistence, export/import and cloud backup continue to include them.
+- One-time push migrations move existing Note reminders to the new notification route.
 
 ## Files changed
-- js/app.js
-- js/revisits.js
-- sw.js
-- .ai/ACTIVE_TASK.md
+- `js/organizer.js` — new organizer/UI/migration/dashboard/notification module.
+- `js/push-config.js` — loads organizer module alongside the reusable push toggle.
+- `sw.js` — precaches organizer module; cache version bumped to v89.
+- `.github/workflows/encoding-check.yml` — adds Node syntax checks for organizer/PWA modules.
+- `.ai/ACTIVE_TASK.md` — this tracker.
 
-## Verification completed
-- js/app.js syntax passes.
-- js/revisits.js syntax passes.
-- sw.js syntax passes.
-- Old default Return Visits Notes category is no longer present.
-- Notes Test Push / diagnostics button markup is no longer present.
-- Safe migration for notes formerly in mnc-1 is present.
-- Address-only Return Visit normalization, address-based navigation, optional-map address flow, and pinned-only map filtering are present.
+## Verification
+- Local draft of organizer module passed `node --check` before upload.
+- PR CI is configured to run:
+  - encoding/mojibake check
+  - `node --check js/organizer.js`
+  - `node --check js/push-config.js`
+  - `node --check sw.js`
 
-## Real-device smoke test recommended
-1. Notes: verify the old Return Visits category and debug buttons are gone, while old notes remain in All Notes.
-2. Return Visits -> New -> Enter an address -> Continue: verify the full person/household form opens immediately.
-3. Save an address-only Return Visit with name, notes, date/time and reminder.
-4. Reopen it and start Directions with Apple Maps or Google Maps.
-5. Add it to Calendar and confirm the saved address appears correctly.
-6. Return Visits -> New -> Enter an address -> Find on map: verify the map opens with a pin or manual placement fallback.
-7. Create with GPS and with a manually dropped pin; verify those flows remain unchanged.
+## Real-device QA still required before calling the UX fully verified
+1. Refresh/reopen installed PWA and verify three tabs in English and Spanish.
+2. Notes: create title-only and detailed notes; verify private body, preview toggle, reminder, calendar, Today/Upcoming/Overdue and dashboard entry.
+3. Return Visits: verify existing cards/map/address workflow still works; save email; verify Call/Text/WhatsApp/Email and notification quick card.
+4. Bible Studies: create/edit/log/end a study; test weekly next-date behavior; test four contact actions, directions, reminder, calendar and dashboard entry.
+5. Tap real push notifications for all three record types.
+6. Verify Home agenda hides when empty and routes each item correctly.
+7. Verify dark/light themes, iPhone Home Screen PWA and Android/desktop responsive behavior.
 
 ## Review
 Supervisor: David
-Review status: NOT REVIEWED
+Review status: PENDING REAL-DEVICE QA
