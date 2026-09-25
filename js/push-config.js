@@ -8,10 +8,16 @@
     appName: 'Ministry Tracker'
   }, window.MINISTRY_TRACKER_PUSH_CONFIG || {});
 
-  // Load the reusable device-specific notification control without changing
-  // the large app bundle. The module waits for push.js and the Settings card.
-  var script = document.createElement('script');
-  script.src = 'js/push-toggle.js';
-  script.defer = true;
-  document.head.appendChild(script);
+  function loadModule(src) {
+    var script = document.createElement('script');
+    script.src = src;
+    script.defer = true;
+    script.async = false;
+    document.head.appendChild(script);
+  }
+
+  // Reusable notification control plus the Notes / Return Visits / Bible Studies organizer.
+  // Both modules wait for their app dependencies before initializing.
+  loadModule('js/push-toggle.js');
+  loadModule('js/organizer.js');
 })();
