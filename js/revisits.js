@@ -1059,14 +1059,20 @@
     var lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//KHub//Ministry Return Visits//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT','UID:ministry-revisit-'+v.id+'@khub','SEQUENCE:'+Math.max(0,Number(v.calendarSeq)||0),'DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')];
     if(v.dueTime)lines.push('DTSTART:'+localStamp(v.dueDate,v.dueTime),'DTEND:'+endStamp(v.dueDate,v.dueTime,30));
     else lines.push('DTSTART;VALUE=DATE:'+v.dueDate.replace(/-/g,''),'DTEND;VALUE=DATE:'+addDays(v.dueDate,1).replace(/-/g,''));
-    var description=[v.nextTopic?L('Next topic: ','Próximo tema: ')+v.nextTopic:'',v.leftWith?L('Left: ','Dejó: ')+v.leftWith:'',v.phone?L('Phone: ','Teléfono: ')+v.phone:'',mapLink(v)].filter(Boolean).join('\n');
-    lines.push('SUMMARY:'+icsEscape(L('Return Visit: ','Revisita: ')+v.name),'LOCATION:'+icsEscape(placeLine(v)||coord(v.lat)+', '+coord(v.lng)),'GEO:'+coord(v.lat)+';'+coord(v.lng),'DESCRIPTION:'+icsEscape(description),'URL:'+mapLink(v),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEscape(L('Return Visit: ','Revisita: ')+v.name),v.dueTime?'TRIGGER:-PT'+reminder+'M':'TRIGGER:PT8H','END:VALARM','END:VEVENT','END:VCALENDAR');
+    var link=mapLink(v);
+    var description=[v.nextTopic?L('Next topic: ','Próximo tema: ')+v.nextTopic:'',v.leftWith?L('Left: ','Dejó: ')+v.leftWith:'',v.phone?L('Phone: ','Teléfono: ')+v.phone:'',link].filter(Boolean).join('\n');
+    var location=placeLine(v)||(hasCoords(v)?coord(v.lat)+', '+coord(v.lng):'');
+    lines.push('SUMMARY:'+icsEscape(L('Return Visit: ','Revisita: ')+v.name),'LOCATION:'+icsEscape(location));
+    if(hasCoords(v))lines.push('GEO:'+coord(v.lat)+';'+coord(v.lng));
+    lines.push('DESCRIPTION:'+icsEscape(description));
+    if(link)lines.push('URL:'+link);
+    lines.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEscape(L('Return Visit: ','Revisita: ')+v.name),v.dueTime?'TRIGGER:-PT'+reminder+'M':'TRIGGER:PT8H','END:VALARM','END:VEVENT','END:VCALENDAR');
     return lines.join('\r\n')+'\r\n';
   }
   function googleCalendarUrl(v){
     var dates=v.dueTime?localStamp(v.dueDate,v.dueTime)+'/'+endStamp(v.dueDate,v.dueTime,30):v.dueDate.replace(/-/g,'')+'/'+addDays(v.dueDate,1).replace(/-/g,'');
     var details=[v.nextTopic?L('Next topic: ','Próximo tema: ')+v.nextTopic:'',v.leftWith?L('Left: ','Dejó: ')+v.leftWith:'',mapLink(v)].filter(Boolean).join('\n');
-    var q=new URLSearchParams({action:'TEMPLATE',text:L('Return Visit: ','Revisita: ')+v.name,dates:dates,details:details,location:placeLine(v)||coord(v.lat)+','+coord(v.lng)});
+    var q=new URLSearchParams({action:'TEMPLATE',text:L('Return Visit: ','Revisita: ')+v.name,dates:dates,details:details,location:placeLine(v)||(hasCoords(v)?coord(v.lat)+','+coord(v.lng):'')});
     return 'https://calendar.google.com/calendar/render?'+q.toString();
   }
   function addToCalendar(v){
