@@ -162,3 +162,31 @@ Requested by David in chat on 2026-09-25.
 ## Review
 Supervisor: David
 Review status: NOT REVIEWED
+
+
+## Person-card entry refinement — 2026-09-25
+- New Return Visit and Bible Study entry forms now lead with the same core person information:
+  1. Name
+  2. Phone number
+  3. Address
+  4. Schedule
+  5. Optional type-specific details
+- Phone is recommended, not required. The form explains that adding it enables Call, Text, and WhatsApp after saving.
+- First-time entry screens do not show contact/navigation actions before a record exists.
+- Saved person cards only show actions supported by the information actually present:
+  - Call/Text/WhatsApp only when there is a usable phone number
+  - Email only when there is an email address
+  - Directions / map navigation only when there is an address or map pin
+- A missing phone number produces a small **Add phone** prompt on saved Return Visit and Bible Study cards. It opens Edit and focuses the phone field.
+- Return Visit descriptive house references remain visible, but are no longer treated as a navigation destination unless an address or pin exists.
+- Return Visit list cards no longer show Directions when no address/pin exists.
+- Bible Study cards no longer show empty contact controls.
+- Regular Notes remain note/reminder cards rather than person/contact cards, so phone/address logic does not apply to Notes.
+- PWA cache bumped to **v91-person-card-entry**.
+
+### Verification
+- js/revisits.js syntax passes.
+- js/organizer.js syntax passes.
+- sw.js syntax passes.
+- Static order checks confirm both person forms place Name → Phone → Address before schedule/optional details.
+- Static checks confirm Return Visit directions are conditional and both person types have missing-phone prompts.

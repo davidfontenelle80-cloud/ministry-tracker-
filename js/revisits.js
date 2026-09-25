@@ -79,7 +79,7 @@
   function navigationTarget(v){
     if(!v)return '';
     if(hasCoords(v))return coord(v.lat)+','+coord(v.lng);
-    return String(v.address||v.reference||'').trim();
+    return String(v.address||'').trim();
   }
   function mapLink(v){
     var target=navigationTarget(v);
@@ -206,17 +206,24 @@
   }
   function visitCard(v,compact){
     var phone=telUrl(v.phone);
+    var canNavigate=!!navigationTarget(v);
     var distance=currentLocation&&hasCoords(v)&&global.MinistryRevisitMap?global.MinistryRevisitMap.formatDistance(global.MinistryRevisitMap.haversineKm(currentLocation.lat,currentLocation.lng,v.lat,v.lng)):'';
     var when=v.dueDate?[fmtDate(v.dueDate),v.dueTime?fmtTime(v.dueTime):''].filter(Boolean).join(' · '):L('No date set','Sin fecha');
-    var place=placeLine(v)||L('Pinned location','Ubicación marcada');
+    var place=placeLine(v)||(hasCoords(v)?L('Pinned location','Ubicación marcada'):'');
+    var placeHtml='';
+    if(place){
+      placeHtml=canNavigate
+        ? '<button class="rv-muted rv-place-link" type="button" data-rv-directions="'+esc(v.id)+'"><i class="fa-solid fa-location-dot"></i><span>'+esc(place)+'</span></button>'
+        : '<div class="rv-muted rv-place-link is-static"><i class="fa-solid fa-location-dot"></i><span>'+esc(place)+'</span></div>';
+    }
     return '<article class="rv-card" data-rv-card="'+esc(v.id)+'">'+
       '<div class="rv-card-head"><div class="min-w-0"><div class="rv-card-title">'+esc(v.name)+'</div><div class="rv-card-meta"><span>'+esc(when)+'</span>'+(distance?'<span>'+esc(distance)+'</span>':'')+'</div></div>'+visitStatus(v)+'</div>'+
-      '<button class="rv-muted rv-place-link" type="button" data-rv-directions="'+esc(v.id)+'"><i class="fa-solid fa-location-dot"></i><span>'+esc(place)+'</span></button>'+
+      placeHtml+
       (!compact&&v.nextTopic?'<div class="rv-small"><strong>'+esc(L('Next topic:','Próximo tema:'))+'</strong> '+esc(v.nextTopic)+'</div>':'')+
       '<div class="rv-card-actions">'+
-        '<button class="btn btn-secondary" type="button" data-rv-open="'+esc(v.id)+'"><i class="fa-solid fa-pen"></i>'+esc(L('Open','Abrir'))+'</button>'+
-        (phone?'<a class="btn btn-secondary" href="'+esc(phone)+'"><i class="fa-solid fa-phone"></i>'+esc(L('Call','Llamar'))+'</a>':'')+
-        '<button class="btn btn-secondary" type="button" data-rv-directions="'+esc(v.id)+'"><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Directions','Cómo llegar'))+'</button>'+
+        '<button class="btn btn-secondary" type="button" data-rv-open="'+esc(v.id)+'"><i class="fa-solid fa-arrow-up-right-from-square"></i>'+esc(L('Open','Abrir'))+'</button>'+
+        (phone?'<a class="btn btn-secondary" href="'+esc(phone)+'"><i class="fa-solid fa-phone"></i>'+esc(L('Call','Llamar'))+'</a>':'<button class="btn btn-secondary person-phone-prompt" type="button" data-rv-add-phone="'+esc(v.id)+'"><i class="fa-solid fa-phone-plus"></i>'+esc(L('Add phone','Añadir teléfono'))+'</button>')+
+        (canNavigate?'<button class="btn btn-secondary" type="button" data-rv-directions="'+esc(v.id)+'"><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Directions','Cómo llegar'))+'</button>':'')+
         (v.status!=='completed'?'<button class="btn btn-primary" type="button" data-rv-log="'+esc(v.id)+'"><i class="fa-solid fa-check"></i>'+esc(L('Log visit','Registrar'))+'</button>':'')+
       '</div></article>';
   }
@@ -696,21 +703,23 @@
         '<div id="rvAddressResults" class="rv-address-results"></div></form></div></dialog>'+
       '<dialog id="rvVisitDialog" class="rv-dialog rv-visit-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2 id="rvVisitDialogTitle">'+esc(L('Return Visit','Revisita'))+'</h2><div id="rvVisitCoords" class="rv-muted font-mono"></div></div><button class="rv-icon-btn" data-rv-close-visit>×</button></div>'+
         '<section id="rvVisitView" class="rv-visit-view" hidden>'+
-          '<button id="rvViewPlace" class="rv-view-place" type="button" data-rv-view-directions><i class="fa-solid fa-location-dot"></i><span></span></button>'+
+          '<button id="rvViewPlace" class="rv-view-place" type="button" data-rv-view-directions hidden><i class="fa-solid fa-location-dot"></i><span></span></button>'+
           '<div id="rvViewSchedule" class="rv-view-schedule"></div>'+
-          '<div class="rv-view-primary-actions"><button class="btn btn-primary" type="button" data-rv-view-directions><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Directions','Cómo llegar'))+'</button><button id="rvViewLogBtn" class="btn btn-primary" type="button" data-rv-view-log><i class="fa-solid fa-check"></i>'+esc(L('Log visit','Registrar visita'))+'</button></div>'+
+          '<div class="rv-view-primary-actions"><button id="rvViewDirectionsBtn" class="btn btn-primary" type="button" data-rv-view-directions hidden><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Directions','Cómo llegar'))+'</button><button id="rvViewLogBtn" class="btn btn-primary" type="button" data-rv-view-log><i class="fa-solid fa-check"></i>'+esc(L('Log visit','Registrar visita'))+'</button></div>'+
           '<div id="rvViewContact" class="rv-view-contact" hidden><a id="rvViewCall" class="btn btn-secondary" href="#"><i class="fa-solid fa-phone"></i>'+esc(L('Call','Llamar'))+'</a><a id="rvViewText" class="btn btn-secondary" href="#"><i class="fa-solid fa-message"></i>'+esc(L('Text','Texto'))+'</a><a id="rvViewWhatsapp" class="btn btn-secondary" href="#" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i>WhatsApp</a><a id="rvViewEmail" class="btn btn-secondary" href="#"><i class="fa-solid fa-envelope"></i>'+esc(L('Email','Correo'))+'</a></div>'+
+          '<button id="rvViewAddPhone" class="person-missing-phone" type="button" data-rv-view-add-phone hidden><i class="fa-solid fa-phone-plus"></i><span>'+esc(L('Add a phone number to enable Call, Text and WhatsApp','Añade un teléfono para activar Llamar, Texto y WhatsApp'))+'</span><i class="fa-solid fa-chevron-right"></i></button>'+
           '<dl id="rvViewDetails" class="rv-view-details"></dl>'+
           '<div id="rvViewHistory" class="rv-history" hidden></div>'+
-          '<div class="rv-view-secondary-actions"><button class="btn btn-secondary" type="button" data-rv-view-calendar><i class="fa-solid fa-calendar-plus"></i>'+esc(L('Calendar','Calendario'))+'</button><button id="rvViewReminderBtn" class="btn btn-secondary" type="button" data-rv-view-reminder><i class="fa-solid fa-bell"></i><span>'+esc(L('Set reminder','Poner aviso'))+'</span></button><button class="btn btn-secondary" type="button" data-rv-view-share><i class="fa-solid fa-share-nodes"></i>'+esc(L('Share','Compartir'))+'</button><button class="btn btn-secondary" type="button" data-rv-view-map><i class="fa-solid fa-map-location-dot"></i>'+esc(L('View on map','Ver en mapa'))+'</button><button class="btn btn-secondary" type="button" data-rv-view-edit><i class="fa-solid fa-pen"></i>'+esc(L('Edit','Editar'))+'</button></div>'+
+          '<div class="rv-view-secondary-actions"><button class="btn btn-secondary" type="button" data-rv-view-calendar><i class="fa-solid fa-calendar-plus"></i>'+esc(L('Calendar','Calendario'))+'</button><button id="rvViewReminderBtn" class="btn btn-secondary" type="button" data-rv-view-reminder><i class="fa-solid fa-bell"></i><span>'+esc(L('Set reminder','Poner aviso'))+'</span></button><button class="btn btn-secondary" type="button" data-rv-view-share><i class="fa-solid fa-share-nodes"></i>'+esc(L('Share','Compartir'))+'</button><button id="rvViewMapBtn" class="btn btn-secondary" type="button" data-rv-view-map><i class="fa-solid fa-map-location-dot"></i>'+esc(L('View on map','Ver en mapa'))+'</button><button class="btn btn-secondary" type="button" data-rv-view-edit><i class="fa-solid fa-pen"></i>'+esc(L('Edit','Editar'))+'</button></div>'+
         '</section>'+
         '<form id="rvVisitForm" class="rv-form"><input type="hidden" id="rvVisitId"><input type="hidden" id="rvVisitLat"><input type="hidden" id="rvVisitLng">'+
-          '<label class="rv-field"><span>'+esc(L('Name','Nombre'))+' *</span><input id="rvVisitName" maxlength="120" required autocomplete="off" placeholder="'+esc(L('Example: Smith family, Maria','Ej.: Familia Pérez, doña Carmen'))+'"></label>'+
-          '<label class="rv-field"><span>'+esc(L('Reference / how to find the house','Referencia / cómo encontrar la casa'))+'</span><textarea id="rvVisitReference" maxlength="300" rows="2" placeholder="'+esc(L('Example: green house across from the store','Ej.: casa verde frente al colmado'))+'"></textarea></label>'+
+          '<label class="rv-field"><span>'+esc(L('Name','Nombre'))+' *</span><input id="rvVisitName" maxlength="120" required autocomplete="name" placeholder="'+esc(L('Example: Smith family, Maria','Ej.: Familia Pérez, doña Carmen'))+'"></label>'+
+          '<label class="rv-field"><span>'+esc(L('Phone number','Número de teléfono'))+'</span><input id="rvVisitPhone" type="tel" maxlength="40" autocomplete="tel" placeholder="'+esc(L('Recommended','Recomendado'))+'"><small class="person-field-hint">'+esc(L('Add it now to enable Call, Text and WhatsApp after saving.','Añádelo ahora para activar Llamar, Texto y WhatsApp después de guardar.'))+'</small></label>'+
+          '<label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><div class="rv-field-row"><input id="rvVisitAddress" maxlength="220" autocomplete="street-address" style="flex:1"><button id="rvFindAddressBtn" class="btn btn-secondary" type="button" data-rv-find-address><i class="fa-solid fa-location-dot"></i>'+esc(L('Map','Mapa'))+'</button></div></label>'+
           '<fieldset class="rv-schedule-box"><legend>'+esc(L('When will you return?','¿Cuándo vuelves?'))+'</legend><div class="rv-quick-dates"><button class="rv-chip" type="button" data-rv-date-preset="7">+1 '+esc(L('week','semana'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="14">+2 '+esc(L('weeks','semanas'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="month">+1 '+esc(L('month','mes'))+'</button></div><div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Return date','Volver el'))+'</span><input id="rvVisitDueDate" type="date"></label><label class="rv-field"><span>'+esc(L('Return time','Hora de volver'))+'</span><input id="rvVisitDueTime" type="time" step="60"></label></div><label class="rv-check"><input id="rvVisitNotify" type="checkbox"><span><strong>'+esc(L('App reminder','Aviso en la app'))+'</strong><br><span class="rv-muted">'+esc(L('The phone may ask for notification permission.','El teléfono puede pedir permiso para las notificaciones.'))+'</span></span></label><label class="rv-field"><span>'+esc(L('Minutes before','Minutos antes'))+'</span><input id="rvVisitReminderMinutes" type="number" min="0" max="10080" step="1" value="5"></label></fieldset>'+
           '<details id="rvMoreDetails" class="rv-more-details"><summary>'+esc(L('More details (optional)','Más detalles (opcional)'))+'</summary><div class="rv-more-details-body">'+
-            '<div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Phone / WhatsApp','Teléfono / WhatsApp'))+'</span><input id="rvVisitPhone" type="tel" maxlength="40" autocomplete="tel"></label><label class="rv-field"><span>'+esc(L('Email','Correo electrónico'))+'</span><input id="rvVisitEmail" type="email" maxlength="160" autocomplete="email"></label></div>'+
-            '<label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><div class="rv-field-row"><input id="rvVisitAddress" maxlength="220" autocomplete="street-address" style="flex:1"><button id="rvFindAddressBtn" class="btn btn-secondary" type="button" data-rv-find-address><i class="fa-solid fa-location-dot"></i>'+esc(L('Map','Mapa'))+'</button></div></label>'+
+            '<label class="rv-field"><span>'+esc(L('Reference / how to find the house','Referencia / cómo encontrar la casa'))+'</span><textarea id="rvVisitReference" maxlength="300" rows="2" placeholder="'+esc(L('Example: green house across from the store','Ej.: casa verde frente al colmado'))+'"></textarea></label>'+
+            '<label class="rv-field"><span>'+esc(L('Email','Correo electrónico'))+'</span><input id="rvVisitEmail" type="email" maxlength="160" autocomplete="email"></label>'+
             '<label class="rv-field"><span>'+esc(L('Notes','Notas'))+'</span><textarea id="rvVisitNotes" maxlength="1200" rows="4" placeholder="'+esc(L('What you discussed, what to remember, best time…','Qué hablaron, qué recordar, mejor horario…'))+'"></textarea></label>'+
             '<label class="rv-field"><span>'+esc(L('What you left','Qué le dejaste'))+'</span><input id="rvVisitLeftWith" maxlength="160"></label>'+
             '<label class="rv-field"><span>'+esc(L('Next topic','Tema para la próxima vez'))+'</span><input id="rvVisitNextTopic" maxlength="200"></label>'+
@@ -743,8 +752,9 @@
     }).join('');
   }
   function renderVisitView(v){
-    var place=placeLine(v)||L('Pinned location','Ubicación marcada');
-    var placeEl=dialog('rvViewPlace');if(placeEl){placeEl.querySelector('span').textContent=place;}
+    var canNavigate=!!navigationTarget(v);
+    var place=placeLine(v)||(hasCoords(v)?L('Pinned location','Ubicación marcada'):'');
+    var placeEl=dialog('rvViewPlace');if(placeEl){placeEl.hidden=!canNavigate;placeEl.querySelector('span').textContent=place;}
     var schedule=dialog('rvViewSchedule');if(schedule){
       schedule.textContent=v.status==='completed'?L('In history','En historial'):visitScheduleText(v);
       schedule.className='rv-view-schedule'+(scheduleBucket(v)==='overdue'?' is-overdue':'')+(v.status==='completed'?' is-history':'');
@@ -762,6 +772,9 @@
     }
     var tel=telUrl(v.phone),sms=smsUrl(v.phone),wa=whatsappUrl(v.phone),mail=mailUrl(v.email),contact=dialog('rvViewContact');
     if(contact)contact.hidden=!(tel||sms||wa||mail);
+    var addPhone=dialog('rvViewAddPhone');if(addPhone)addPhone.hidden=!!tel;
+    var directionsBtn=dialog('rvViewDirectionsBtn');if(directionsBtn)directionsBtn.hidden=!canNavigate;
+    var mapBtn=dialog('rvViewMapBtn');if(mapBtn)mapBtn.hidden=!canNavigate;
     var call=dialog('rvViewCall');if(call){call.hidden=!tel;if(tel)call.href=tel;}
     var text=dialog('rvViewText');if(text){text.hidden=!sms;if(sms)text.href=sms;}
     var whatsapp=dialog('rvViewWhatsapp');if(whatsapp){whatsapp.hidden=!wa;if(wa)whatsapp.href=wa;}
@@ -812,7 +825,7 @@
     dialog('rvVisitReminderMinutes').value=v?Math.max(0,Number(v.reminderMinutes)||0):5;
     dialog('rvVisitDialogTitle').textContent=v?v.name:L('New Return Visit','Nueva revisita');
     dialog('rvVisitCoords').textContent=hasCoords(p)?coord(p.lat)+', '+coord(p.lng):L('Address saved — map pin optional','Dirección guardada — el pin del mapa es opcional');
-    var more=dialog('rvMoreDetails');if(more)more.open=Boolean(v&&(v.phone||v.email||v.address||v.notes||v.leftWith||v.nextTopic));
+    var more=dialog('rvMoreDetails');if(more)more.open=Boolean(v&&(v.reference||v.email||v.notes||v.leftWith||v.nextTopic));
     var findAddressBtn=dialog('rvFindAddressBtn');if(findAddressBtn)findAddressBtn.hidden=!v;
     var mode=!v?'new':options.edit?'edit':'view';
     setVisitDialogMode(mode,v);
@@ -879,6 +892,17 @@
         if(e.target.closest('[data-rv-view-share]')){var vs=findActive();if(vs)shareVisit(vs);}
         if(e.target.closest('[data-rv-view-map]')){var vm=findActive();if(vm)showVisitOnMap(vm);}
         if(e.target.closest('[data-rv-view-edit]')){var ve=findActive();if(ve)openEditor(ve.id,null,{edit:true});}
+        var addPhoneBtn=e.target.closest('[data-rv-add-phone]');
+        if(addPhoneBtn){
+          var ap=state.ministryRevisits.find(function(x){return x.id===addPhoneBtn.dataset.rvAddPhone;});
+          if(ap){openEditor(ap.id,null,{edit:true});setTimeout(function(){dialog('rvVisitPhone').focus();},80);}
+          return;
+        }
+        if(e.target.closest('[data-rv-view-add-phone]')){
+          var avp=findActive();
+          if(avp){openEditor(avp.id,null,{edit:true});setTimeout(function(){dialog('rvVisitPhone').focus();},80);}
+          return;
+        }
 
         if(e.target.closest('[data-rv-form-move]')){
           var mv=findActive();if(!mv)return;
