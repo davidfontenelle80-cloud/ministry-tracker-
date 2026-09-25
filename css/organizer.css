@@ -51,3 +51,8 @@
   .org-quick-actions{grid-template-columns:1fr;}
   .org-quick-actions .btn:last-child:nth-child(odd){grid-column:auto;}
 }
+
+@media(max-width:560px){
+  .rv-top-tabs .rv-top-tab{font-size:11px;padding:8px 4px;gap:4px;}
+  .rv-top-tabs .rv-top-tab i{font-size:12px;}
+}
