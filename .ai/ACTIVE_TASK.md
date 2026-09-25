@@ -4,24 +4,67 @@
 READY FOR REVIEW
 
 ## Task
-Bring the integrated Ministry Return Visits experience closer to the standalone Revisita workflow, especially GPS/location behavior, manual address entry, verification, and navigation handoff.
+Bring Ministry Return Visits to functional parity with the important workflows in the standalone Revisita app, with special attention to manual address entry, pin placement, the Return Visit detail sheet, reminders, navigation, import/export, and Return Visit-specific settings.
 
-Requested by David in chat on 2026-09-25 with explicit authorization to implement.
+Requested by David in chat on 2026-09-25.
 
 ## Scope delivered
-- Return Visits requests the device location automatically the first time the Revisits experience is opened during an app session.
-- When permission is granted, the map opens centered on the user's current GPS position.
-- Tapping **Use my location** always makes a fresh browser geolocation request so the browser/OS can prompt for permission when needed.
-- GPS-created visits now go through the same map confirmation step as manually placed pins instead of skipping verification.
-- The confirmation panel shows the reverse-geocoded address, coordinates, and GPS accuracy when available.
-- Added **Enter an address** when creating a revisit.
-- Manual address search geocodes the address and then requires visual pin verification on the map before the visit form opens.
-- Existing revisit addresses can be re-searched on the map to move/verify the saved pin.
-- Address/location text on revisit cards is tappable and starts the navigation flow.
-- Directions can launch Google Maps, Apple Maps, or Waze.
-- By default the navigation popup asks which map app to use; the user can remember a choice for future taps.
-- Existing Today / Map / All views, visit history, calendar handoff, push reminder, import and cloud-backup behavior remain intact.
-- PWA cache version bumped so installed devices receive the updated revisit code and styles.
+- New Return Visit chooser now clearly offers:
+  - **Here — use my location**
+  - **Enter an address**
+  - **Choose on the map**
+- Manual address entry now supports:
+  - browser/mobile street-address autofill
+  - saved-address suggestions from existing Return Visits
+  - up to five address matches instead of silently taking the first result
+  - location-biased search when the user's GPS position is available
+  - manual fallback to place the typed address on the map
+  - map verification before the Return Visit is created
+- Manually entered addresses remain authoritative when the user adjusts the pin.
+- GPS and map-created Return Visits still reverse-geocode the pin automatically.
+- Added explicit **Adjust location** during pin confirmation.
+- Existing pins can be moved and return to the editor afterward.
+- Opening an existing Return Visit now shows a Revisita-style detail sheet instead of dropping straight into edit mode.
+- Detail sheet includes:
+  - name/location and schedule
+  - notes, what was left, next topic and phone
+  - Call and WhatsApp
+  - Directions
+  - Log Visit
+  - Calendar
+  - Set 5-minute reminder
+  - Share
+  - View on map
+  - Edit
+  - visit history
+- New/edit form now follows the standalone Revisita hierarchy more closely:
+  - name
+  - house/reference description
+  - quick scheduling
+  - date/time
+  - app reminder
+  - collapsible optional details
+- Return Visit settings now include:
+  - add to calendar on save
+  - calendar app
+  - calendar alarm: at time / 5 / 15 / 30 / 60 / 120 minutes
+  - default 5-minute app reminder
+  - enable notifications
+  - test notification
+  - navigation app
+  - same-origin import from standalone Revisita
+  - import from a Revisita JSON backup file
+  - export Return Visits in Revisita-compatible JSON
+  - privacy/data explanation
+  - delete all Return Visits
+- Imported Revisita data also brings over compatible navigation/calendar settings.
+- Added **Save area offline** to pre-cache the visible Return Visit map area for rural/offline use.
+- Ministry remains responsible for shared app-wide concerns instead of duplicating them:
+  - theme
+  - language
+  - installation
+  - Ministry cloud backup/account
+- PWA cache bumped to v87 so installed devices receive the new Return Visit code and styles.
 
 ## Files changed
 - js/revisits.js
@@ -30,19 +73,28 @@ Requested by David in chat on 2026-09-25 with explicit authorization to implemen
 - .ai/ACTIVE_TASK.md
 
 ## Verification completed
-- Classic JavaScript syntax compilation passes for js/revisits.js.
-- Service worker syntax compilation passes.
-- Confirmed manual address search, GPS confirmation, navigation chooser, and tappable-location handlers are present on the feature branch.
-- This branch starts from current main.
+- js/revisits.js compiles as classic JavaScript.
+- js/revisit-map.js compiles as classic JavaScript.
+- sw.js compiles as classic JavaScript.
+- Every dialog(...) ID referenced by js/revisits.js exists in the generated dialog markup.
+- Manual address flow, map verification, detail sheet, settings controls, import/export and navigation handlers are present on the feature branch.
 
-## Real-device smoke test still recommended
-1. Open Notes -> Return Visits on iPhone/Android and verify the browser/OS location permission appears when permission has not yet been granted.
-2. Confirm the map centers on the current location after permission is granted.
-3. Tap **Use my location**, verify the accuracy/address/coordinates, then confirm the pin.
-4. Create a revisit by manually entering an address and verify the map pin before saving.
-5. Tap a saved address/location and verify the Google Maps / Apple Maps navigation chooser.
-6. Check that remembering a navigation app sends later taps directly to that app.
-7. Verify existing calendar and 5-minute push reminder behavior still works.
+## Real-device smoke test recommended
+1. Open Notes & Reminders -> Return Visits.
+2. Create a Return Visit by address:
+   - type a street address
+   - verify browser autofill / saved-address suggestions
+   - press Search
+   - select the correct match
+   - confirm/adjust the map pin
+   - verify the full New Return Visit sheet appears with name, reference, schedule, reminder and details.
+3. Create a Return Visit with GPS and with a manually dropped pin.
+4. Open a saved Return Visit from a list card and from a map marker; confirm the detail sheet appears.
+5. Test Call, WhatsApp, Directions, Calendar, Set Reminder, Share, View on Map and Edit.
+6. Edit a saved address and move its pin.
+7. Import a standalone Revisita JSON export and verify visits/settings merge correctly.
+8. Test notification permission and test notification on iPhone Home Screen PWA and Android.
+9. Test Save area offline and reopen the map without network access.
 
 ## Review
 Supervisor: David
