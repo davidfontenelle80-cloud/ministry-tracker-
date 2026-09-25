@@ -455,6 +455,7 @@
     });
     if(prev)state.ministryBibleStudies=state.ministryBibleStudies.map(function(x){return x.id===id?s:x;});else state.ministryBibleStudies.push(s);
     persist();closeDialog('orgStudyEdit');renderStudies();syncStudyPush(s);
+    if(!prev)openStudyDetail(s.id);
     if(D('orgStudyCalendarOnSave').checked)calendarForStudy(s);
     toast(L('Bible Study saved.','Estudio bíblico guardado.'));
   }

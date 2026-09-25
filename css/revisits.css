@@ -257,6 +257,9 @@
   box-shadow:var(--shadow-lg);
   padding:0;
 }
+/* Author display rules (e.g. .rv-visit-view{display:flex}) beat the UA [hidden]
+   rule, which showed the empty action panel on New Return Visit. */
+.rv-dialog [hidden]{display:none !important;}
 .rv-dialog::backdrop{background:var(--color-overlay);backdrop-filter:blur(3px);}
 .rv-dialog-body{padding:var(--space-lg);overflow:auto;max-height:90vh;}
 .rv-dialog-head{

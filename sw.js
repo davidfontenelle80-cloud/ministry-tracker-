@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v93-sheet-width-tab-sync';
+const CACHE_VERSION = 'ministry-tracker-v94-info-first-new-entry';
 
 const PRECACHE_URLS = [
   './',

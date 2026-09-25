@@ -232,3 +232,9 @@ Sweep of the 11 organizer/Return Visit commits found and fixed:
 3. **Spanish tab label wrap:** tab label shortened to "Estudios" (section heading keeps "Estudios bíblicos").
 4. **Return Visits header aligned with Notes/Bible Studies (approved by David):** same `org-heading` (title + description, full-width-row button underneath on phones, label "New Return Visit") followed by the same segmented `org-filter-tabs` bar (3-column `is-3` variant) for Today/Map/All; view switching still via `data-rv-view`.
 - PWA cache bumped to **v93-sheet-width-tab-sync**.
+
+## 2026-09-25 — Info-first new entries (v94, approved by David)
+- **Bug:** New Return Visit showed the empty view-mode action panel (Directions, Log visit, Call/Text/WhatsApp/Email, Calendar, Share, Edit…) above the Name/Phone/Address form. `setVisitDialogMode('new')` set `#rvVisitView.hidden=true`, but `.rv-visit-view{display:flex}` overrode the UA `[hidden]` rule. Fix: `.rv-dialog [hidden]{display:none !important}` (css/revisits.css).
+- **Flow:** saving a *new* Return Visit now opens its card (`openEditor(v.id)` → view mode); saving a *new* Bible Study opens its detail card (`openStudyDetail`). Edits still just close the sheet.
+- New Bible Study form was already info-first (no action buttons) — unchanged.
+- PWA cache bumped to **v94-info-first-new-entry**.

@@ -1032,6 +1032,8 @@
     if(prev)state.ministryRevisits=state.ministryRevisits.map(function(x){return x.id===id?v:x;});
     else state.ministryRevisits.push(v);
     persist();closeDialog('rvVisitDialog');render();
+    // New person: open their card so Directions / Call / Log visit are right there.
+    if(!prev)openEditor(v.id);
     syncPush(v);
     var newSlot=calendarSlot(v);
     if(prev&&prev.calendarSlot&&prev.calendarSlot!==newSlot)toast(L('The old phone calendar event may still need to be removed.','Quizás tengas que borrar manualmente el evento anterior del calendario.'));
