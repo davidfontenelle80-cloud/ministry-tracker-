@@ -349,7 +349,9 @@
     }
     var lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//KHub//Ministry Notes//EN','BEGIN:VEVENT','UID:'+n.id+'@khub','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')];
     if(n.dueTime)lines.push('DTSTART:'+localStamp(n.dueDate,n.dueTime),'DTEND:'+endStamp(n.dueDate,n.dueTime,30));else lines.push('DTSTART;VALUE=DATE:'+n.dueDate.replace(/-/g,''),'DTEND;VALUE=DATE:'+addDays(n.dueDate,1).replace(/-/g,''));
-    lines.push('SUMMARY:'+icsEscape(title),'DESCRIPTION:'+icsEscape(description),'END:VEVENT','END:VCALENDAR');downloadICS('ministry-note-'+n.dueDate+'.ics',lines);
+    lines.push('SUMMARY:'+icsEscape(title),'DESCRIPTION:'+icsEscape(description));
+    if(n.dueTime&&n.reminder)lines.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEscape(title),'TRIGGER:-PT'+Math.max(0,Number(n.reminderMinutes)||15)+'M','END:VALARM');
+    lines.push('END:VEVENT','END:VCALENDAR');downloadICS('ministry-note-'+n.dueDate+'.ics',lines);
   }
   function calendarForStudy(s){
     if(!s.dueDate){toast(L('Set the next study date first.','Primero fija la fecha del próximo estudio.'));return;}
