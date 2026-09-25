@@ -621,50 +621,80 @@
     if(!dialogClicksBound){
       dialogClicksBound=true;
       document.addEventListener('click',function(e){
-      if(e.target.closest('[data-rv-close-new]'))closeDialog('rvNewDialog');
-      if(e.target.closest('[data-rv-close-visit]'))closeDialog('rvVisitDialog');
-      if(e.target.closest('[data-rv-close-log]'))closeDialog('rvLogDialog');
-      if(e.target.closest('[data-rv-close-address]'))closeDialog('rvAddressDialog');
-      if(e.target.closest('[data-rv-close-directions]'))closeDialog('rvDirectionsDialog');
-      if(e.target.closest('[data-rv-new-here]')){
-        closeDialog('rvNewDialog');
-        movePinId='';
-        requestLocation(function(loc){beginGpsPin(loc,'create');},{center:false});
-      }
-      if(e.target.closest('[data-rv-new-map]')){closeDialog('rvNewDialog');view='map';movePinId='';pendingPurpose='create';render();toast(L('Tap the map, then confirm the pin.','Toca el mapa y confirma la ubicación.'));}
-      if(e.target.closest('[data-rv-new-address]')){
-        closeDialog('rvNewDialog');movePinId='';
-        dialog('rvAddressSearch').value='';
-        showDialog('rvAddressDialog');
-        setTimeout(function(){dialog('rvAddressSearch').focus();},60);
-      }
-      if(e.target.closest('[data-rv-find-address]')){
-        var av=findActive();if(!av)return;
-        movePinId=av.id;
-        dialog('rvAddressSearch').value=dialog('rvVisitAddress').value.trim()||av.address||'';
-        closeDialog('rvVisitDialog');showDialog('rvAddressDialog');
-        setTimeout(function(){dialog('rvAddressSearch').focus();},60);
-      }
-      var preset=e.target.closest('[data-rv-date-preset]');
-      if(preset){var val=preset.dataset.rvDatePreset;dialog('rvVisitDueDate').value=val==='month'?addMonths(todayKey(),1):addDays(todayKey(),Number(val));}
-      var lp=e.target.closest('[data-rv-log-preset]');
-      if(lp){var lv=lp.dataset.rvLogPreset;dialog('rvLogDueDate').value=lv==='month'?addMonths(todayKey(),1):addDays(todayKey(),Number(lv));}
-      if(e.target.closest('[data-rv-dialog-calendar]')){var cv=findActive();if(cv)addToCalendar(cv);}
-      if(e.target.closest('[data-rv-dialog-directions]')){var dv=findActive();if(dv)openDirections(dv);}
-      if(e.target.closest('[data-rv-dialog-log]')){var lv2=findActive();if(lv2){closeDialog('rvVisitDialog');openLog(lv2.id);}}
-      if(e.target.closest('[data-rv-dialog-move]')){
-        var mv=findActive();if(!mv)return;
-        movePinId=mv.id;pendingPurpose='move';pendingLocation={lat:mv.lat,lng:mv.lng,address:mv.address||'',accuracy:null};
-        closeDialog('rvVisitDialog');view='map';render();
-      }
-      var nav=e.target.closest('[data-rv-nav-app]');
-      if(nav){
-        var nv=state.ministryRevisits.find(function(x){return x.id===directionsVisitId;});
-        var app=nav.dataset.rvNavApp;
-        if(dialog('rvRememberNav')&&dialog('rvRememberNav').checked){state.revisitSettings.navApp=app;persist();}
-        closeDialog('rvDirectionsDialog');
-        if(nv)global.open(directionsUrl(nv,app),'_blank','noopener');
-      }
+        if(e.target.closest('[data-rv-close-new]'))closeDialog('rvNewDialog');
+        if(e.target.closest('[data-rv-close-visit]'))closeDialog('rvVisitDialog');
+        if(e.target.closest('[data-rv-close-log]'))closeDialog('rvLogDialog');
+        if(e.target.closest('[data-rv-close-address]'))closeDialog('rvAddressDialog');
+        if(e.target.closest('[data-rv-close-directions]'))closeDialog('rvDirectionsDialog');
+
+        if(e.target.closest('[data-rv-new-here]')){
+          closeDialog('rvNewDialog');movePinId='';pendingTypedAddress='';
+          requestLocation(function(loc){beginGpsPin(loc,'create');},{center:false});
+        }
+        if(e.target.closest('[data-rv-new-map]')){
+          closeDialog('rvNewDialog');view='map';movePinId='';pendingPurpose='create';pendingTypedAddress='';pendingLocation=null;
+          render();toast(L('Tap the map, then confirm the pin.','Toca el mapa y confirma la ubicación.'));
+        }
+        if(e.target.closest('[data-rv-new-address]')){
+          closeDialog('rvNewDialog');movePinId='';pendingTypedAddress='';addressSearchResults=[];
+          populateAddressDatalist();
+          dialog('rvAddressSearch').value='';
+          dialog('rvAddressResults').innerHTML='';
+          showDialog('rvAddressDialog');
+          setTimeout(function(){dialog('rvAddressSearch').focus();},60);
+        }
+        if(e.target.closest('[data-rv-find-address]')){
+          var av=findActive();if(!av)return;
+          movePinId=av.id;addressSearchResults=[];
+          populateAddressDatalist();
+          dialog('rvAddressSearch').value=dialog('rvVisitAddress').value.trim()||av.address||'';
+          dialog('rvAddressResults').innerHTML='';
+          closeDialog('rvVisitDialog');showDialog('rvAddressDialog');
+          setTimeout(function(){dialog('rvAddressSearch').focus();},60);
+        }
+        var ar=e.target.closest('[data-rv-address-result]');
+        if(ar){useAddressResult(ar.dataset.rvAddressResult);return;}
+        if(e.target.closest('[data-rv-address-manual-map]')){useTypedAddressOnMap();return;}
+
+        var preset=e.target.closest('[data-rv-date-preset]');
+        if(preset){
+          var val=preset.dataset.rvDatePreset;
+          dialog('rvVisitDueDate').value=val==='month'?addMonths(todayKey(),1):addDays(todayKey(),Number(val));
+        }
+        var lp=e.target.closest('[data-rv-log-preset]');
+        if(lp){
+          var lv=lp.dataset.rvLogPreset;
+          dialog('rvLogDueDate').value=lv==='month'?addMonths(todayKey(),1):addDays(todayKey(),Number(lv));
+        }
+
+        if(e.target.closest('[data-rv-view-directions]')){var vd=findActive();if(vd)openDirections(vd);}
+        if(e.target.closest('[data-rv-view-log]')){var vl=findActive();if(vl){closeDialog('rvVisitDialog');openLog(vl.id);}}
+        if(e.target.closest('[data-rv-view-calendar]')){var vc=findActive();if(vc)addToCalendar(vc);}
+        if(e.target.closest('[data-rv-view-reminder]')){var vr=findActive();if(vr)setReminderForVisit(vr);}
+        if(e.target.closest('[data-rv-view-share]')){var vs=findActive();if(vs)shareVisit(vs);}
+        if(e.target.closest('[data-rv-view-map]')){var vm=findActive();if(vm)showVisitOnMap(vm);}
+        if(e.target.closest('[data-rv-view-edit]')){var ve=findActive();if(ve)openEditor(ve.id,null,{edit:true});}
+
+        if(e.target.closest('[data-rv-form-move]')){
+          var mv=findActive();if(!mv)return;
+          movePinId=mv.id;pendingPurpose='move';pendingTypedAddress=mv.address||'';
+          pendingLocation={lat:mv.lat,lng:mv.lng,address:mv.address||'',accuracy:null};
+          closeDialog('rvVisitDialog');view='map';render();
+          toast(L('Tap another spot to move the pin, or confirm this location.','Toca otro lugar para mover el pin o confirma esta ubicación.'));
+        }
+        if(e.target.closest('[data-rv-cancel-edit]')){
+          var cv=findActive();
+          if(cv)openEditor(cv.id);else closeDialog('rvVisitDialog');
+        }
+
+        var nav=e.target.closest('[data-rv-nav-app]');
+        if(nav){
+          var nv=state.ministryRevisits.find(function(x){return x.id===directionsVisitId;});
+          var app=nav.dataset.rvNavApp;
+          if(dialog('rvRememberNav')&&dialog('rvRememberNav').checked){state.revisitSettings.navApp=app;persist();}
+          closeDialog('rvDirectionsDialog');
+          if(nv)global.open(directionsUrl(nv,app),'_blank','noopener');
+        }
       });
     }
     dialog('rvVisitForm').addEventListener('submit',saveVisit);
@@ -672,13 +702,48 @@
     dialog('rvLogForm').addEventListener('submit',saveLog);
     dialog('rvAddressForm').addEventListener('submit',function(e){
       e.preventDefault();
-      var q=dialog('rvAddressSearch').value.trim();
-      if(!q)return;
+      var q=dialog('rvAddressSearch').value.trim();if(!q)return;
       var submit=e.submitter;if(submit)submit.disabled=true;
       searchAddressToMap(q).finally(function(){if(submit)submit.disabled=false;});
     });
   }
   function findActive(){return state.ministryRevisits.find(function(v){return v.id===activeVisitId;});}
+  function showVisitOnMap(v){
+    if(!v)return;
+    closeDialog('rvVisitDialog');
+    view='map';mapMode=v.status==='completed'?'all':'active';
+    state.revisitMap={lat:v.lat,lng:v.lng,zoom:17,manual:true};
+    persist();render();
+    requestAnimationFrame(function(){if(map)map.setView(v.lat,v.lng,17);});
+  }
+  function shareVisit(v){
+    if(!v)return;
+    var url=mapLink(v);
+    var text=[v.name,placeLine(v),v.dueDate?visitScheduleText(v):'',url].filter(Boolean).join('\n');
+    if(navigator.share){
+      navigator.share({title:L('Return Visit: ','Revisita: ')+v.name,text:text}).catch(function(err){
+        if(err&&err.name!=='AbortError')toast(L('Could not share this Return Visit.','No se pudo compartir esta revisita.'));
+      });
+      return;
+    }
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){toast(L('Return Visit copied.','Revisita copiada.'));}).catch(function(){toast(L('Could not copy the Return Visit.','No se pudo copiar la revisita.'));});
+    }
+  }
+  function setReminderForVisit(v){
+    if(!v)return;
+    if(!v.dueDate||!v.dueTime){
+      toast(L('Set a return date and time first.','Primero fija una fecha y hora para volver.'));
+      openEditor(v.id,null,{edit:true});
+      return;
+    }
+    var next=Object.assign({},v,{notify5Min:true,updatedAt:nowIso()});
+    state.ministryRevisits=state.ministryRevisits.map(function(x){return x.id===v.id?next:x;});
+    persist();renderVisitView(next);
+    Promise.resolve(syncPush(next)).then(function(result){
+      if(!result||result.ok!==false)toast(L('Reminder set for 5 minutes before.','Aviso programado 5 minutos antes.'));
+    });
+  }
 
   function saveVisit(e){
     e.preventDefault();
