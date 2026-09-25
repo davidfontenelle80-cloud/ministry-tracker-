@@ -89,6 +89,7 @@ const APP_CONFIG = {
         // Separate from service `categories`. Migration-safe: existing users get [] on first load.
     ministryNoteCategories: [],
     ministryNotes: [],
+    ministryBibleStudies: [],
   },
 };
 
