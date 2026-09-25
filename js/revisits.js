@@ -13,7 +13,9 @@
   var currentLocation=null;
   var pendingLocation=null;
   var pendingPurpose='create';
+  var pendingTypedAddress='';
   var movePinId='';
+  var addressSearchResults=[];
   var map=null;
   var initialized=false;
   var activeVisitId='';
@@ -276,12 +278,15 @@
     map=new global.MinistryRevisitMap.SimpleMap(el,state.revisitMap);
     map.onViewChange=function(p){state.revisitMap={lat:p.lat,lng:p.lng,zoom:p.zoom,manual:true};persist();};
     map.onTap=function(ll){
-      pendingLocation={lat:ll.lat,lng:ll.lng,address:'',accuracy:null};
+      pendingLocation={lat:ll.lat,lng:ll.lng,address:pendingTypedAddress||'',accuracy:null};
       pendingPurpose=movePinId?'move':'create';
       map.setDraft(ll.lat,ll.lng);
       refreshConfirmPanel();
       reverseGeocode(ll.lat,ll.lng).then(function(address){
-        if(pendingLocation){pendingLocation.address=address||'';refreshConfirmPanel();}
+        if(pendingLocation){
+          pendingLocation.address=address||pendingTypedAddress||pendingLocation.address||'';
+          refreshConfirmPanel();
+        }
       });
     };
     map.onMarkerTap=function(id){openEditor(id);};
@@ -348,6 +353,7 @@
   }
   function beginGpsPin(loc,purpose){
     pendingPurpose=purpose||'create';
+    pendingTypedAddress='';
     pendingLocation={lat:loc.lat,lng:loc.lng,address:'',accuracy:Number.isFinite(loc.accuracy)?loc.accuracy:null};
     view='map';
     render();
