@@ -4,12 +4,12 @@
 READY FOR REVIEW
 
 ## Task
-Bring the integrated Ministry Revisits experience closer to the standalone Revisita workflow, especially GPS/location behavior, manual address entry, verification, and navigation handoff.
+Bring the integrated Ministry Return Visits experience closer to the standalone Revisita workflow, especially GPS/location behavior, manual address entry, verification, and navigation handoff.
 
 Requested by David in chat on 2026-09-25 with explicit authorization to implement.
 
 ## Scope delivered
-- Revisits requests the device location automatically the first time the Revisits experience is opened during an app session.
+- Return Visits requests the device location automatically the first time the Revisits experience is opened during an app session.
 - When permission is granted, the map opens centered on the user's current GPS position.
 - Tapping **Use my location** always makes a fresh browser geolocation request so the browser/OS can prompt for permission when needed.
 - GPS-created visits now go through the same map confirmation step as manually placed pins instead of skipping verification.
@@ -36,7 +36,7 @@ Requested by David in chat on 2026-09-25 with explicit authorization to implemen
 - This branch starts from current main.
 
 ## Real-device smoke test still recommended
-1. Open Notes -> Revisits on iPhone/Android and verify the browser/OS location permission appears when permission has not yet been granted.
+1. Open Notes -> Return Visits on iPhone/Android and verify the browser/OS location permission appears when permission has not yet been granted.
 2. Confirm the map centers on the current location after permission is granted.
 3. Tap **Use my location**, verify the accuracy/address/coordinates, then confirm the pin.
 4. Create a revisit by manually entering an address and verify the map pin before saving.
