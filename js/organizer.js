@@ -561,6 +561,7 @@
     };
     if(global.KHub&&typeof global.KHub.on==='function')global.KHub.on('notification:route',routeNotification);
     setTimeout(function(){
+      if(!('Notification' in global)||Notification.permission!=='granted')return;
       (state.ministryBibleStudies||[]).forEach(function(s){
         if(s.status!=='completed'&&s.notify&&s.dueDate&&s.dueTime)syncStudyPush(s);
       });
