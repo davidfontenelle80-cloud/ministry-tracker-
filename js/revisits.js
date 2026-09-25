@@ -863,9 +863,17 @@
         if(e.target.closest('[data-rv-form-move]')){
           var mv=findActive();if(!mv)return;
           movePinId=mv.id;pendingPurpose='move';pendingTypedAddress=mv.address||'';
-          pendingLocation={lat:mv.lat,lng:mv.lng,address:mv.address||'',accuracy:null};
-          closeDialog('rvVisitDialog');view='map';render();
-          toast(L('Tap another spot to move the pin, or confirm this location.','Toca otro lugar para mover el pin o confirma esta ubicación.'));
+          closeDialog('rvVisitDialog');
+          if(hasCoords(mv)){
+            pendingLocation={lat:mv.lat,lng:mv.lng,address:mv.address||'',accuracy:null};
+            view='map';render();
+            toast(L('Tap another spot to move the pin, or confirm this location.','Toca otro lugar para mover el pin o confirma esta ubicación.'));
+          }else if(mv.address){
+            searchAddressToMap(mv.address);
+          }else{
+            pendingLocation=null;view='map';render();
+            toast(L('Tap the map to add a pin.','Toca el mapa para añadir un pin.'));
+          }
         }
         if(e.target.closest('[data-rv-cancel-edit]')){
           var cv=findActive();
@@ -878,7 +886,7 @@
           var app=nav.dataset.rvNavApp;
           if(dialog('rvRememberNav')&&dialog('rvRememberNav').checked){state.revisitSettings.navApp=app;persist();}
           closeDialog('rvDirectionsDialog');
-          if(nv)global.open(directionsUrl(nv,app),'_blank','noopener');
+          if(nv){var navUrl=directionsUrl(nv,app);if(navUrl)global.open(navUrl,'_blank','noopener');}
         }
       });
     }
@@ -894,10 +902,22 @@
   function showVisitOnMap(v){
     if(!v)return;
     closeDialog('rvVisitDialog');
-    view='map';mapMode=v.status==='completed'?'all':'active';
-    state.revisitMap={lat:v.lat,lng:v.lng,zoom:17,manual:true};
-    persist();render();
-    requestAnimationFrame(function(){if(map)map.setView(v.lat,v.lng,17);});
+    movePinId=v.id;
+    pendingPurpose='move';
+    pendingTypedAddress=v.address||'';
+    if(hasCoords(v)){
+      view='map';mapMode=v.status==='completed'?'all':'active';
+      state.revisitMap={lat:v.lat,lng:v.lng,zoom:17,manual:true};
+      persist();render();
+      requestAnimationFrame(function(){if(map)map.setView(v.lat,v.lng,17);});
+      return;
+    }
+    if(v.address){
+      searchAddressToMap(v.address);
+      return;
+    }
+    view='map';mapMode=v.status==='completed'?'all':'active';pendingLocation=null;render();
+    toast(L('This Return Visit has no map pin yet. Tap the map to add one.','Esta revisita todavía no tiene pin. Toca el mapa para añadirlo.'));
   }
   function shareVisit(v){
     if(!v)return;
@@ -949,7 +969,8 @@
       status:prev?prev.status:'active',
       completedAt:prev?prev.completedAt:null,
       history:prev?prev.history:[],
-      lat:Number(dialog('rvVisitLat').value),lng:Number(dialog('rvVisitLng').value),
+      lat:dialog('rvVisitLat').value===''?null:Number(dialog('rvVisitLat').value),
+      lng:dialog('rvVisitLng').value===''?null:Number(dialog('rvVisitLng').value),
       createdAt:prev?prev.createdAt:nowIso(),updatedAt:nowIso()
     });
     if(!v)return;
@@ -1064,8 +1085,13 @@
   }
   function openDirections(v){
     if(!v)return;
+    if(!navigationTarget(v)){toast(L('Add an address or map pin first.','Primero añade una dirección o un pin en el mapa.'));return;}
     var app=state.revisitSettings.navApp||'ask';
-    if(app&&app!=='ask'&&app!=='auto'){global.open(directionsUrl(v,app),'_blank','noopener');return;}
+    if(app&&app!=='ask'&&app!=='auto'){
+      var directUrl=directionsUrl(v,app);
+      if(directUrl)global.open(directUrl,'_blank','noopener');
+      return;
+    }
     ensureDialogs();
     directionsVisitId=v.id;
     var name=dialog('rvDirectionsName');if(name)name.textContent=[v.name,placeLine(v)].filter(Boolean).join(' · ');
