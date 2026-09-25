@@ -18,6 +18,7 @@
   var initialized=false;
   var activeVisitId='';
   var importChecked=false;
+  var dialogClicksBound=false;
 
   function L(en,es){return state.lang==='es'?es:en;}
   function esc(v){
@@ -124,7 +125,7 @@
     var n=notesRoot(),r=root();
     if(n)n.classList.toggle('hidden',mode!=='notes');
     if(r)r.classList.toggle('hidden',mode!=='revisits');
-    document.querySelectorAll('[data-notes-mode]').forEach(function(b){b.classList.toggle('is-active',b.dataset.notesMode===mode);});
+    document.querySelectorAll('[data-notes-mode]').forEach(function(b){var on=b.dataset.notesMode===mode;b.classList.toggle('is-active',on);b.setAttribute('aria-selected',on?'true':'false');});
     var noteLabel=document.getElementById('notesModeNotesLabel');
     var rvLabel=document.getElementById('notesModeRevisitsLabel');
     if(noteLabel)noteLabel.textContent=L('Notes','Notas');
@@ -335,6 +336,7 @@
   function ensureDialogs(){
     if(document.getElementById('rvVisitDialog'))return;
     var wrap=document.createElement('div');
+    wrap.id='rvDialogsHost';
     wrap.innerHTML=
       '<dialog id="rvNewDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('New revisit','Nueva revisita'))+'</h2><div class="rv-muted">'+esc(L('Where is the person?','¿Dónde está la persona?'))+'</div></div><button class="rv-icon-btn" data-rv-close-new>×</button></div><div class="rv-list"><button class="btn btn-primary w-full" data-rv-new-here><i class="fa-solid fa-location-crosshairs"></i>'+esc(L('Here — use my location','Aquí — usar mi ubicación'))+'</button><button class="btn btn-secondary w-full" data-rv-new-map><i class="fa-solid fa-map-pin"></i>'+esc(L('Choose on map','Elegir en el mapa'))+'</button></div></div></dialog>'+
       '<dialog id="rvVisitDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2 id="rvVisitDialogTitle">'+esc(L('Revisit','Revisita'))+'</h2><div id="rvVisitCoords" class="rv-muted font-mono"></div></div><button class="rv-icon-btn" data-rv-close-visit>×</button></div><div id="rvExistingActions" class="rv-card-actions"></div><form id="rvVisitForm" class="rv-form"><input type="hidden" id="rvVisitId"><input type="hidden" id="rvVisitLat"><input type="hidden" id="rvVisitLng">'+
@@ -396,7 +398,9 @@
   }
 
   function bindDialogs(){
-    document.addEventListener('click',function(e){
+    if(!dialogClicksBound){
+      dialogClicksBound=true;
+      document.addEventListener('click',function(e){
       if(e.target.closest('[data-rv-close-new]'))closeDialog('rvNewDialog');
       if(e.target.closest('[data-rv-close-visit]'))closeDialog('rvVisitDialog');
       if(e.target.closest('[data-rv-close-log]'))closeDialog('rvLogDialog');
@@ -419,7 +423,8 @@
         movePinId=mv.id;pendingPurpose='move';pendingLocation={lat:mv.lat,lng:mv.lng,address:mv.address||''};
         closeDialog('rvVisitDialog');view='map';render();
       }
-    });
+      });
+    }
     dialog('rvVisitForm').addEventListener('submit',saveVisit);
     dialog('rvDeleteBtn').addEventListener('click',deleteActive);
     dialog('rvLogForm').addEventListener('submit',saveLog);
@@ -618,10 +623,10 @@
   }
 
   function init(){
-    if(initialized)return;initialized=true;ensureState();ensureDialogs();bindRoot();
+    if(initialized)return;initialized=true;ensureState();bindRoot();
     document.querySelectorAll('[data-notes-mode]').forEach(function(b){b.addEventListener('click',function(){activate(b.dataset.notesMode);});});
     document.addEventListener('click',function(e){
-      if(e.target.closest('#langToggle'))setTimeout(function(){if(mode==='revisits')render();activate(mode);},30);
+      if(e.target.closest('#langToggle'))setTimeout(function(){var host=document.getElementById('rvDialogsHost');if(host)host.remove();if(mode==='revisits')render();activate(mode);},30);
       var nav=e.target.closest('.nav-btn[data-screen="notes"]');if(nav)setTimeout(function(){activate(mode);},30);
     },true);
     activate('notes');
