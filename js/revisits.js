@@ -535,11 +535,32 @@
     });
     toast(L('Tap the correct spot on the map, then confirm the pin.','Toca el lugar correcto en el mapa y luego confirma la ubicación.'));
   }
+  function continueWithTypedAddress(){
+    var input=dialog('rvAddressSearch');
+    var query=input?input.value.trim():'';
+    if(!query)return;
+    pendingTypedAddress=query;
+    pendingLocation=null;
+    closeDialog('rvAddressDialog');
+    openEditor(null,{lat:null,lng:null,address:query},{addressOnly:true});
+  }
   function searchAddressToMap(query){
+    query=String(query||'').trim();
+    if(!query)return Promise.resolve([]);
     toast(L('Finding address…','Buscando dirección…'));
     return forwardGeocode(query).then(function(results){
-      renderAddressResults(results,query);
-      if(!results.length)toast(L('Choose the location manually on the map if needed.','Si hace falta, elige la ubicación manualmente en el mapa.'));
+      if(results.length){
+        useAddressResult(0);
+        return results;
+      }
+      pendingTypedAddress=query;
+      pendingLocation=null;
+      pendingPurpose=movePinId?'move':'create';
+      view='map';
+      closeDialog('rvAddressDialog');
+      render();
+      requestAnimationFrame(function(){if(map&&currentLocation)map.setView(currentLocation.lat,currentLocation.lng,17);});
+      toast(L('Address not found automatically. Tap the correct spot on the map.','No se encontró la dirección automáticamente. Toca el lugar correcto en el mapa.'));
       return results;
     });
   }
@@ -654,9 +675,9 @@
         '<button class="rv-choice-btn" type="button" data-rv-new-address><i class="fa-solid fa-location-dot"></i><span><strong>'+esc(L('Enter an address','Escribir una dirección'))+'</strong><small>'+esc(L('Search the address and verify the pin.','Busca la dirección y verifica el pin.'))+'</small></span></button>'+
         '<button class="rv-choice-btn" type="button" data-rv-new-map><i class="fa-solid fa-map-pin"></i><span><strong>'+esc(L('Choose on the map','Elegir en el mapa'))+'</strong><small>'+esc(L('Drop the pin exactly where you want it.','Coloca el pin exactamente donde quieras.'))+'</small></span></button>'+
       '</div></div></dialog>'+
-      '<dialog id="rvAddressDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Find an address','Buscar una dirección'))+'</h2><div class="rv-muted">'+esc(L('Enter the address, choose the best match, then verify the pin.','Escribe la dirección, elige la mejor coincidencia y verifica el pin.'))+'</div></div><button class="rv-icon-btn" data-rv-close-address>×</button></div>'+
+      '<dialog id="rvAddressDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Enter an address','Escribir una dirección'))+'</h2><div class="rv-muted">'+esc(L('You can continue with the address alone, or use the map to verify or place a pin.','Puedes continuar solo con la dirección o usar el mapa para verificarla o colocar un pin.'))+'</div></div><button class="rv-icon-btn" data-rv-close-address>×</button></div>'+
         '<form id="rvAddressForm" class="rv-form"><label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><input id="rvAddressSearch" type="text" maxlength="220" list="rvAddressDatalist" autocomplete="street-address" autocapitalize="words" spellcheck="false" required placeholder="'+esc(L('Street, city, state or area','Calle, ciudad, estado o sector'))+'"><datalist id="rvAddressDatalist"></datalist></label>'+
-        '<div class="rv-address-actions"><button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i>'+esc(L('Search address','Buscar dirección'))+'</button><button class="btn btn-secondary" type="button" data-rv-address-manual-map><i class="fa-solid fa-map-pin"></i>'+esc(L('Place it on map','Colocarla en el mapa'))+'</button></div>'+
+        '<div class="rv-address-actions"><button class="btn btn-primary" type="submit"><i class="fa-solid fa-arrow-right"></i>'+esc(L('Continue','Continuar'))+'</button><button class="btn btn-secondary" type="button" data-rv-address-map-search><i class="fa-solid fa-map-pin"></i>'+esc(L('Find on map','Buscar en el mapa'))+'</button></div>'+
         '<div id="rvAddressResults" class="rv-address-results"></div></form></div></dialog>'+
       '<dialog id="rvVisitDialog" class="rv-dialog rv-visit-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2 id="rvVisitDialogTitle">'+esc(L('Return Visit','Revisita'))+'</h2><div id="rvVisitCoords" class="rv-muted font-mono"></div></div><button class="rv-icon-btn" data-rv-close-visit>×</button></div>'+
         '<section id="rvVisitView" class="rv-visit-view" hidden>'+
@@ -757,8 +778,8 @@
     var p=v||coords;if(!p)return;
     activeVisitId=v?v.id:'';
     dialog('rvVisitId').value=v?v.id:'';
-    dialog('rvVisitLat').value=p.lat;
-    dialog('rvVisitLng').value=p.lng;
+    dialog('rvVisitLat').value=hasCoords(p)?p.lat:'';
+    dialog('rvVisitLng').value=hasCoords(p)?p.lng:'';
     dialog('rvVisitName').value=v?v.name:'';
     dialog('rvVisitPhone').value=v?v.phone:'';
     dialog('rvVisitReference').value=v?v.reference:'';
@@ -770,7 +791,7 @@
     dialog('rvVisitDueTime').value=v?v.dueTime:'';
     dialog('rvVisitNotify').checked=v?v.notify5Min!==false:state.revisitSettings.pushReminderDefault!==false;
     dialog('rvVisitDialogTitle').textContent=v?v.name:L('New Return Visit','Nueva revisita');
-    dialog('rvVisitCoords').textContent=coord(p.lat)+', '+coord(p.lng);
+    dialog('rvVisitCoords').textContent=hasCoords(p)?coord(p.lat)+', '+coord(p.lng):L('Address saved — map pin optional','Dirección guardada — el pin del mapa es opcional');
     var more=dialog('rvMoreDetails');if(more)more.open=Boolean(v&&(v.phone||v.address||v.notes||v.leftWith||v.nextTopic));
     var findAddressBtn=dialog('rvFindAddressBtn');if(findAddressBtn)findAddressBtn.hidden=!v;
     var mode=!v?'new':options.edit?'edit':'view';
@@ -815,7 +836,10 @@
         }
         var ar=e.target.closest('[data-rv-address-result]');
         if(ar){useAddressResult(ar.dataset.rvAddressResult);return;}
-        if(e.target.closest('[data-rv-address-manual-map]')){useTypedAddressOnMap();return;}
+        if(e.target.closest('[data-rv-address-map-search]')){
+          var mq=dialog('rvAddressSearch').value.trim();if(!mq)return;
+          searchAddressToMap(mq);return;
+        }
 
         var preset=e.target.closest('[data-rv-date-preset]');
         if(preset){
@@ -863,9 +887,7 @@
     dialog('rvLogForm').addEventListener('submit',saveLog);
     dialog('rvAddressForm').addEventListener('submit',function(e){
       e.preventDefault();
-      var q=dialog('rvAddressSearch').value.trim();if(!q)return;
-      var submit=e.submitter;if(submit)submit.disabled=true;
-      searchAddressToMap(q).finally(function(){if(submit)submit.disabled=false;});
+      continueWithTypedAddress();
     });
   }
   function findActive(){return state.ministryRevisits.find(function(v){return v.id===activeVisitId;});}
