@@ -30,6 +30,7 @@
   <link rel="stylesheet" href="css/responsive.css" />
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/notes-card-borders.css" />
+  <link rel="stylesheet" href="css/revisits.css" />
 
   <title>Ministry Tracker</title>
 </head>
@@ -557,12 +558,23 @@
     <div id="calNotesPanel" class="hidden"></div>
   </section>
 
-  <!-- ===== NOTES & REMINDERS (Stage A placeholder) ===== -->
+  <!-- ===== NOTES, REMINDERS & REVISITS ===== -->
   <section id="screen-notes" class="screen">
     <div class="screen-header">
       <h1 class="screen-title" id="lbl_navNotes">Notes &amp; Reminders</h1>
     </div>
+    <div class="rv-top-tabs px-4" role="tablist" aria-label="Notes and revisits">
+      <button id="notesModeNotes" class="rv-top-tab is-active" type="button" data-notes-mode="notes" role="tab" aria-selected="true">
+        <i class="fa-solid fa-note-sticky"></i>
+        <span id="notesModeNotesLabel">Notes</span>
+      </button>
+      <button id="notesModeRevisits" class="rv-top-tab" type="button" data-notes-mode="revisits" role="tab" aria-selected="false">
+        <i class="fa-solid fa-location-dot"></i>
+        <span id="notesModeRevisitsLabel">Revisits</span>
+      </button>
+    </div>
     <div id="notesContent" class="px-4 pb-safe"></div>
+    <div id="revisitsContent" class="px-4 pb-safe hidden" aria-live="polite"></div>
   </section>
 
   <!-- ===== REPORTS ===== -->
@@ -910,6 +922,8 @@
   <script src="js/push-config.js"></script>
   <script src="js/push.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/revisit-map.js"></script>
+  <script src="js/revisits.js"></script>
 
 </body>
 </html>

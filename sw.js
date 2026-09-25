@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v82-pause-resume';
+const CACHE_VERSION = 'ministry-tracker-v83-revisits';
 
 const PRECACHE_URLS = [
   './',
@@ -13,6 +13,7 @@ const PRECACHE_URLS = [
   './css/components.css',
   './css/responsive.css',
   './css/notes-card-borders.css',
+  './css/revisits.css',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './js/config.js',
@@ -30,6 +31,8 @@ const PRECACHE_URLS = [
   './js/push.js',
   './js/push-toggle.js',
   './js/app.js',
+  './js/revisit-map.js',
+  './js/revisits.js',
   './js/firebase/firebase-config.js',
   './js/firebase/cloud-backup.js',
 ];
@@ -82,7 +85,7 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) {
     // v60: runtime-cache CDN assets (Font Awesome, Google Fonts) so nav icons
     // and fonts survive offline / CDN hiccups.
-    if (/(^|\.)(cdnjs\.cloudflare\.com|fonts\.googleapis\.com|fonts\.gstatic\.com)$/.test(url.hostname)) {
+    if (/(^|\.)(cdnjs\.cloudflare\.com|fonts\.googleapis\.com|fonts\.gstatic\.com|tile\.openstreetmap\.org)$/.test(url.hostname)) {
       event.respondWith(
         caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
           if (response && (response.status === 200 || response.type === 'opaque')) {
