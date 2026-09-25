@@ -89,6 +89,7 @@ const APP_CONFIG = {
         // Separate from service `categories`. Migration-safe: existing users get [] on first load.
     ministryNoteCategories: [],
     ministryNotes: [],
+    ministryBibleStudies: [],
   },
 };
 
@@ -1513,6 +1514,9 @@ function renderAll() {
   renderHome(); renderTimer(); renderCalendar(); renderNotes(); renderReports(); renderLogHistory(); renderSettings();
   applyI18n();
   renderBackupBanner();
+  if (window.MinistryOrganizer && typeof window.MinistryOrganizer.refreshDashboard === 'function') {
+    window.MinistryOrganizer.refreshDashboard();
+  }
 }
 
 function applyI18n() {
@@ -2471,6 +2475,10 @@ function renderLog() {
 
 /* ---------- NOTES & REMINDERS (Stage A placeholder) ---------- */
 function renderNotes() {
+  if (window.MinistryOrganizer && typeof window.MinistryOrganizer.renderNotes === 'function') {
+    window.MinistryOrganizer.renderNotes();
+    return;
+  }
   const scr = document.getElementById('notesContent');
   if (!scr) return;
   injectMinistryNotesPolishCss();
