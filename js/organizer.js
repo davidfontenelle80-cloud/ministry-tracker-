@@ -46,7 +46,7 @@
   function telUrl(phone){return digits(phone).length>=7?'tel:'+String(phone).replace(/[^\d+]/g,''):'';}
   function smsUrl(phone){return digits(phone).length>=7?'sms:'+String(phone).replace(/[^\d+]/g,''):'';}
   function whatsappUrl(phone){var d=digits(phone);return d.length>=7?'https://wa.me/'+d:'';}
-  function mailUrl(email){email=String(email||'').trim();return email&&email.indexOf('@')>0?'mailto:'+encodeURIComponent(email):'';}
+  function mailUrl(email){email=String(email||'').trim();return email&&email.indexOf('@')>0?'mailto:'+email:'';}
   function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
   function reminderMinutes(v,def){var n=Number(v&&v.reminderMinutes);return Number.isFinite(n)&&n>=0?n:def;}
   function scheduleText(v){
@@ -505,7 +505,8 @@
     D('orgQuickSchedule').textContent=scheduleText(rec);
     D('orgQuickPlace').textContent=rec.address||rec.reference||'';
     var acts=[];
-    if(rec.address||rec.reference)acts.push('<button class="btn btn-primary" type="button" data-org-quick-nav="'+sourceType+'" data-org-id="'+esc(id)+'"><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Navigate','Navegar'))+'</button>');
+    var quickHasCoords=rec.lat!==null&&rec.lat!==undefined&&rec.lat!==''&&rec.lng!==null&&rec.lng!==undefined&&rec.lng!==''&&Number.isFinite(Number(rec.lat))&&Number.isFinite(Number(rec.lng));
+    if(rec.address||rec.reference||quickHasCoords)acts.push('<button class="btn btn-primary" type="button" data-org-quick-nav="'+sourceType+'" data-org-id="'+esc(id)+'"><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Navigate','Navegar'))+'</button>');
     if(telUrl(rec.phone))acts.push('<a class="btn btn-primary" href="'+esc(telUrl(rec.phone))+'"><i class="fa-solid fa-phone"></i>'+esc(L('Call','Llamar'))+'</a>');
     acts.push('<button class="btn btn-secondary" type="button" data-org-quick-open="'+sourceType+'" data-org-id="'+esc(id)+'"><i class="fa-solid fa-arrow-up-right-from-square"></i>'+esc(L('Full Card','Tarjeta completa'))+'</button>');
     D('orgQuickActions').innerHTML=acts.join('');
