@@ -258,6 +258,7 @@
   function renderMap(){
     var html=heading(L('Return Visit map','Mapa de revisitas'),L('Tap the map to place or move a pin.','Toca el mapa para colocar o mover un pin.'),true);
     html+='<div class="rv-filter-row">'+mapChip('today',L('Today','Hoy'))+mapChip('active',L('Active','Activas'))+mapChip('all',L('All','Todas'))+mapChip('nearby',L('Nearby','Cerca'))+'</div>';
+    html+='<div class="rv-map-toolbar"><span class="rv-muted">'+esc(L('Pins can be adjusted before you save them.','Puedes ajustar los pines antes de guardarlos.'))+'</span><button class="btn btn-secondary" type="button" data-rv-save-zone><i class="fa-solid fa-download"></i>'+esc(L('Save area offline','Guardar zona'))+'</button></div>';
     html+='<div class="rv-map-shell" id="rvMapShell"><div class="rv-map" id="rvMap" role="application" aria-label="'+esc(L('Map of return visits','Mapa de revisitas'))+'"></div>'+
       '<div class="rv-map-controls"><button class="rv-map-control" data-rv-zoom="1" aria-label="'+esc(L('Zoom in','Acercar'))+'">+</button><button class="rv-map-control" data-rv-zoom="-1" aria-label="'+esc(L('Zoom out','Alejar'))+'">−</button></div>'+
       '<button class="btn btn-secondary rv-locate" type="button" data-rv-locate><i class="fa-solid fa-location-crosshairs"></i>'+esc(L('Use my location','Usar mi ubicación'))+'</button>'+
@@ -375,6 +376,54 @@
     var postal=a.postcode||'';
     return [street,area,city,stateName,postal].filter(function(x,i,arr){return x&&arr.indexOf(x)===i;}).join(', ');
   }
+  function zoneTileUrls(bounds,zooms,max){
+    max=max||200;var urls=[];
+    function tile(lat,lng,z){
+      var n=Math.pow(2,z);
+      var x=Math.floor((lng+180)/360*n);
+      var latRad=Math.max(-85.05112878,Math.min(85.05112878,lat))*Math.PI/180;
+      var y=Math.floor((1-Math.asinh(Math.tan(latRad))/Math.PI)/2*n);
+      return {x:x,y:y,n:n};
+    }
+    zooms.forEach(function(z){
+      if(urls.length>=max)return;
+      var nw=tile(bounds.north,bounds.west,z),se=tile(bounds.south,bounds.east,z);
+      for(var x=nw.x;x<=se.x&&urls.length<max;x++){
+        for(var y=nw.y;y<=se.y&&urls.length<max;y++){
+          if(y<0||y>=nw.n)continue;
+          var wrapped=((x%nw.n)+nw.n)%nw.n;
+          urls.push('https://tile.openstreetmap.org/'+z+'/'+wrapped+'/'+y+'.png');
+        }
+      }
+    });
+    return urls;
+  }
+  function saveOfflineZone(){
+    if(!map||!map.el){toast(L('Open the map first.','Abre el mapa primero.'));return;}
+    if(!navigator.onLine||!('caches' in global)){toast(L('Connect to the internet to save a map area.','Conéctate a internet para guardar una zona.'));return;}
+    var w=map.el.clientWidth,h=map.el.clientHeight;
+    if(!w||!h)return;
+    var nw=map.screenToLatLng(0,0),se=map.screenToLatLng(w,h);
+    var base=Math.max(14,Math.min(map.zoom,17));
+    var urls=zoneTileUrls({north:nw.lat,west:nw.lng,south:se.lat,east:se.lng},[base,base+1,base+2].filter(function(z){return z<=18;}),200);
+    if(!urls.length){toast(L('Zoom in closer before saving the map area.','Acerca más el mapa antes de guardar la zona.'));return;}
+    toast(L('Saving map area for offline use…','Guardando zona para usar sin conexión…'));
+    caches.open('ministry-revisit-zones-v1').then(function(cache){
+      var done=0,failed=0,queue=urls.slice();
+      function worker(){
+        if(!queue.length)return Promise.resolve();
+        var url=queue.shift();
+        return cache.match(url).then(function(hit){
+          if(hit)return null;
+          return fetch(url,{mode:'cors'}).then(function(r){if(r.ok)return cache.put(url,r);failed++;}).catch(function(){failed++;});
+        }).then(function(){done++;return worker();});
+      }
+      return Promise.all([worker(),worker()]).then(function(){
+        toast(failed?L('Most of the map area was saved; some tiles could not be cached.','Se guardó la mayor parte de la zona; algunos mosaicos no se pudieron guardar.'):L('Map area saved for offline use.','Zona guardada para usar sin conexión.'));
+      });
+    }).catch(function(){toast(L('Could not save the map area.','No se pudo guardar la zona.'));});
+  }
+
   function reverseGeocode(lat,lng){
     if(!navigator.onLine)return Promise.resolve('');
     var q=new URLSearchParams({format:'jsonv2',addressdetails:'1',lat:String(lat),lon:String(lng),zoom:'18','accept-language':state.lang==='es'?'es':'en'});
@@ -1004,6 +1053,7 @@
       var f=e.target.closest('[data-rv-filter]');if(f){listFilter=f.dataset.rvFilter;render();return;}
       var mm=e.target.closest('[data-rv-map-mode]');if(mm){mapMode=mm.dataset.rvMapMode;if(mapMode==='nearby'&&!currentLocation){requestLocation(function(){render();},{center:false});}else render();return;}
       var z=e.target.closest('[data-rv-zoom]');if(z&&map){map.setZoom(map.zoom+Number(z.dataset.rvZoom));return;}
+      if(e.target.closest('[data-rv-save-zone]')){saveOfflineZone();return;}
       if(e.target.closest('[data-rv-locate]')){requestLocation(function(loc){beginGpsPin(loc,movePinId?'move':'create');},{center:false});return;}
       if(e.target.closest('[data-rv-adjust-pin]')){
         if(pendingLocation&&map){map.setView(pendingLocation.lat,pendingLocation.lng,19);toast(L('Tap another spot to move the pin.','Toca otro lugar para mover el pin.'));}
