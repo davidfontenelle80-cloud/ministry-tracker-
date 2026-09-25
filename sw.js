@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v88-address-first-return-visits';
+const CACHE_VERSION = 'ministry-tracker-v89-notes-rv-bible-dashboard';
 
 const PRECACHE_URLS = [
   './',
@@ -30,6 +30,7 @@ const PRECACHE_URLS = [
   './js/push-config.js',
   './js/push.js',
   './js/push-toggle.js',
+  './js/organizer.js',
   './js/app.js',
   './js/revisit-map.js',
   './js/revisits.js',
@@ -59,12 +60,9 @@ function notificationRouteMessage(data = {}) {
 }
 
 self.addEventListener('install', event => {
-  // Force the new worker to activate immediately instead of waiting for all
-  // tabs to close — fixes devices getting stuck on an old cached build.
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_VERSION)
-      // allSettled so one missing/renamed asset can't fail the whole install
       .then(cache => Promise.allSettled(PRECACHE_URLS.map(url => cache.add(url))))
   );
 });
@@ -83,8 +81,6 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) {
-    // v60: runtime-cache CDN assets (Font Awesome, Google Fonts) so nav icons
-    // and fonts survive offline / CDN hiccups.
     if (/(^|\.)(cdnjs\.cloudflare\.com|fonts\.googleapis\.com|fonts\.gstatic\.com|tile\.openstreetmap\.org)$/.test(url.hostname)) {
       event.respondWith(
         caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
