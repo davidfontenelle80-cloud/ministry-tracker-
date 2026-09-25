@@ -17,6 +17,7 @@
   var map=null;
   var initialized=false;
   var activeVisitId='';
+  var directionsVisitId='';
   var importChecked=false;
   var dialogClicksBound=false;
   var autoLocationRequested=false;
@@ -68,9 +69,9 @@
   function telUrl(phone){return digits(phone).length>=7?'tel:'+String(phone).replace(/[^\d+]/g,''):'';}
   function coord(n){return String(+Number(n).toFixed(6));}
   function mapLink(v){return 'https://www.google.com/maps/search/?api=1&query='+coord(v.lat)+','+coord(v.lng);}
-  function directionsUrl(v){
-    var app=state.revisitSettings.navApp||'auto';
-    if(app==='auto')app=isIOS()?'apple':'google';
+  function directionsUrl(v,app){
+    app=app||state.revisitSettings.navApp||'ask';
+    if(app==='auto'||app==='ask')app=isIOS()?'apple':'google';
     var ll=coord(v.lat)+','+coord(v.lng);
     if(app==='waze')return 'https://waze.com/ul?ll='+ll+'&navigate=yes';
     if(app==='apple')return 'https://maps.apple.com/?daddr='+ll+'&dirflg=d';
@@ -175,7 +176,7 @@
     var place=placeLine(v)||L('Pinned location','Ubicación marcada');
     return '<article class="rv-card" data-rv-card="'+esc(v.id)+'">'+
       '<div class="rv-card-head"><div class="min-w-0"><div class="rv-card-title">'+esc(v.name)+'</div><div class="rv-card-meta"><span>'+esc(when)+'</span>'+(distance?'<span>'+esc(distance)+'</span>':'')+'</div></div>'+visitStatus(v)+'</div>'+
-      '<div class="rv-muted">'+esc(place)+'</div>'+
+      '<button class="rv-muted rv-place-link" type="button" data-rv-directions="'+esc(v.id)+'"><i class="fa-solid fa-location-dot"></i><span>'+esc(place)+'</span></button>'+
       (!compact&&v.nextTopic?'<div class="rv-small"><strong>'+esc(L('Next topic:','Próximo tema:'))+'</strong> '+esc(v.nextTopic)+'</div>':'')+
       '<div class="rv-card-actions">'+
         '<button class="btn btn-secondary" type="button" data-rv-open="'+esc(v.id)+'"><i class="fa-solid fa-pen"></i>'+esc(L('Open','Abrir'))+'</button>'+
@@ -261,6 +262,7 @@
       '<div id="rvLocationConfirm" class="rv-location-confirm" '+(pendingLocation?'':'hidden')+'>'+
         '<strong>'+esc(L('Is this the right location?','¿Es esta la ubicación correcta?'))+'</strong>'+
         '<div id="rvPendingAddress" class="rv-muted">'+esc(pendingLocation?(pendingLocation.address||L('Approximate location','Ubicación aproximada')):'')+'</div>'+
+        '<div id="rvPendingAccuracy" class="rv-small">'+(pendingLocation&&Number.isFinite(pendingLocation.accuracy)?esc(L('GPS accuracy: ','Precisión GPS: ')+Math.round(pendingLocation.accuracy)+' m'):'')+'</div>'+
         '<div id="rvPendingCoords" class="rv-small font-mono">'+(pendingLocation?esc(coord(pendingLocation.lat)+', '+coord(pendingLocation.lng)):'')+'</div>'+
         '<div class="rv-card-actions"><button class="btn btn-secondary" data-rv-cancel-pin>'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" data-rv-confirm-pin>'+esc(L('Confirm pin','Confirmar ubicación'))+'</button></div>'+
       '</div></div>';
@@ -299,8 +301,9 @@
   function refreshConfirmPanel(){
     var panel=document.getElementById('rvLocationConfirm');if(!panel)return;
     panel.hidden=!pendingLocation;
-    var a=document.getElementById('rvPendingAddress'),c=document.getElementById('rvPendingCoords');
+    var a=document.getElementById('rvPendingAddress'),acc=document.getElementById('rvPendingAccuracy'),c=document.getElementById('rvPendingCoords');
     if(a)a.textContent=pendingLocation?(pendingLocation.address||L('Looking up approximate address…','Buscando dirección aproximada…')):'';
+    if(acc)acc.textContent=pendingLocation&&Number.isFinite(pendingLocation.accuracy)?L('GPS accuracy: ','Precisión GPS: ')+Math.round(pendingLocation.accuracy)+' m':'';
     if(c)c.textContent=pendingLocation?coord(pendingLocation.lat)+', '+coord(pendingLocation.lng):'';
   }
   function locationErrorMessage(e){
@@ -368,6 +371,32 @@
       .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
       .then(compactAddress).catch(function(){return '';});
   }
+  function forwardGeocode(query){
+    query=String(query||'').trim();
+    if(!query)return Promise.resolve(null);
+    if(!navigator.onLine){toast(L('Address search needs an internet connection.','La búsqueda de direcciones necesita conexión a internet.'));return Promise.resolve(null);}
+    var q=new URLSearchParams({format:'jsonv2',addressdetails:'1',limit:'1',q:query,'accept-language':state.lang==='es'?'es':'en'});
+    return fetch('https://nominatim.openstreetmap.org/search?'+q.toString(),{headers:{Accept:'application/json'}})
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+      .then(function(rows){
+        var row=rows&&rows[0];if(!row)return null;
+        var lat=Number(row.lat),lng=Number(row.lon);if(!Number.isFinite(lat)||!Number.isFinite(lng))return null;
+        return {lat:lat,lng:lng,address:compactAddress(row)||String(row.display_name||query),accuracy:null};
+      }).catch(function(){return null;});
+  }
+  function searchAddressToMap(query){
+    toast(L('Finding address…','Buscando dirección…'));
+    return forwardGeocode(query).then(function(loc){
+      if(!loc){toast(L('Address not found. Try adding the city or area.','No se encontró la dirección. Añade la ciudad o el sector e inténtalo de nuevo.'));return false;}
+      pendingLocation=loc;
+      pendingPurpose=movePinId?'move':'create';
+      view='map';
+      closeDialog('rvAddressDialog');
+      render();
+      toast(L('Verify the pin, then confirm the location.','Verifica la ubicación y luego confírmala.'));
+      return true;
+    });
+  }
 
   function renderSettings(){
     var s=state.revisitSettings;
@@ -377,7 +406,7 @@
       '<label class="rv-check"><input type="checkbox" data-rv-setting="calendarOnSave" '+(s.calendarOnSave?'checked':'')+'><span><strong>'+esc(L('Add to calendar after saving','Añadir al calendario al guardar'))+'</strong><br><span class="rv-muted">'+esc(L('You can also add any visit manually.','También puedes añadir cualquier visita manualmente.'))+'</span></span></label>'+
       '<label class="rv-field"><span>'+esc(L('Calendar app','Calendario'))+'</span><select data-rv-setting="calendarMode"><option value="auto" '+(s.calendarMode==='auto'?'selected':'')+'>'+esc(L('Automatic','Automático'))+'</option><option value="ics" '+(s.calendarMode==='ics'?'selected':'')+'>ICS '+esc(L('(alarm included)','(incluye alarma)'))+'</option><option value="google" '+(s.calendarMode==='google'?'selected':'')+'>Google Calendar</option></select></label>'+
       '<label class="rv-field"><span>'+esc(L('Calendar alarm','Alarma del calendario'))+'</span><select data-rv-setting="calendarReminderMinutes">'+[0,5,15,30,60].map(function(n){return '<option value="'+n+'" '+(Number(s.calendarReminderMinutes)===n?'selected':'')+'>'+ (n? n+' min':L('At time','A la hora')) +'</option>';}).join('')+'</select></label>'+
-      '<label class="rv-field"><span>'+esc(L('Directions app','App de navegación'))+'</span><select data-rv-setting="navApp"><option value="auto" '+(s.navApp==='auto'?'selected':'')+'>'+esc(L('Automatic','Automático'))+'</option><option value="google" '+(s.navApp==='google'?'selected':'')+'>Google Maps</option><option value="apple" '+(s.navApp==='apple'?'selected':'')+'>Apple Maps</option><option value="waze" '+(s.navApp==='waze'?'selected':'')+'>Waze</option></select></label>'+
+      '<label class="rv-field"><span>'+esc(L('Directions app','App de navegación'))+'</span><select data-rv-setting="navApp"><option value="ask" '+(s.navApp==='ask'?'selected':'')+'>'+esc(L('Ask every time','Preguntar siempre'))+'</option><option value="auto" '+(s.navApp==='auto'?'selected':'')+'>'+esc(L('Automatic','Automático'))+'</option><option value="google" '+(s.navApp==='google'?'selected':'')+'>Google Maps</option><option value="apple" '+(s.navApp==='apple'?'selected':'')+'>Apple Maps</option><option value="waze" '+(s.navApp==='waze'?'selected':'')+'>Waze</option></select></label>'+
       '<label class="rv-check"><input type="checkbox" data-rv-setting="pushReminderDefault" '+(s.pushReminderDefault?'checked':'')+'><span><strong>'+esc(L('5-minute app reminder by default','Recordatorio de 5 minutos por defecto'))+'</strong><br><span class="rv-muted">'+esc(L('Requires notifications to be allowed on this device.','Requiere permitir notificaciones en este dispositivo.'))+'</span></span></label>'+
       (standaloneCount?'<button class="btn btn-secondary" type="button" data-rv-import><i class="fa-solid fa-file-import"></i>'+esc(L('Import '+standaloneCount+' from Revisita','Importar '+standaloneCount+' de Revisita'))+'</button>':'')+
       '</div></details>';
@@ -393,7 +422,7 @@
       '<dialog id="rvVisitDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2 id="rvVisitDialogTitle">'+esc(L('Revisit','Revisita'))+'</h2><div id="rvVisitCoords" class="rv-muted font-mono"></div></div><button class="rv-icon-btn" data-rv-close-visit>×</button></div><div id="rvExistingActions" class="rv-card-actions"></div><form id="rvVisitForm" class="rv-form"><input type="hidden" id="rvVisitId"><input type="hidden" id="rvVisitLat"><input type="hidden" id="rvVisitLng">'+
         '<label class="rv-field"><span>'+esc(L('Name','Nombre'))+'</span><input id="rvVisitName" maxlength="80" required autocomplete="off"></label>'+
         '<div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Phone','Teléfono'))+'</span><input id="rvVisitPhone" type="tel" maxlength="40" autocomplete="tel"></label><label class="rv-field"><span>'+esc(L('Reference / landmark','Referencia'))+'</span><input id="rvVisitReference" maxlength="120"></label></div>'+
-        '<label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><div class="rv-field-row"><input id="rvVisitAddress" maxlength="180" style="flex:1"><button class="btn btn-secondary" type="button" data-rv-find-address><i class="fa-solid fa-location-dot"></i>'+esc(L('Map','Mapa'))+'</button></div></label>'+
+        '<label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><div class="rv-field-row"><input id="rvVisitAddress" maxlength="180" style="flex:1"><button id="rvFindAddressBtn" class="btn btn-secondary" type="button" data-rv-find-address><i class="fa-solid fa-location-dot"></i>'+esc(L('Map','Mapa'))+'</button></div></label>'+
         '<label class="rv-field"><span>'+esc(L('Notes','Notas'))+'</span><textarea id="rvVisitNotes" maxlength="800"></textarea></label>'+
         '<div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('What you left','Qué le dejaste'))+'</span><input id="rvVisitLeftWith" maxlength="160"></label><label class="rv-field"><span>'+esc(L('Next topic','Próximo tema'))+'</span><input id="rvVisitNextTopic" maxlength="200"></label></div>'+
         '<div class="rv-quick-dates"><button class="rv-chip" type="button" data-rv-date-preset="7">+1 '+esc(L('week','semana'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="14">+2 '+esc(L('weeks','semanas'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="month">+1 '+esc(L('month','mes'))+'</button></div>'+
@@ -432,6 +461,7 @@
     dialog('rvVisitDialogTitle').textContent=v?v.name:L('New revisit','Nueva revisita');
     dialog('rvVisitCoords').textContent=coord(p.lat)+', '+coord(p.lng);
     dialog('rvDeleteBtn').hidden=!v;
+    var findAddressBtn=dialog('rvFindAddressBtn');if(findAddressBtn)findAddressBtn.hidden=!v;
     var actions=dialog('rvExistingActions');
     actions.innerHTML=v?'<button class="btn btn-secondary" type="button" data-rv-dialog-move><i class="fa-solid fa-location-dot"></i>'+esc(L('Move pin','Mover pin'))+'</button><button class="btn btn-secondary" type="button" data-rv-dialog-calendar><i class="fa-solid fa-calendar-plus"></i>'+esc(L('Calendar','Calendario'))+'</button><button class="btn btn-secondary" type="button" data-rv-dialog-directions><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Directions','Cómo llegar'))+'</button>'+(v.status!=='completed'?'<button class="btn btn-primary" type="button" data-rv-dialog-log><i class="fa-solid fa-check"></i>'+esc(L('Log','Registrar'))+'</button>':''):'';
     renderHistory(v);
@@ -607,7 +637,18 @@
       persist();toast(L('Calendar opened.','Calendario abierto.'));
     }catch(e){console.warn('[MinistryRevisits] calendar handoff failed',e);toast(L('Could not open the calendar.','No se pudo abrir el calendario.'));}
   }
-  function openDirections(v){global.open(directionsUrl(v),'_blank','noopener');}
+  function openDirections(v){
+    if(!v)return;
+    var app=state.revisitSettings.navApp||'ask';
+    if(app&&app!=='ask'&&app!=='auto'){global.open(directionsUrl(v,app),'_blank','noopener');return;}
+    ensureDialogs();
+    directionsVisitId=v.id;
+    var name=dialog('rvDirectionsName');if(name)name.textContent=[v.name,placeLine(v)].filter(Boolean).join(' · ');
+    var remember=dialog('rvRememberNav');if(remember)remember.checked=false;
+    var apple=dialog('rvDirectionsDialog')&&dialog('rvDirectionsDialog').querySelector('[data-rv-nav-app="apple"]');
+    if(apple)apple.hidden=!isIOS()&&/Android/i.test(navigator.userAgent);
+    showDialog('rvDirectionsDialog');
+  }
 
   function standaloneVisits(){
     if(importChecked&&standaloneVisits.cache)return standaloneVisits.cache;
