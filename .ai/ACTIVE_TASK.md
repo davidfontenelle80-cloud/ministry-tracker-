@@ -4,61 +4,160 @@
 READY FOR REVIEW
 
 ## Task
-Streamline Notes now that Return Visits has its own dedicated tab, and make the Return Visit workflow address-first with the map optional.
+Unify Ministry's follow-up workflow around three simple card-based areas — Notes, Return Visits, and Bible Studies — and feed anything scheduled into the Home dashboard.
 
 Requested by David in chat on 2026-09-25.
 
-## Scope delivered
-- Removed the old built-in **Return Visits / Revisitas** category from Notes.
-- Existing notes that were stored in that old category are preserved and moved to **All Notes / no category**.
-- Removed developer-only **Test Push** and **Push diagnostics** controls from the normal Notes UI.
-- Updated Notes helper text so Notes is clearly for general ministry notes, while Return Visits is separate.
-- A Return Visit can now be saved with a typed address **without requiring a map pin**.
-- New address flow:
-  - type the address
-  - **Continue** directly to the person/household Return Visit form
-  - or choose **Find on map** to locate/verify a pin
-- **Find on map** now always produces a visible outcome:
-  - best address match opens on the map for pin verification
-  - if no match is found, the map opens so the user can place the pin manually
-- Address-only Return Visits can still use Directions / navigation from the app; Google Maps, Apple Maps, and Waze receive the saved address when no GPS pin exists.
-- Address-only Return Visits continue to support:
-  - person/household name
-  - notes
-  - phone / WhatsApp
-  - next topic
-  - visit history
-  - return date/time
-  - app reminder
-  - calendar handoff
-- Calendar events no longer generate fake 0,0 coordinates when a Return Visit has only an address.
-- Map views show only Return Visits that actually have a pin.
-- Existing address-only Return Visits can later be geocoded, viewed on the map, and assigned/moved to a pin.
-- PWA cache bumped to v88.
+## Product decisions implemented
+- The top of Notes & Reminders now has three tabs:
+  - **Notes / Notas**
+  - **Return Visits / Revisitas**
+  - **Bible Studies / Estudios bíblicos**
+- Notes are now flat cards, not category-first.
+- Note cards show the title/subject and schedule only; the note body stays private until the card is opened.
+- Return Visits keep the Revisita-style person card and map/address workflow.
+- Bible Studies use the same person-card pattern as Return Visits, but with study-specific fields and history.
+- Anything scheduled in Notes, Return Visits, or Bible Studies feeds the Home **Today's agenda** card.
+
+## Notes
+- Add Note creates one card directly; there is no category selection in the new Notes UI.
+- Filters: Today, Upcoming, Overdue, All.
+- Full note card supports:
+  - large note body
+  - due date/time
+  - arbitrary push reminder lead time in minutes
+  - one-tap Set Reminder
+  - Add to Calendar
+  - iPhone ICS calendar alarm when a reminder is enabled
+  - Complete/Reopen
+  - Edit
+  - Delete
+- Existing Ministry note data is preserved and reused.
+- Existing Calendar note taps now open the new note card workflow through the overridden note opener.
+
+## Return Visits
+- Existing GPS / typed-address / map-pin / move-pin workflows remain.
+- Existing card-first workflow remains: opening a person shows the action/detail card; Edit is a separate action.
+- Added contact support:
+  - Call
+  - Text
+  - WhatsApp
+  - Email
+- Added Email field to Return Visit data and editor.
+- Push reminder lead time is now configurable per Return Visit instead of fixed at 5 minutes.
+- Return Visit changes refresh the Home agenda immediately.
+- Tapping a Return Visit push notification now opens a small reminder card first with:
+  - Navigate
+  - Call
+  - Full Card
+- Full Card then opens the normal Return Visit detail card.
+
+## Bible Studies
+- New dedicated `state.ministryBibleStudies[]` collection.
+- One card per student.
+- Filters: Today, Upcoming, Overdue, All.
+- Student fields:
+  - name
+  - phone
+  - email
+  - address
+  - study notes
+  - publication/material
+  - lesson/chapter
+  - next date/time
+  - weekly-repeat preference
+  - custom reminder minutes
+  - study history
+- Detail card actions:
+  - Call
+  - Text
+  - WhatsApp
+  - Email
+  - Directions
+  - Log Study
+  - Calendar
+  - Set Reminder
+  - Edit
+  - Delete
+- Logging a study stores a dated history entry and can advance the next study date.
+- Weekly studies prefill the next date one week later when logging.
+- Device calendar:
+  - iPhone/iPad uses ICS
+  - other platforms use Google Calendar create links
+  - iPhone ICS includes a custom VALARM reminder when enabled
+- Push notifications use sourceType `bible-study`.
+- Tapping a Bible Study push notification opens the same quick reminder card pattern: Navigate / Call / Full Card.
+- Active Bible Study reminders are restored on startup only when notification permission is already granted, so startup never triggers an unsolicited permission prompt.
+
+## Home dashboard
+- Added **Today's agenda** near the top of Home.
+- Pulls from:
+  - Notes
+  - Return Visits
+  - Bible Studies
+- Shows:
+  - Today
+  - Overdue
+  - next Upcoming items
+- Each dashboard row opens its exact underlying card; no duplicate records are created.
+
+## Shared behavior
+- Ministry remains the source of truth for language, theme, app install, local storage, export/import, and cloud backup.
+- Bible Studies was added to APP_CONFIG defaults so migration/reset behavior is safe.
+- Full-state backup/export automatically includes Bible Studies.
+- Return Visit and Bible Study navigation respects the saved Return Visit navigation preference where applicable.
+- Notification routing continues through the existing service worker sourceType/sourceId mechanism.
+- PWA cache bumped to **v89-organizer-studies-dashboard** and organizer JS/CSS are precached.
 
 ## Files changed
+- index.html
+- css/organizer.css (new)
+- js/organizer.js (new)
 - js/app.js
 - js/revisits.js
 - sw.js
 - .ai/ACTIVE_TASK.md
 
 ## Verification completed
-- js/app.js syntax passes.
-- js/revisits.js syntax passes.
-- sw.js syntax passes.
-- Old default Return Visits Notes category is no longer present.
-- Notes Test Push / diagnostics button markup is no longer present.
-- Safe migration for notes formerly in mnc-1 is present.
-- Address-only Return Visit normalization, address-based navigation, optional-map address flow, and pinned-only map filtering are present.
+- js/app.js classic JavaScript syntax passes.
+- js/revisits.js classic JavaScript syntax passes.
+- js/organizer.js classic JavaScript syntax passes.
+- sw.js classic JavaScript syntax passes.
+- Organizer dialog references were checked against generated dialog IDs; no missing IDs found.
+- index.html contains:
+  - three top tabs
+  - Bible Studies content root
+  - Home agenda root
+  - organizer CSS
+  - organizer JS
+- Push backend accepts arbitrary sourceType values, so `bible-study` uses the existing reminder API without worker changes.
 
 ## Real-device smoke test recommended
-1. Notes: verify the old Return Visits category and debug buttons are gone, while old notes remain in All Notes.
-2. Return Visits -> New -> Enter an address -> Continue: verify the full person/household form opens immediately.
-3. Save an address-only Return Visit with name, notes, date/time and reminder.
-4. Reopen it and start Directions with Apple Maps or Google Maps.
-5. Add it to Calendar and confirm the saved address appears correctly.
-6. Return Visits -> New -> Enter an address -> Find on map: verify the map opens with a pin or manual placement fallback.
-7. Create with GPS and with a manually dropped pin; verify those flows remain unchanged.
+1. Notes tab:
+   - Add a note
+   - verify only its title is visible in the list
+   - open full note
+   - set date/time and custom reminder
+   - add to Calendar
+2. Return Visits:
+   - verify existing address/map workflow still works
+   - add phone + email
+   - test Call, Text, WhatsApp, Email
+   - set a non-5-minute reminder
+3. Bible Studies:
+   - create a student
+   - test all four contact actions
+   - set schedule/reminder
+   - add to Calendar
+   - log a study and verify history/next date
+4. Home:
+   - verify all three scheduled record types appear in Today's agenda
+   - tap each and confirm the exact card opens
+5. Push:
+   - trigger one Return Visit reminder and one Bible Study reminder
+   - tap notification
+   - verify quick card shows Navigate / Call / Full Card
+6. English / Spanish, light / dark, and iPhone Home Screen PWA.
 
 ## Review
 Supervisor: David
