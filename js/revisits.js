@@ -267,7 +267,7 @@
         '<div id="rvPendingAddress" class="rv-muted">'+esc(pendingLocation?(pendingLocation.address||L('Approximate location','Ubicación aproximada')):'')+'</div>'+
         '<div id="rvPendingAccuracy" class="rv-small">'+(pendingLocation&&Number.isFinite(pendingLocation.accuracy)?esc(L('GPS accuracy: ','Precisión GPS: ')+Math.round(pendingLocation.accuracy)+' m'):'')+'</div>'+
         '<div id="rvPendingCoords" class="rv-small font-mono">'+(pendingLocation?esc(coord(pendingLocation.lat)+', '+coord(pendingLocation.lng)):'')+'</div>'+
-        '<div class="rv-card-actions"><button class="btn btn-secondary" data-rv-cancel-pin>'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" data-rv-confirm-pin>'+esc(L('Confirm pin','Confirmar ubicación'))+'</button></div>'+
+        '<div class="rv-card-actions"><button class="btn btn-secondary" data-rv-cancel-pin>'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-secondary" data-rv-adjust-pin>'+esc(L('Adjust location','Ajustar ubicación'))+'</button><button class="btn btn-primary" data-rv-confirm-pin>'+esc(L('Confirm pin','Confirmar ubicación'))+'</button></div>'+
       '</div></div>';
     var vis=mapVisits();
     html+='<div class="rv-map-list" id="rvMapList">'+(vis.length?vis.map(function(v){return visitCard(v,true);}).join(''):'<div class="rv-empty">'+esc(L('No Return Visits to show on this map.','No hay revisitas para mostrar en este mapa.'))+'</div>')+'</div>';
@@ -1001,6 +1001,10 @@
       var mm=e.target.closest('[data-rv-map-mode]');if(mm){mapMode=mm.dataset.rvMapMode;if(mapMode==='nearby'&&!currentLocation){requestLocation(function(){render();},{center:false});}else render();return;}
       var z=e.target.closest('[data-rv-zoom]');if(z&&map){map.setZoom(map.zoom+Number(z.dataset.rvZoom));return;}
       if(e.target.closest('[data-rv-locate]')){requestLocation(function(loc){beginGpsPin(loc,movePinId?'move':'create');},{center:false});return;}
+      if(e.target.closest('[data-rv-adjust-pin]')){
+        if(pendingLocation&&map){map.setView(pendingLocation.lat,pendingLocation.lng,19);toast(L('Tap another spot to move the pin.','Toca otro lugar para mover el pin.'));}
+        return;
+      }
       if(e.target.closest('[data-rv-cancel-pin]')){
         var cancelledMove=movePinId;
         pendingLocation=null;pendingTypedAddress='';movePinId='';
