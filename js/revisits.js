@@ -132,7 +132,7 @@
     var noteLabel=document.getElementById('notesModeNotesLabel');
     var rvLabel=document.getElementById('notesModeRevisitsLabel');
     if(noteLabel)noteLabel.textContent=L('Notes','Notas');
-    if(rvLabel)rvLabel.textContent=L('Revisits','Revisitas');
+    if(rvLabel)rvLabel.textContent=L('Return Visits','Revisitas');
     if(mode==='revisits'){
       render();
       autoLocateOnRevisitsOpen();
@@ -140,7 +140,7 @@
   }
 
   function viewTabs(){
-    return '<div class="rv-view-tabs" role="tablist" aria-label="'+esc(L('Revisit views','Vistas de revisitas'))+'">'+
+    return '<div class="rv-view-tabs" role="tablist" aria-label="'+esc(L('Return Visit views','Vistas de revisitas'))+'">'+
       tabButton('today','fa-calendar-day',L('Today','Hoy'))+
       tabButton('map','fa-map-location-dot',L('Map','Mapa'))+
       tabButton('list','fa-address-book',L('All','Todas'))+
@@ -201,7 +201,7 @@
     var overdue=active.filter(function(v){return scheduleBucket(v)==='overdue'&&(!next||v.id!==next.id);}).sort(compareSchedule);
     var due=active.filter(function(v){return scheduleBucket(v)==='today'&&(!next||v.id!==next.id);}).sort(compareSchedule);
     var upcoming=active.filter(function(v){return scheduleBucket(v)==='upcoming'&&v.dueDate<=weekEnd&&(!next||v.id!==next.id);}).sort(compareSchedule);
-    var html=heading(L('Revisits','Revisitas'),new Intl.DateTimeFormat(state.lang==='es'?'es-US':'en-US',{weekday:'long',month:'long',day:'numeric'}).format(new Date()),true);
+    var html=heading(L('Return Visits','Revisitas'),new Intl.DateTimeFormat(state.lang==='es'?'es-US':'en-US',{weekday:'long',month:'long',day:'numeric'}).format(new Date()),true);
     if(next){
       var when=next.dueDate?[fmtDate(next.dueDate),next.dueTime?fmtTime(next.dueTime):''].filter(Boolean).join(' · '):L('No date','Sin fecha');
       html+='<section class="rv-next-card"><div class="rv-kicker">'+esc(L('Next revisit','Próxima revisita'))+'</div><div class="rv-next-main"><div><h3>'+esc(next.name)+'</h3><div class="rv-muted">'+esc([when,placeLine(next)].filter(Boolean).join(' · '))+'</div></div><div class="rv-next-time">'+esc(next.dueTime?fmtTime(next.dueTime):fmtDate(next.dueDate,true))+'</div></div><div class="rv-card-actions"><button class="btn btn-secondary" data-rv-open="'+esc(next.id)+'">'+esc(L('Open','Abrir'))+'</button><button class="btn btn-secondary" data-rv-directions="'+esc(next.id)+'">'+esc(L('Directions','Cómo llegar'))+'</button><button class="btn btn-primary" data-rv-log="'+esc(next.id)+'">'+esc(L('Log visit','Registrar visita'))+'</button></div></section>';
@@ -219,7 +219,7 @@
   }
 
   function renderList(){
-    var html=heading(L('All revisits','Todas las revisitas'),state.ministryRevisits.length+' '+L('saved','guardadas'),true);
+    var html=heading(L('All Return Visits','Todas las revisitas'),state.ministryRevisits.length+' '+L('saved','guardadas'),true);
     html+='<input id="rvSearch" class="rv-search" type="search" autocomplete="off" placeholder="'+esc(L('Search name, address or note','Buscar nombre, dirección o nota'))+'">';
     html+='<div class="rv-filter-row">'+
       filterChip('active',L('Active','Activas'))+
@@ -253,7 +253,7 @@
   }
   function mapChip(id,label){return '<button class="rv-chip'+(mapMode===id?' is-active':'')+'" type="button" data-rv-map-mode="'+id+'">'+esc(label)+'</button>';}
   function renderMap(){
-    var html=heading(L('Revisit map','Mapa de revisitas'),L('Tap the map to place or move a pin.','Toca el mapa para colocar o mover un pin.'),true);
+    var html=heading(L('Return Visit map','Mapa de revisitas'),L('Tap the map to place or move a pin.','Toca el mapa para colocar o mover un pin.'),true);
     html+='<div class="rv-filter-row">'+mapChip('today',L('Today','Hoy'))+mapChip('active',L('Active','Activas'))+mapChip('all',L('All','Todas'))+mapChip('nearby',L('Nearby','Cerca'))+'</div>';
     html+='<div class="rv-map-shell" id="rvMapShell"><div class="rv-map" id="rvMap" role="application" aria-label="'+esc(L('Map of return visits','Mapa de revisitas'))+'"></div>'+
       '<div class="rv-map-controls"><button class="rv-map-control" data-rv-zoom="1" aria-label="'+esc(L('Zoom in','Acercar'))+'">+</button><button class="rv-map-control" data-rv-zoom="-1" aria-label="'+esc(L('Zoom out','Alejar'))+'">−</button></div>'+
@@ -401,8 +401,8 @@
   function renderSettings(){
     var s=state.revisitSettings;
     var standaloneCount=standaloneVisits().length;
-    return '<details class="rv-settings"><summary>'+esc(L('Revisit settings','Configuración de revisitas'))+'</summary><div class="rv-settings-content">'+
-      '<div class="rv-cloud-note"><i class="fa-solid fa-cloud"></i> '+esc(L('Revisits are included in Ministry cloud backup.','Las revisitas se incluyen en la copia de seguridad de Ministry.'))+'</div>'+
+    return '<details class="rv-settings"><summary>'+esc(L('Return Visit settings','Configuración de revisitas'))+'</summary><div class="rv-settings-content">'+
+      '<div class="rv-cloud-note"><i class="fa-solid fa-cloud"></i> '+esc(L('Return Visits are included in Ministry cloud backup.','Las revisitas se incluyen en la copia de seguridad de Ministry.'))+'</div>'+
       '<label class="rv-check"><input type="checkbox" data-rv-setting="calendarOnSave" '+(s.calendarOnSave?'checked':'')+'><span><strong>'+esc(L('Add to calendar after saving','Añadir al calendario al guardar'))+'</strong><br><span class="rv-muted">'+esc(L('You can also add any visit manually.','También puedes añadir cualquier visita manualmente.'))+'</span></span></label>'+
       '<label class="rv-field"><span>'+esc(L('Calendar app','Calendario'))+'</span><select data-rv-setting="calendarMode"><option value="auto" '+(s.calendarMode==='auto'?'selected':'')+'>'+esc(L('Automatic','Automático'))+'</option><option value="ics" '+(s.calendarMode==='ics'?'selected':'')+'>ICS '+esc(L('(alarm included)','(incluye alarma)'))+'</option><option value="google" '+(s.calendarMode==='google'?'selected':'')+'>Google Calendar</option></select></label>'+
       '<label class="rv-field"><span>'+esc(L('Calendar alarm','Alarma del calendario'))+'</span><select data-rv-setting="calendarReminderMinutes">'+[0,5,15,30,60].map(function(n){return '<option value="'+n+'" '+(Number(s.calendarReminderMinutes)===n?'selected':'')+'>'+ (n? n+' min':L('At time','A la hora')) +'</option>';}).join('')+'</select></label>'+
@@ -419,7 +419,7 @@
     wrap.innerHTML=
       '<dialog id="rvNewDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('New revisit','Nueva revisita'))+'</h2><div class="rv-muted">'+esc(L('Where is the person?','¿Dónde está la persona?'))+'</div></div><button class="rv-icon-btn" data-rv-close-new>×</button></div><div class="rv-list"><button class="btn btn-primary w-full" data-rv-new-here><i class="fa-solid fa-location-crosshairs"></i>'+esc(L('Here — use my location','Aquí — usar mi ubicación'))+'</button><button class="btn btn-secondary w-full" data-rv-new-map><i class="fa-solid fa-map-pin"></i>'+esc(L('Choose on map','Elegir en el mapa'))+'</button><button class="btn btn-secondary w-full" data-rv-new-address><i class="fa-solid fa-location-dot"></i>'+esc(L('Enter an address','Escribir una dirección'))+'</button></div></div></dialog>'+
       '<dialog id="rvAddressDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Find an address','Buscar una dirección'))+'</h2><div class="rv-muted">'+esc(L('Type an address, then verify the pin on the map.','Escribe una dirección y luego verifica la ubicación en el mapa.'))+'</div></div><button class="rv-icon-btn" data-rv-close-address>×</button></div><form id="rvAddressForm" class="rv-form"><label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><input id="rvAddressSearch" type="search" maxlength="220" autocomplete="street-address" required placeholder="'+esc(L('Street, city, state or area','Calle, ciudad, estado o sector'))+'"></label><div class="rv-dialog-actions"><button class="btn btn-secondary" type="button" data-rv-close-address>'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i>'+esc(L('Find on map','Buscar en el mapa'))+'</button></div></form></div></dialog>'+
-      '<dialog id="rvVisitDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2 id="rvVisitDialogTitle">'+esc(L('Revisit','Revisita'))+'</h2><div id="rvVisitCoords" class="rv-muted font-mono"></div></div><button class="rv-icon-btn" data-rv-close-visit>×</button></div><div id="rvExistingActions" class="rv-card-actions"></div><form id="rvVisitForm" class="rv-form"><input type="hidden" id="rvVisitId"><input type="hidden" id="rvVisitLat"><input type="hidden" id="rvVisitLng">'+
+      '<dialog id="rvVisitDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2 id="rvVisitDialogTitle">'+esc(L('Return Visit','Revisita'))+'</h2><div id="rvVisitCoords" class="rv-muted font-mono"></div></div><button class="rv-icon-btn" data-rv-close-visit>×</button></div><div id="rvExistingActions" class="rv-card-actions"></div><form id="rvVisitForm" class="rv-form"><input type="hidden" id="rvVisitId"><input type="hidden" id="rvVisitLat"><input type="hidden" id="rvVisitLng">'+
         '<label class="rv-field"><span>'+esc(L('Name','Nombre'))+'</span><input id="rvVisitName" maxlength="80" required autocomplete="off"></label>'+
         '<div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Phone','Teléfono'))+'</span><input id="rvVisitPhone" type="tel" maxlength="40" autocomplete="tel"></label><label class="rv-field"><span>'+esc(L('Reference / landmark','Referencia'))+'</span><input id="rvVisitReference" maxlength="120"></label></div>'+
         '<label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><div class="rv-field-row"><input id="rvVisitAddress" maxlength="180" style="flex:1"><button id="rvFindAddressBtn" class="btn btn-secondary" type="button" data-rv-find-address><i class="fa-solid fa-location-dot"></i>'+esc(L('Map','Mapa'))+'</button></div></label>'+
@@ -574,7 +574,7 @@
     var newSlot=calendarSlot(v);
     if(prev&&prev.calendarSlot&&prev.calendarSlot!==newSlot)toast(L('The old phone calendar event may still need to be removed.','Quizás tengas que borrar manualmente el evento anterior del calendario.'));
     if(state.revisitSettings.calendarOnSave&&v.dueDate)addToCalendar(v);
-    else toast(L('Revisit saved.','Revisita guardada.'));
+    else toast(L('Return Visit saved.','Revisita guardada.'));
   }
   function deleteActive(){
     var v=findActive();if(!v)return;
@@ -582,7 +582,7 @@
     state.ministryRevisits=state.ministryRevisits.filter(function(x){return x.id!==v.id;});
     persist();clearPush(v.id);closeDialog('rvVisitDialog');render();
     if(v.calendarSlot)toast(L('Deleted here. Remove its phone calendar event separately if needed.','Eliminada aquí. Borra por separado el evento del calendario si es necesario.'));
-    else toast(L('Revisit deleted.','Revisita eliminada.'));
+    else toast(L('Return Visit deleted.','Revisita eliminada.'));
   }
   function openLog(id){
     ensureDialogs();var v=state.ministryRevisits.find(function(x){return x.id===id;});if(!v)return;
@@ -627,9 +627,9 @@
     var fire=new Date(at.getTime()-5*60000);
     if(fire.getTime()<=Date.now()+30000){clearPush(v.id);toast(L('This visit is too soon for a 5-minute app reminder.','Esta visita está demasiado cerca para un aviso de 5 minutos.'));return;}
     var body=[fmtDate(v.dueDate),fmtTime(v.dueTime),placeLine(v)].filter(Boolean).join(' · ');
-    global.MinistryPush.syncReminder('revisit',v.id,L('Revisit: ','Revisita: ')+v.name,body,fire.toISOString()).then(function(result){
-      if(result&&result.ok===false)toast(L('Revisit saved, but the app reminder could not be scheduled.','Revisita guardada, pero no se pudo programar el aviso.'));
-    }).catch(function(){toast(L('Revisit saved, but the app reminder could not be scheduled.','Revisita guardada, pero no se pudo programar el aviso.'));});
+    global.MinistryPush.syncReminder('revisit',v.id,L('Return Visit: ','Revisita: ')+v.name,body,fire.toISOString()).then(function(result){
+      if(result&&result.ok===false)toast(L('Return Visit saved, but the app reminder could not be scheduled.','Revisita guardada, pero no se pudo programar el aviso.'));
+    }).catch(function(){toast(L('Return Visit saved, but the app reminder could not be scheduled.','Revisita guardada, pero no se pudo programar el aviso.'));});
   }
 
   function calendarSlot(v){return v&&v.dueDate?(v.dueTime?v.dueDate+' '+v.dueTime:v.dueDate):'';}
@@ -641,17 +641,17 @@
   }
   function buildICS(v){
     var reminder=Math.max(0,Number(state.revisitSettings.calendarReminderMinutes)||0);
-    var lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//KHub//Ministry Revisits//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT','UID:ministry-revisit-'+v.id+'@khub','SEQUENCE:'+Math.max(0,Number(v.calendarSeq)||0),'DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')];
+    var lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//KHub//Ministry Return Visits//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT','UID:ministry-revisit-'+v.id+'@khub','SEQUENCE:'+Math.max(0,Number(v.calendarSeq)||0),'DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')];
     if(v.dueTime)lines.push('DTSTART:'+localStamp(v.dueDate,v.dueTime),'DTEND:'+endStamp(v.dueDate,v.dueTime,30));
     else lines.push('DTSTART;VALUE=DATE:'+v.dueDate.replace(/-/g,''),'DTEND;VALUE=DATE:'+addDays(v.dueDate,1).replace(/-/g,''));
     var description=[v.nextTopic?L('Next topic: ','Próximo tema: ')+v.nextTopic:'',v.leftWith?L('Left: ','Dejó: ')+v.leftWith:'',v.phone?L('Phone: ','Teléfono: ')+v.phone:'',mapLink(v)].filter(Boolean).join('\n');
-    lines.push('SUMMARY:'+icsEscape(L('Revisit: ','Revisita: ')+v.name),'LOCATION:'+icsEscape(placeLine(v)||coord(v.lat)+', '+coord(v.lng)),'GEO:'+coord(v.lat)+';'+coord(v.lng),'DESCRIPTION:'+icsEscape(description),'URL:'+mapLink(v),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEscape(L('Revisit: ','Revisita: ')+v.name),v.dueTime?'TRIGGER:-PT'+reminder+'M':'TRIGGER:PT8H','END:VALARM','END:VEVENT','END:VCALENDAR');
+    lines.push('SUMMARY:'+icsEscape(L('Return Visit: ','Revisita: ')+v.name),'LOCATION:'+icsEscape(placeLine(v)||coord(v.lat)+', '+coord(v.lng)),'GEO:'+coord(v.lat)+';'+coord(v.lng),'DESCRIPTION:'+icsEscape(description),'URL:'+mapLink(v),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEscape(L('Return Visit: ','Revisita: ')+v.name),v.dueTime?'TRIGGER:-PT'+reminder+'M':'TRIGGER:PT8H','END:VALARM','END:VEVENT','END:VCALENDAR');
     return lines.join('\r\n')+'\r\n';
   }
   function googleCalendarUrl(v){
     var dates=v.dueTime?localStamp(v.dueDate,v.dueTime)+'/'+endStamp(v.dueDate,v.dueTime,30):v.dueDate.replace(/-/g,'')+'/'+addDays(v.dueDate,1).replace(/-/g,'');
     var details=[v.nextTopic?L('Next topic: ','Próximo tema: ')+v.nextTopic:'',v.leftWith?L('Left: ','Dejó: ')+v.leftWith:'',mapLink(v)].filter(Boolean).join('\n');
-    var q=new URLSearchParams({action:'TEMPLATE',text:L('Revisit: ','Revisita: ')+v.name,dates:dates,details:details,location:placeLine(v)||coord(v.lat)+','+coord(v.lng)});
+    var q=new URLSearchParams({action:'TEMPLATE',text:L('Return Visit: ','Revisita: ')+v.name,dates:dates,details:details,location:placeLine(v)||coord(v.lat)+','+coord(v.lng)});
     return 'https://calendar.google.com/calendar/render?'+q.toString();
   }
   function addToCalendar(v){
@@ -692,7 +692,7 @@
     if(!confirm(L('Import existing Revisita records into Ministry? Matching IDs will keep the newest edit.','¿Importar las revisitas existentes a Ministry? Los ID iguales conservarán la edición más reciente.')))return;
     var by=new Map(state.ministryRevisits.map(function(v){return [v.id,v];}));
     incoming.forEach(function(v){var prev=by.get(v.id);if(!prev||String(v.updatedAt||'')>String(prev.updatedAt||''))by.set(v.id,v);});
-    state.ministryRevisits=Array.from(by.values());persist();render();toast(L('Revisita records imported.','Revisitas importadas.'));
+    state.ministryRevisits=Array.from(by.values());persist();render();toast(L('Return Visit records imported.','Revisitas importadas.'));
   }
 
   function bindRoot(){
