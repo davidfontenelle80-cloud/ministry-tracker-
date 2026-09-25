@@ -6511,3 +6511,66 @@ window.onload = function() {
 })(window.App=window.App||{});
 // ─── End Stage J Weather Redesign v57 ────────────────────────
 
+// ─── iOS standalone bottom-nav viewport recovery ─────────────
+// WebKit can occasionally keep a fixed bottom bar attached to the old
+// keyboard-sized visual viewport after an input/dialog closes. This watchdog
+// only moves the nav when it is clearly stranded above the physical screen
+// bottom, and never while an editable control is focused.
+(function initBottomNavViewportRecovery(){
+  var nav=document.querySelector('.bottom-nav');
+  if(!nav)return;
+  var raf=0;
+  var standalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;
+
+  function editing(){
+    var el=document.activeElement;
+    return !!(el&&el!==document.body&&el.matches&&el.matches('input, textarea, select, [contenteditable="true"]'));
+  }
+  function targetBottom(){
+    var docH=document.documentElement?document.documentElement.clientHeight:0;
+    var innerH=window.innerHeight||0;
+    var visualH=window.visualViewport?(window.visualViewport.height+window.visualViewport.offsetTop):0;
+    var base=Math.max(docH,innerH,visualH);
+    // In an installed iOS PWA, screen.height stays stable when the visual
+    // viewport gets stuck at the former keyboard height.
+    if(standalone&&window.screen&&window.screen.height)base=Math.max(base,window.screen.height);
+    return base;
+  }
+  function run(){
+    raf=0;
+    nav.style.setProperty('--bottom-nav-recovery-shift','0px');
+    if(editing())return;
+    requestAnimationFrame(function(){
+      var bottom=targetBottom();
+      var rect=nav.getBoundingClientRect();
+      var gap=Math.round(bottom-rect.bottom);
+      var threshold=Math.max(96,Math.round((nav.offsetHeight||80)*0.75));
+      // Only recover a large, obvious detach. Small differences can be normal
+      // browser chrome/safe-area movement and are intentionally ignored.
+      var shift=(gap>threshold&&gap<bottom*0.65)?gap:0;
+      nav.style.setProperty('--bottom-nav-recovery-shift',shift+'px');
+    });
+  }
+  function schedule(){
+    if(raf)cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(run);
+  }
+
+  window.addEventListener('resize',schedule,{passive:true});
+  window.addEventListener('orientationchange',schedule,{passive:true});
+  window.addEventListener('pageshow',schedule,{passive:true});
+  document.addEventListener('focusout',function(){
+    setTimeout(schedule,50);setTimeout(schedule,250);setTimeout(schedule,700);
+  },true);
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')schedule();});
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize',schedule,{passive:true});
+    window.visualViewport.addEventListener('scroll',schedule,{passive:true});
+  }
+  schedule();
+  setTimeout(schedule,120);
+  setTimeout(schedule,600);
+})();
+// ─── End iOS bottom-nav viewport recovery ────────────────────
+
+
