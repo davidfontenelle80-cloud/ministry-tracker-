@@ -305,7 +305,7 @@ const I18N = {
     confirm: 'Confirm',
     // Stage D — Ministry Note Categories
     notesTitle: 'Notes & Reminders',
-    notesCategoriesHint: 'Organize your ministry notes by category.',
+    notesCategoriesHint: 'Keep general ministry notes here. Return Visits are managed in their own tab.',
     notesComingSoon: 'Notes are coming in a future update.',
     addCategory: 'Add Category',
     editCategory: 'Edit Category',
@@ -342,7 +342,7 @@ const I18N = {
     noNotesFound: 'No notes match your search or filter.',
     noNotesSearch: 'No matching notes. Try another search or filter.',
     notesEmptyTitle: 'No notes here yet',
-    notesEmptyHint: 'Add a note for a return visit, appointment, territory detail, or personal reminder.',
+    notesEmptyHint: 'Add a note for an appointment, territory detail, call, message, or personal reminder.',
     noteUntitled: 'Untitled note',
     noteNoBody: 'No note details yet.',
     noteNoCategory: 'No category',
@@ -595,7 +595,7 @@ const I18N = {
     confirm: 'Confirmar',
     // Stage D — Ministry Note Categories
     notesTitle: 'Notas y Recordatorios',
-    notesCategoriesHint: 'Organiza tus notas del ministerio por categoría.',
+    notesCategoriesHint: 'Guarda aquí notas generales del ministerio. Las revisitas se administran en su propia pestaña.',
     notesComingSoon: 'Las notas llegarán en una próxima actualización.',
     addCategory: 'Agregar categoría',
     editCategory: 'Editar categoría',
@@ -667,7 +667,6 @@ const I18N = {
 };
 
 const DEFAULT_MINISTRY_NOTE_CATEGORIES = [
-  { id: 'mnc-1', name: { en: 'Return Visits',     es: 'Revisitas' },             icon: '🔄', color: '#6366f1' },
   { id: 'mnc-2', name: { en: 'Bible Studies',      es: 'Estudios bíblicos' },    icon: '📖', color: '#10b981' },
   { id: 'mnc-3', name: { en: 'Interested Persons', es: 'Personas interesadas' }, icon: '👤', color: '#f59e0b' },
   { id: 'mnc-4', name: { en: 'Calls',              es: 'Llamadas' },             icon: '📞', color: '#3b82f6' },
@@ -707,7 +706,7 @@ const I18N_FALLBACKS = {
     noNotesFound: 'No hay notas que coincidan con la busqueda o el filtro.',
     noNotesSearch: 'No hay notas que coincidan. Prueba otra busqueda o filtro.',
     notesEmptyTitle: 'Aun no hay notas aqui',
-    notesEmptyHint: 'Agrega una nota para una revisita, cita, territorio o recordatorio personal.',
+    notesEmptyHint: 'Agrega una nota para una cita, territorio, llamada, mensaje o recordatorio personal.',
     noteUntitled: 'Nota sin titulo',
     noteNoBody: 'Sin detalles todavia.',
     noteNoCategory: 'Sin categoria',
@@ -2476,6 +2475,23 @@ function renderNotes() {
   if (!scr) return;
   injectMinistryNotesPolishCss();
   const lang = state.lang || 'en';
+
+  // Return Visits now has its own dedicated tab. Remove only the old built-in
+  // Notes category and preserve any notes that were stored there by moving
+  // them to All Notes / no category.
+  if (Array.isArray(state.ministryNoteCategories) && state.ministryNoteCategories.some(function(cat) { return cat && cat.id === 'mnc-1'; })) {
+    state.ministryNoteCategories = state.ministryNoteCategories.filter(function(cat) { return !cat || cat.id !== 'mnc-1'; });
+    if (Array.isArray(state.ministryNotes)) {
+      state.ministryNotes.forEach(function(note) {
+        if (note && note.categoryId === 'mnc-1') note.categoryId = '';
+      });
+    }
+    if (currentNotesCategoryId === 'mnc-1') {
+      currentNotesView = 'categories';
+      currentNotesCategoryId = null;
+    }
+    saveState();
+  }
   if (!Array.isArray(state.ministryNoteCategories) || state.ministryNoteCategories.length === 0) {
     state.ministryNoteCategories = DEFAULT_MINISTRY_NOTE_CATEGORIES.map(c => ({
       id: c.id, name: { en: c.name.en, es: c.name.es }, icon: c.icon, color: c.color,
@@ -2550,20 +2566,12 @@ function renderNotes() {
     '<div class="row-between mb-3" style="gap:8px;align-items:center;flex-wrap:wrap;"><span class="text-xs font-bold uppercase tracking-wider text-dim">' + countLabel + '</span>' +
     '<div class="row gap-2" style="flex-wrap:wrap;justify-content:flex-end;">' +
     '<button class="btn btn-secondary" data-all-notes style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('allNotes')) + '</button>' +
-    '<button class="btn btn-secondary" data-push-test style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('testPush')) + '</button>' +
-    '<button class="btn btn-secondary" data-push-debug style="font-size:13px;padding:7px 14px;" title="' + escapeHtml(t('pushDebug')) + '"><i class="fa-solid fa-stethoscope"></i></button>' +
     '<button class="btn btn-primary" data-add-cat style="font-size:13px;padding:7px 14px;">' +
     '<i class="fa-solid fa-plus"></i><span>' + t('addCategory') + '</span></button></div></div>' +
     gridHTML;
   scr.querySelectorAll('[data-add-cat]').forEach(function(el) { el.addEventListener('click', openAddCategoryModal); });
   var allNotesBtn = scr.querySelector('[data-all-notes]');
   if (allNotesBtn) allNotesBtn.addEventListener('click', function() { currentNotesView = 'all'; currentNotesCategoryId = null; renderNotes(); });
-  scr.querySelectorAll('[data-push-debug]').forEach(function(el) {
-    el.addEventListener('click', showMinistryPushDebug);
-  });
-  scr.querySelectorAll('[data-push-test]').forEach(function(el) {
-    el.addEventListener('click', function() { runMinistryPushDiagnostic(el); });
-  });
   scr.querySelectorAll('[data-cat-open]').forEach(function(el) {
     el.addEventListener('click', function(e) {
       if (!e.target.closest('[data-cat-edit],[data-cat-del]')) { openNotesCategory(el.dataset.catOpen); }
@@ -2690,8 +2698,6 @@ function renderNotesListView(scr, cat) {
     '<button class="btn btn-secondary" data-mn-back style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('notesBackBtn')) + '</button>' +
     '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:20px;">' + escapeHtml(icon) + '</span>' +
     '<span class="font-semibold text-sm">' + escapeHtml(catName) + '</span></div>' +
-    '<button class="btn btn-secondary" data-push-test style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('testPush')) + '</button>' +
-    '<button class="btn btn-secondary" data-push-debug style="font-size:13px;padding:7px 14px;" title="' + escapeHtml(t('pushDebug')) + '"><i class="fa-solid fa-stethoscope"></i></button>' +
     '<button class="btn btn-primary" data-mn-add style="font-size:13px;padding:7px 14px;">' + escapeHtml(t('mnAddNote')) + '</button></div>' +
     notesToolbar + noteCards;
   var addBtn = scr.querySelector('[data-mn-add]');
@@ -2700,12 +2706,6 @@ function renderNotesListView(scr, cat) {
   if (addFromEmptyBtn) addFromEmptyBtn.addEventListener('click', function() { openMinistryNoteModal(isAllNotesView ? '' : cat.id, null); });
   var backBtn = scr.querySelector('[data-mn-back]');
   if (backBtn) backBtn.addEventListener('click', function() { currentNotesView = 'categories'; currentNotesCategoryId = null; renderNotes(); });
-  scr.querySelectorAll('[data-push-debug]').forEach(function(el) {
-    el.addEventListener('click', showMinistryPushDebug);
-  });
-  scr.querySelectorAll('[data-push-test]').forEach(function(el) {
-    el.addEventListener('click', function() { runMinistryPushDiagnostic(el); });
-  });
   var searchEl = scr.querySelector('#mnNotesSearch');
   if (searchEl) searchEl.addEventListener('input', function() { currentNotesSearch = searchEl.value || ''; renderNotes(); });
   var filterEl = scr.querySelector('#mnNotesFilter');

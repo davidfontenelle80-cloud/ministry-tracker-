@@ -70,19 +70,37 @@
   function digits(phone){return String(phone||'').replace(/\D+/g,'');}
   function telUrl(phone){return digits(phone).length>=7?'tel:'+String(phone).replace(/[^\d+]/g,''):'';}
   function coord(n){return String(+Number(n).toFixed(6));}
-  function mapLink(v){return 'https://www.google.com/maps/search/?api=1&query='+coord(v.lat)+','+coord(v.lng);}
+  function hasCoords(v){
+    return !!v && v.lat!==null && v.lat!==undefined && v.lat!=='' && v.lng!==null && v.lng!==undefined && v.lng!=='' &&
+      Number.isFinite(Number(v.lat)) && Number.isFinite(Number(v.lng));
+  }
+  function navigationTarget(v){
+    if(!v)return '';
+    if(hasCoords(v))return coord(v.lat)+','+coord(v.lng);
+    return String(v.address||v.reference||'').trim();
+  }
+  function mapLink(v){
+    var target=navigationTarget(v);
+    return target?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(target):'';
+  }
   function directionsUrl(v,app){
     app=app||state.revisitSettings.navApp||'ask';
     if(app==='auto'||app==='ask')app=isIOS()?'apple':'google';
-    var ll=coord(v.lat)+','+coord(v.lng);
-    if(app==='waze')return 'https://waze.com/ul?ll='+ll+'&navigate=yes';
-    if(app==='apple')return 'https://maps.apple.com/?daddr='+ll+'&dirflg=d';
-    return 'https://www.google.com/maps/dir/?api=1&destination='+ll+'&travelmode=driving';
+    var target=navigationTarget(v);
+    if(!target)return '';
+    if(app==='waze'){
+      return hasCoords(v)
+        ? 'https://waze.com/ul?ll='+encodeURIComponent(target)+'&navigate=yes'
+        : 'https://waze.com/ul?q='+encodeURIComponent(target)+'&navigate=yes';
+    }
+    if(app==='apple')return 'https://maps.apple.com/?daddr='+encodeURIComponent(target)+'&dirflg=d';
+    return 'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(target)+'&travelmode=driving';
   }
   function normalizeVisit(v){
     if(!v||typeof v!=='object')return null;
-    var lat=Number(v.lat),lng=Number(v.lng);
-    if(!Number.isFinite(lat)||!Number.isFinite(lng))return null;
+    var lat=(v.lat===null||v.lat===undefined||v.lat==='')?null:Number(v.lat);
+    var lng=(v.lng===null||v.lng===undefined||v.lng==='')?null:Number(v.lng);
+    if(!Number.isFinite(lat)||!Number.isFinite(lng)){lat=null;lng=null;}
     return {
       id:String(v.id||makeId()),
       name:String(v.name||L('Return visit','Revisita')),
@@ -174,7 +192,7 @@
   }
   function visitCard(v,compact){
     var phone=telUrl(v.phone);
-    var distance=currentLocation&&global.MinistryRevisitMap?global.MinistryRevisitMap.formatDistance(global.MinistryRevisitMap.haversineKm(currentLocation.lat,currentLocation.lng,v.lat,v.lng)):'';
+    var distance=currentLocation&&hasCoords(v)&&global.MinistryRevisitMap?global.MinistryRevisitMap.formatDistance(global.MinistryRevisitMap.haversineKm(currentLocation.lat,currentLocation.lng,v.lat,v.lng)):'';
     var when=v.dueDate?[fmtDate(v.dueDate),v.dueTime?fmtTime(v.dueTime):''].filter(Boolean).join(' · '):L('No date set','Sin fecha');
     var place=placeLine(v)||L('Pinned location','Ubicación marcada');
     return '<article class="rv-card" data-rv-card="'+esc(v.id)+'">'+
@@ -248,7 +266,7 @@
   function filterChip(id,label){return '<button class="rv-chip'+(listFilter===id?' is-active':'')+'" type="button" data-rv-filter="'+id+'">'+esc(label)+'</button>';}
 
   function mapVisits(){
-    var t=todayKey(),arr=state.ministryRevisits.slice();
+    var arr=state.ministryRevisits.filter(hasCoords);
     if(mapMode==='today')arr=arr.filter(function(v){var b=scheduleBucket(v);return v.status==='active'&&(b==='today'||b==='overdue');});
     else if(mapMode==='active')arr=arr.filter(function(v){return v.status==='active';});
     else if(mapMode==='nearby')arr=currentLocation?arr.filter(function(v){return v.status==='active'&&global.MinistryRevisitMap.haversineKm(currentLocation.lat,currentLocation.lng,v.lat,v.lng)<=5;}):[];
@@ -454,7 +472,7 @@
   function forwardGeocode(query){
     query=String(query||'').trim();
     if(!query)return Promise.resolve([]);
-    var exact=state.ministryRevisits.find(function(v){return String(v.address||'').trim().toLowerCase()===query.toLowerCase();});
+    var exact=state.ministryRevisits.find(function(v){return hasCoords(v)&&String(v.address||'').trim().toLowerCase()===query.toLowerCase();});
     if(exact){
       return Promise.resolve([{lat:exact.lat,lng:exact.lng,address:exact.address,fullAddress:exact.address,accuracy:null,source:'saved'}]);
     }
@@ -518,11 +536,32 @@
     });
     toast(L('Tap the correct spot on the map, then confirm the pin.','Toca el lugar correcto en el mapa y luego confirma la ubicación.'));
   }
+  function continueWithTypedAddress(){
+    var input=dialog('rvAddressSearch');
+    var query=input?input.value.trim():'';
+    if(!query)return;
+    pendingTypedAddress=query;
+    pendingLocation=null;
+    closeDialog('rvAddressDialog');
+    openEditor(null,{lat:null,lng:null,address:query},{addressOnly:true});
+  }
   function searchAddressToMap(query){
+    query=String(query||'').trim();
+    if(!query)return Promise.resolve([]);
     toast(L('Finding address…','Buscando dirección…'));
     return forwardGeocode(query).then(function(results){
-      renderAddressResults(results,query);
-      if(!results.length)toast(L('Choose the location manually on the map if needed.','Si hace falta, elige la ubicación manualmente en el mapa.'));
+      if(results.length){
+        useAddressResult(0);
+        return results;
+      }
+      pendingTypedAddress=query;
+      pendingLocation=null;
+      pendingPurpose=movePinId?'move':'create';
+      view='map';
+      closeDialog('rvAddressDialog');
+      render();
+      requestAnimationFrame(function(){if(map&&currentLocation)map.setView(currentLocation.lat,currentLocation.lng,17);});
+      toast(L('Address not found automatically. Tap the correct spot on the map.','No se encontró la dirección automáticamente. Toca el lugar correcto en el mapa.'));
       return results;
     });
   }
@@ -634,12 +673,12 @@
     wrap.innerHTML=
       '<dialog id="rvNewDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('New Return Visit','Nueva revisita'))+'</h2><div class="rv-muted">'+esc(L('How do you want to locate the person?','¿Cómo quieres ubicar a la persona?'))+'</div></div><button class="rv-icon-btn" data-rv-close-new>×</button></div><div class="rv-list">'+
         '<button class="rv-choice-btn is-primary" type="button" data-rv-new-here><i class="fa-solid fa-location-crosshairs"></i><span><strong>'+esc(L('Here — use my location','Aquí — usar mi ubicación'))+'</strong><small>'+esc(L('Use GPS while you are at the house.','Usa el GPS cuando estés frente a la casa.'))+'</small></span></button>'+
-        '<button class="rv-choice-btn" type="button" data-rv-new-address><i class="fa-solid fa-location-dot"></i><span><strong>'+esc(L('Enter an address','Escribir una dirección'))+'</strong><small>'+esc(L('Search the address and verify the pin.','Busca la dirección y verifica el pin.'))+'</small></span></button>'+
+        '<button class="rv-choice-btn" type="button" data-rv-new-address><i class="fa-solid fa-location-dot"></i><span><strong>'+esc(L('Enter an address','Escribir una dirección'))+'</strong><small>'+esc(L('Save the address directly, or verify it on the map.','Guarda la dirección directamente o verifícala en el mapa.'))+'</small></span></button>'+
         '<button class="rv-choice-btn" type="button" data-rv-new-map><i class="fa-solid fa-map-pin"></i><span><strong>'+esc(L('Choose on the map','Elegir en el mapa'))+'</strong><small>'+esc(L('Drop the pin exactly where you want it.','Coloca el pin exactamente donde quieras.'))+'</small></span></button>'+
       '</div></div></dialog>'+
-      '<dialog id="rvAddressDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Find an address','Buscar una dirección'))+'</h2><div class="rv-muted">'+esc(L('Enter the address, choose the best match, then verify the pin.','Escribe la dirección, elige la mejor coincidencia y verifica el pin.'))+'</div></div><button class="rv-icon-btn" data-rv-close-address>×</button></div>'+
+      '<dialog id="rvAddressDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Enter an address','Escribir una dirección'))+'</h2><div class="rv-muted">'+esc(L('You can continue with the address alone, or use the map to verify or place a pin.','Puedes continuar solo con la dirección o usar el mapa para verificarla o colocar un pin.'))+'</div></div><button class="rv-icon-btn" data-rv-close-address>×</button></div>'+
         '<form id="rvAddressForm" class="rv-form"><label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><input id="rvAddressSearch" type="text" maxlength="220" list="rvAddressDatalist" autocomplete="street-address" autocapitalize="words" spellcheck="false" required placeholder="'+esc(L('Street, city, state or area','Calle, ciudad, estado o sector'))+'"><datalist id="rvAddressDatalist"></datalist></label>'+
-        '<div class="rv-address-actions"><button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i>'+esc(L('Search address','Buscar dirección'))+'</button><button class="btn btn-secondary" type="button" data-rv-address-manual-map><i class="fa-solid fa-map-pin"></i>'+esc(L('Place it on map','Colocarla en el mapa'))+'</button></div>'+
+        '<div class="rv-address-actions"><button class="btn btn-primary" type="submit"><i class="fa-solid fa-arrow-right"></i>'+esc(L('Continue','Continuar'))+'</button><button class="btn btn-secondary" type="button" data-rv-address-map-search><i class="fa-solid fa-map-pin"></i>'+esc(L('Find on map','Buscar en el mapa'))+'</button></div>'+
         '<div id="rvAddressResults" class="rv-address-results"></div></form></div></dialog>'+
       '<dialog id="rvVisitDialog" class="rv-dialog rv-visit-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2 id="rvVisitDialogTitle">'+esc(L('Return Visit','Revisita'))+'</h2><div id="rvVisitCoords" class="rv-muted font-mono"></div></div><button class="rv-icon-btn" data-rv-close-visit>×</button></div>'+
         '<section id="rvVisitView" class="rv-visit-view" hidden>'+
@@ -740,8 +779,8 @@
     var p=v||coords;if(!p)return;
     activeVisitId=v?v.id:'';
     dialog('rvVisitId').value=v?v.id:'';
-    dialog('rvVisitLat').value=p.lat;
-    dialog('rvVisitLng').value=p.lng;
+    dialog('rvVisitLat').value=hasCoords(p)?p.lat:'';
+    dialog('rvVisitLng').value=hasCoords(p)?p.lng:'';
     dialog('rvVisitName').value=v?v.name:'';
     dialog('rvVisitPhone').value=v?v.phone:'';
     dialog('rvVisitReference').value=v?v.reference:'';
@@ -753,7 +792,7 @@
     dialog('rvVisitDueTime').value=v?v.dueTime:'';
     dialog('rvVisitNotify').checked=v?v.notify5Min!==false:state.revisitSettings.pushReminderDefault!==false;
     dialog('rvVisitDialogTitle').textContent=v?v.name:L('New Return Visit','Nueva revisita');
-    dialog('rvVisitCoords').textContent=coord(p.lat)+', '+coord(p.lng);
+    dialog('rvVisitCoords').textContent=hasCoords(p)?coord(p.lat)+', '+coord(p.lng):L('Address saved — map pin optional','Dirección guardada — el pin del mapa es opcional');
     var more=dialog('rvMoreDetails');if(more)more.open=Boolean(v&&(v.phone||v.address||v.notes||v.leftWith||v.nextTopic));
     var findAddressBtn=dialog('rvFindAddressBtn');if(findAddressBtn)findAddressBtn.hidden=!v;
     var mode=!v?'new':options.edit?'edit':'view';
@@ -798,7 +837,10 @@
         }
         var ar=e.target.closest('[data-rv-address-result]');
         if(ar){useAddressResult(ar.dataset.rvAddressResult);return;}
-        if(e.target.closest('[data-rv-address-manual-map]')){useTypedAddressOnMap();return;}
+        if(e.target.closest('[data-rv-address-map-search]')){
+          var mq=dialog('rvAddressSearch').value.trim();if(!mq)return;
+          searchAddressToMap(mq);return;
+        }
 
         var preset=e.target.closest('[data-rv-date-preset]');
         if(preset){
@@ -822,9 +864,17 @@
         if(e.target.closest('[data-rv-form-move]')){
           var mv=findActive();if(!mv)return;
           movePinId=mv.id;pendingPurpose='move';pendingTypedAddress=mv.address||'';
-          pendingLocation={lat:mv.lat,lng:mv.lng,address:mv.address||'',accuracy:null};
-          closeDialog('rvVisitDialog');view='map';render();
-          toast(L('Tap another spot to move the pin, or confirm this location.','Toca otro lugar para mover el pin o confirma esta ubicación.'));
+          closeDialog('rvVisitDialog');
+          if(hasCoords(mv)){
+            pendingLocation={lat:mv.lat,lng:mv.lng,address:mv.address||'',accuracy:null};
+            view='map';render();
+            toast(L('Tap another spot to move the pin, or confirm this location.','Toca otro lugar para mover el pin o confirma esta ubicación.'));
+          }else if(mv.address){
+            searchAddressToMap(mv.address);
+          }else{
+            pendingLocation=null;view='map';render();
+            toast(L('Tap the map to add a pin.','Toca el mapa para añadir un pin.'));
+          }
         }
         if(e.target.closest('[data-rv-cancel-edit]')){
           var cv=findActive();
@@ -837,7 +887,7 @@
           var app=nav.dataset.rvNavApp;
           if(dialog('rvRememberNav')&&dialog('rvRememberNav').checked){state.revisitSettings.navApp=app;persist();}
           closeDialog('rvDirectionsDialog');
-          if(nv)global.open(directionsUrl(nv,app),'_blank','noopener');
+          if(nv){var navUrl=directionsUrl(nv,app);if(navUrl)global.open(navUrl,'_blank','noopener');}
         }
       });
     }
@@ -846,19 +896,29 @@
     dialog('rvLogForm').addEventListener('submit',saveLog);
     dialog('rvAddressForm').addEventListener('submit',function(e){
       e.preventDefault();
-      var q=dialog('rvAddressSearch').value.trim();if(!q)return;
-      var submit=e.submitter;if(submit)submit.disabled=true;
-      searchAddressToMap(q).finally(function(){if(submit)submit.disabled=false;});
+      continueWithTypedAddress();
     });
   }
   function findActive(){return state.ministryRevisits.find(function(v){return v.id===activeVisitId;});}
   function showVisitOnMap(v){
     if(!v)return;
     closeDialog('rvVisitDialog');
-    view='map';mapMode=v.status==='completed'?'all':'active';
-    state.revisitMap={lat:v.lat,lng:v.lng,zoom:17,manual:true};
-    persist();render();
-    requestAnimationFrame(function(){if(map)map.setView(v.lat,v.lng,17);});
+    movePinId=v.id;
+    pendingPurpose='move';
+    pendingTypedAddress=v.address||'';
+    if(hasCoords(v)){
+      view='map';mapMode=v.status==='completed'?'all':'active';
+      state.revisitMap={lat:v.lat,lng:v.lng,zoom:17,manual:true};
+      persist();render();
+      requestAnimationFrame(function(){if(map)map.setView(v.lat,v.lng,17);});
+      return;
+    }
+    if(v.address){
+      searchAddressToMap(v.address);
+      return;
+    }
+    view='map';mapMode=v.status==='completed'?'all':'active';pendingLocation=null;render();
+    toast(L('This Return Visit has no map pin yet. Tap the map to add one.','Esta revisita todavía no tiene pin. Toca el mapa para añadirlo.'));
   }
   function shareVisit(v){
     if(!v)return;
@@ -910,7 +970,8 @@
       status:prev?prev.status:'active',
       completedAt:prev?prev.completedAt:null,
       history:prev?prev.history:[],
-      lat:Number(dialog('rvVisitLat').value),lng:Number(dialog('rvVisitLng').value),
+      lat:dialog('rvVisitLat').value===''?null:Number(dialog('rvVisitLat').value),
+      lng:dialog('rvVisitLng').value===''?null:Number(dialog('rvVisitLng').value),
       createdAt:prev?prev.createdAt:nowIso(),updatedAt:nowIso()
     });
     if(!v)return;
@@ -999,14 +1060,20 @@
     var lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//KHub//Ministry Return Visits//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT','UID:ministry-revisit-'+v.id+'@khub','SEQUENCE:'+Math.max(0,Number(v.calendarSeq)||0),'DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')];
     if(v.dueTime)lines.push('DTSTART:'+localStamp(v.dueDate,v.dueTime),'DTEND:'+endStamp(v.dueDate,v.dueTime,30));
     else lines.push('DTSTART;VALUE=DATE:'+v.dueDate.replace(/-/g,''),'DTEND;VALUE=DATE:'+addDays(v.dueDate,1).replace(/-/g,''));
-    var description=[v.nextTopic?L('Next topic: ','Próximo tema: ')+v.nextTopic:'',v.leftWith?L('Left: ','Dejó: ')+v.leftWith:'',v.phone?L('Phone: ','Teléfono: ')+v.phone:'',mapLink(v)].filter(Boolean).join('\n');
-    lines.push('SUMMARY:'+icsEscape(L('Return Visit: ','Revisita: ')+v.name),'LOCATION:'+icsEscape(placeLine(v)||coord(v.lat)+', '+coord(v.lng)),'GEO:'+coord(v.lat)+';'+coord(v.lng),'DESCRIPTION:'+icsEscape(description),'URL:'+mapLink(v),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEscape(L('Return Visit: ','Revisita: ')+v.name),v.dueTime?'TRIGGER:-PT'+reminder+'M':'TRIGGER:PT8H','END:VALARM','END:VEVENT','END:VCALENDAR');
+    var link=mapLink(v);
+    var description=[v.nextTopic?L('Next topic: ','Próximo tema: ')+v.nextTopic:'',v.leftWith?L('Left: ','Dejó: ')+v.leftWith:'',v.phone?L('Phone: ','Teléfono: ')+v.phone:'',link].filter(Boolean).join('\n');
+    var location=placeLine(v)||(hasCoords(v)?coord(v.lat)+', '+coord(v.lng):'');
+    lines.push('SUMMARY:'+icsEscape(L('Return Visit: ','Revisita: ')+v.name),'LOCATION:'+icsEscape(location));
+    if(hasCoords(v))lines.push('GEO:'+coord(v.lat)+';'+coord(v.lng));
+    lines.push('DESCRIPTION:'+icsEscape(description));
+    if(link)lines.push('URL:'+link);
+    lines.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEscape(L('Return Visit: ','Revisita: ')+v.name),v.dueTime?'TRIGGER:-PT'+reminder+'M':'TRIGGER:PT8H','END:VALARM','END:VEVENT','END:VCALENDAR');
     return lines.join('\r\n')+'\r\n';
   }
   function googleCalendarUrl(v){
     var dates=v.dueTime?localStamp(v.dueDate,v.dueTime)+'/'+endStamp(v.dueDate,v.dueTime,30):v.dueDate.replace(/-/g,'')+'/'+addDays(v.dueDate,1).replace(/-/g,'');
     var details=[v.nextTopic?L('Next topic: ','Próximo tema: ')+v.nextTopic:'',v.leftWith?L('Left: ','Dejó: ')+v.leftWith:'',mapLink(v)].filter(Boolean).join('\n');
-    var q=new URLSearchParams({action:'TEMPLATE',text:L('Return Visit: ','Revisita: ')+v.name,dates:dates,details:details,location:placeLine(v)||coord(v.lat)+','+coord(v.lng)});
+    var q=new URLSearchParams({action:'TEMPLATE',text:L('Return Visit: ','Revisita: ')+v.name,dates:dates,details:details,location:placeLine(v)||(hasCoords(v)?coord(v.lat)+','+coord(v.lng):'')});
     return 'https://calendar.google.com/calendar/render?'+q.toString();
   }
   function addToCalendar(v){
@@ -1025,8 +1092,13 @@
   }
   function openDirections(v){
     if(!v)return;
+    if(!navigationTarget(v)){toast(L('Add an address or map pin first.','Primero añade una dirección o un pin en el mapa.'));return;}
     var app=state.revisitSettings.navApp||'ask';
-    if(app&&app!=='ask'&&app!=='auto'){global.open(directionsUrl(v,app),'_blank','noopener');return;}
+    if(app&&app!=='ask'&&app!=='auto'){
+      var directUrl=directionsUrl(v,app);
+      if(directUrl)global.open(directUrl,'_blank','noopener');
+      return;
+    }
     ensureDialogs();
     directionsVisitId=v.id;
     var name=dialog('rvDirectionsName');if(name)name.textContent=[v.name,placeLine(v)].filter(Boolean).join(' · ');
