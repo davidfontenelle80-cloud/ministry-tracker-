@@ -365,11 +365,15 @@
     });
   }
   function compactAddress(result){
-    var a=result&&result.address;if(!a)return String(result&&result.display_name||'').split(',').slice(0,3).join(',').trim();
-    var street=[a.road||a.pedestrian||a.footway||a.path||'',a.house_number||''].filter(Boolean).join(' ');
+    var a=result&&result.address;
+    if(!a)return String(result&&result.display_name||'').split(',').slice(0,5).join(',').trim();
+    var road=a.road||a.pedestrian||a.footway||a.path||'';
+    var street=[a.house_number||'',road].filter(Boolean).join(' ');
     var area=a.neighbourhood||a.suburb||a.quarter||a.hamlet||a.village||'';
     var city=a.city||a.town||a.municipality||a.county||'';
-    return [street,area,city].filter(function(x,i,arr){return x&&arr.indexOf(x)===i;}).join(', ');
+    var stateName=a.state||a.region||'';
+    var postal=a.postcode||'';
+    return [street,area,city,stateName,postal].filter(function(x,i,arr){return x&&arr.indexOf(x)===i;}).join(', ');
   }
   function reverseGeocode(lat,lng){
     if(!navigator.onLine)return Promise.resolve('');
