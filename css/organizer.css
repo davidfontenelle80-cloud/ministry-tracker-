@@ -1,0 +1,53 @@
+/* organizer.css — Notes, Bible Studies and Home agenda */
+.org-shell{display:flex;flex-direction:column;gap:14px;padding-top:14px;}
+.org-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.org-heading h2{margin:0;font-size:1.2rem;}
+.org-heading p{margin:4px 0 0;color:var(--text-dim);font-size:12px;line-height:1.45;max-width:560px;}
+.org-filter-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:4px;border:1px solid var(--border);border-radius:16px;background:var(--surface-sub);}
+.org-filter-tab{min-height:46px;border:0;border-radius:12px;background:transparent;color:var(--text-dim);display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700;font-size:12px;}
+.org-filter-tab.is-active{background:var(--surface);color:var(--accent);box-shadow:0 1px 5px rgba(0,0,0,.08);}
+.org-card-list{display:flex;flex-direction:column;gap:10px;}
+.org-note-card,.org-person-open{width:100%;border:0;background:transparent;color:var(--text);text-align:left;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0;}
+.org-note-card{padding:14px;border:1px solid var(--border);border-radius:16px;background:var(--surface);}
+.org-card-main{min-width:0;flex:1;}
+.org-card-title{font-weight:800;font-size:15px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.org-card-sub{font-size:12px;color:var(--text-dim);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.org-card-meta{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:8px;color:var(--text-dim);font-size:11px;}
+.org-chevron{color:var(--text-faint);font-size:12px;flex:0 0 auto;}
+.org-badge{display:inline-flex;align-items:center;min-height:24px;padding:3px 8px;border-radius:999px;background:var(--surface-sub);border:1px solid var(--border);font-weight:800;color:var(--text-dim);}
+.org-badge.is-today{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,var(--border));}
+.org-badge.is-overdue{background:var(--coral-soft);color:var(--coral);border-color:color-mix(in srgb,var(--coral) 35%,var(--border));}
+.org-badge.is-complete{opacity:.7;}
+.org-person-card{border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:12px;}
+.org-person-open>div{min-width:0;flex:1;}
+.org-inline-actions{display:flex;flex-wrap:wrap;gap:8px;padding-top:10px;border-top:1px solid var(--border);}
+.org-inline-actions .btn{flex:1 1 auto;min-height:42px;}
+.org-empty{padding:28px 16px;text-align:center;border:1px dashed var(--border);border-radius:16px;color:var(--text-dim);}
+.org-note-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--surface-sub);min-height:120px;}
+.org-detail-actions,.org-contact-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.org-detail-actions .btn,.org-contact-actions .btn{flex:1 1 40%;min-height:44px;}
+.org-dashboard{margin-bottom:20px;padding:14px;}
+.org-dashboard-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.org-dashboard-section{display:flex;flex-direction:column;gap:6px;padding-top:10px;margin-top:10px;border-top:1px solid var(--border);}
+.org-dashboard-section>strong{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);}
+.org-overdue-label{color:var(--coral)!important;}
+.org-dashboard-item{width:100%;display:grid;grid-template-columns:36px minmax(0,1fr) 14px;gap:10px;align-items:center;border:0;border-radius:12px;background:var(--surface-sub);color:var(--text);padding:10px;text-align:left;}
+.org-dashboard-icon{width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;}
+.org-dashboard-copy{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.org-dashboard-copy strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.org-dashboard-copy small{font-size:11px;color:var(--text-dim);}
+.org-dashboard-empty{padding:12px;border-radius:12px;background:var(--surface-sub);color:var(--text-dim);font-size:12px;}
+.org-eyebrow{text-transform:uppercase;letter-spacing:.05em;font-size:10px;font-weight:800;color:var(--accent);margin-bottom:4px;}
+.org-quick-place{font-size:13px;color:var(--text-dim);padding:10px 12px;border-radius:12px;background:var(--surface-sub);}
+.org-quick-place:empty{display:none;}
+.org-quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.org-quick-actions .btn:last-child:nth-child(odd){grid-column:1/-1;}
+.rv-top-tabs{grid-template-columns:repeat(3,minmax(0,1fr));}
+@media(max-width:560px){
+  .org-heading{align-items:stretch;flex-direction:column;}
+  .org-heading .btn{align-self:flex-start;}
+  .org-filter-tab span{display:none;}
+  .org-filter-tab{font-size:15px;}
+  .org-quick-actions{grid-template-columns:1fr;}
+  .org-quick-actions .btn:last-child:nth-child(odd){grid-column:auto;}
+}
