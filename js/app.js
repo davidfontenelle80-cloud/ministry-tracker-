@@ -5795,10 +5795,21 @@ window.onload = function() {
     return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true});
   }
   function dayName(iso,lang){
-    var d=new Date(iso);
+    // Open-Meteo daily.time values are date-only strings (YYYY-MM-DD).
+    // Parsing those with new Date("YYYY-MM-DD") treats them as UTC midnight,
+    // which shifts the weekday back one day in US time zones. Parse the
+    // calendar date directly so Saturday stays Saturday, etc.
+    var s=String(iso||'');
+    var m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    var dayIndex;
+    if(m){
+      dayIndex=new Date(Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3]))).getUTCDay();
+    }else{
+      dayIndex=new Date(iso).getDay();
+    }
     var en=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     var es=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-    return(lang==='es'?es:en)[d.getDay()];
+    return(lang==='es'?es:en)[dayIndex];
   }
 
   function uvLabel(uv,lang){
