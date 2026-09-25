@@ -151,6 +151,12 @@
 
   function root(){return document.getElementById('revisitsContent');}
   function notesRoot(){return document.getElementById('notesContent');}
+  // organizer.js can switch tabs without going through activate(); read the
+  // highlighted tab so returning to Notes restores what is actually on screen.
+  function currentMode(){
+    var on=document.querySelector('[data-notes-mode].is-active');
+    return on&&on.dataset.notesMode?on.dataset.notesMode:mode;
+  }
   function activate(next){
     mode=next==='revisits'?'revisits':next==='studies'?'studies':'notes';
     var n=notesRoot(),r=root(),s=document.getElementById('studiesContent');
@@ -163,7 +169,7 @@
     var studyLabel=document.getElementById('notesModeStudiesLabel');
     if(noteLabel)noteLabel.textContent=L('Notes','Notas');
     if(rvLabel)rvLabel.textContent=L('Return Visits','Revisitas');
-    if(studyLabel)studyLabel.textContent=L('Bible Studies','Estudios bíblicos');
+    if(studyLabel)studyLabel.textContent=L('Bible Studies','Estudios');
     if(mode==='revisits'){
       render();
       autoLocateOnRevisitsOpen();
@@ -175,27 +181,28 @@
   }
 
   function viewTabs(){
-    return '<div class="rv-view-tabs" role="tablist" aria-label="'+esc(L('Return Visit views','Vistas de revisitas'))+'">'+
+    return '<div class="org-filter-tabs is-3" role="tablist" aria-label="'+esc(L('Return Visit views','Vistas de revisitas'))+'">'+
       tabButton('today','fa-calendar-day',L('Today','Hoy'))+
       tabButton('map','fa-map-location-dot',L('Map','Mapa'))+
       tabButton('list','fa-address-book',L('All','Todas'))+
       '</div>';
   }
   function tabButton(name,icon,label){
-    return '<button class="rv-view-tab'+(view===name?' is-active':'')+'" data-rv-view="'+name+'" type="button"><i class="fa-solid '+icon+'"></i><span>'+esc(label)+'</span></button>';
+    return '<button class="org-filter-tab'+(view===name?' is-active':'')+'" data-rv-view="'+name+'" type="button" role="tab" aria-selected="'+(view===name?'true':'false')+'"><i class="fa-solid '+icon+'"></i><span>'+esc(label)+'</span></button>';
   }
   function render(){
     ensureState();
     var el=root();if(!el||mode!=='revisits')return;
     map=null;
     var body=view==='map'?renderMap():view==='list'?renderList():renderToday();
-    el.innerHTML='<div class="rv-shell">'+viewTabs()+body+renderSettings()+'</div>';
+    el.innerHTML='<div class="rv-shell org-shell">'+body+renderSettings()+'</div>';
     requestAnimationFrame(refreshRevisitSettingsStatus);
     if(view==='map')requestAnimationFrame(initMap);
   }
   function heading(title,subtitle,newBtn){
-    return '<div class="rv-heading"><div><h2 class="text-xl font-bold">'+esc(title)+'</h2>'+(subtitle?'<div class="rv-muted">'+esc(subtitle)+'</div>':'')+'</div>'+
-      (newBtn?'<button class="btn btn-primary" type="button" data-rv-new><i class="fa-solid fa-plus"></i>'+esc(L('New','Nueva'))+'</button>':'')+'</div>';
+    return '<div class="org-heading"><div><h2>'+esc(title)+'</h2>'+(subtitle?'<p>'+esc(subtitle)+'</p>':'')+'</div>'+
+      (newBtn?'<button class="btn btn-primary" type="button" data-rv-new><i class="fa-solid fa-plus"></i>'+esc(L('New Return Visit','Nueva revisita'))+'</button>':'')+'</div>'+
+      viewTabs();
   }
   function visitStatus(v){
     var b=scheduleBucket(v);
@@ -1258,8 +1265,8 @@
     if(initialized)return;initialized=true;ensureState();bindRoot();
     document.querySelectorAll('[data-notes-mode]').forEach(function(b){b.addEventListener('click',function(){activate(b.dataset.notesMode);});});
     document.addEventListener('click',function(e){
-      if(e.target.closest('#langToggle'))setTimeout(function(){var host=document.getElementById('rvDialogsHost');if(host)host.remove();if(mode==='revisits')render();activate(mode);},30);
-      var nav=e.target.closest('.nav-btn[data-screen="notes"]');if(nav)setTimeout(function(){activate(mode);},30);
+      if(e.target.closest('#langToggle'))setTimeout(function(){var host=document.getElementById('rvDialogsHost');if(host)host.remove();var m=currentMode();if(m==='revisits')render();activate(m);},30);
+      var nav=e.target.closest('.nav-btn[data-screen="notes"]');if(nav)setTimeout(function(){activate(currentMode());},30);
     },true);
     activate('notes');
   }

@@ -124,7 +124,7 @@
     var nl=document.getElementById('notesModeNotesLabel'),rl=document.getElementById('notesModeRevisitsLabel'),sl=document.getElementById('notesModeStudiesLabel');
     if(nl)nl.textContent=L('Notes','Notas');
     if(rl)rl.textContent=L('Return Visits','Revisitas');
-    if(sl)sl.textContent=L('Bible Studies','Estudios bíblicos');
+    if(sl)sl.textContent=L('Bible Studies','Estudios');
   }
 
   function filterTabs(kind,current,records){

@@ -224,3 +224,11 @@ Review status: NOT REVIEWED
 - Bible Study Done routes to Log Study.
 - Snooze 15m reschedules without changing the record's due date/time.
 - Dismiss closes the alert and leaves the record untouched.
+
+## 2026-09-25 — Post-organizer sweep fixes (v93)
+Sweep of the 11 organizer/Return Visit commits found and fixed:
+1. **Bottom sheets short on the right (phones):** `.rv-dialog` mobile rule set `width:100%` but the UA `<dialog>` max-width (`100% - 2em - 6px`) capped it at 392/430px, left-aligned. Added `max-width:100%` (css/revisits.css).
+2. **Notes tab desync:** revisits.js tracked the active tab in its own `mode` variable; organizer.js switches tabs via `showOnly()` without updating it, so after a notification tap / dashboard shortcut / language toggle, tapping the Notes nav jumped back to Return Visits. revisits.js now reads the highlighted tab (`currentMode()`) instead.
+3. **Spanish tab label wrap:** tab label shortened to "Estudios" (section heading keeps "Estudios bíblicos").
+4. **Return Visits header aligned with Notes/Bible Studies (approved by David):** same `org-heading` (title + description, full-width-row button underneath on phones, label "New Return Visit") followed by the same segmented `org-filter-tabs` bar (3-column `is-3` variant) for Today/Map/All; view switching still via `data-rv-view`.
+- PWA cache bumped to **v93-sheet-width-tab-sync**.
