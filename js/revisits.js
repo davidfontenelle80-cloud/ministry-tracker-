@@ -969,18 +969,23 @@
     showDialog('rvDirectionsDialog');
   }
 
+  function standalonePayload(){
+    try{
+      var raw=localStorage.getItem('revisita.state.v1');if(!raw)return null;
+      var parsed=JSON.parse(raw);if(!parsed||!Array.isArray(parsed.visits))return null;
+      return {app:'Revisita',schemaVersion:parsed.version||3,visits:parsed.visits,settings:parsed.settings||{}};
+    }catch(e){return null;}
+  }
   function standaloneVisits(){
     if(importChecked&&standaloneVisits.cache)return standaloneVisits.cache;
-    var arr=[];
-    try{var raw=localStorage.getItem('revisita.state.v1');if(raw){var parsed=JSON.parse(raw);if(Array.isArray(parsed.visits))arr=parsed.visits.map(normalizeVisit).filter(Boolean);}}catch(e){}
+    var payload=standalonePayload();
+    var arr=payload?payload.visits.map(normalizeVisit).filter(Boolean):[];
     standaloneVisits.cache=arr;importChecked=true;return arr;
   }
   function importStandalone(){
-    var incoming=standaloneVisits();if(!incoming.length)return;
-    if(!confirm(L('Import existing Revisita records into Ministry? Matching IDs will keep the newest edit.','¿Importar las revisitas existentes a Ministry? Los ID iguales conservarán la edición más reciente.')))return;
-    var by=new Map(state.ministryRevisits.map(function(v){return [v.id,v];}));
-    incoming.forEach(function(v){var prev=by.get(v.id);if(!prev||String(v.updatedAt||'')>String(prev.updatedAt||''))by.set(v.id,v);});
-    state.ministryRevisits=Array.from(by.values());persist();render();toast(L('Return Visit records imported.','Revisitas importadas.'));
+    var payload=standalonePayload();if(!payload||!payload.visits.length)return;
+    if(!confirm(L('Import Return Visits and compatible settings from Revisita? Matching IDs will keep the newest edit.','¿Importar las revisitas y la configuración compatible desde Revisita? Los ID iguales conservarán la edición más reciente.')))return;
+    applyImportedRevisita(payload);
   }
 
   function bindRoot(){
@@ -1020,7 +1025,11 @@
         }
         return;
       }
+      if(e.target.closest('[data-rv-enable-push]')){enableRevisitPush();return;}
+      if(e.target.closest('[data-rv-test-push]')){testRevisitPush();return;}
       if(e.target.closest('[data-rv-import]')){importStandalone();return;}
+      if(e.target.closest('[data-rv-import-file]')){var fileInput=document.getElementById('rvImportFile');if(fileInput)fileInput.click();return;}
+      if(e.target.closest('[data-rv-export]')){exportRevisitBackup();return;}
     });
     el.addEventListener('input',function(e){
       if(e.target.id==='rvSearch'){
@@ -1038,6 +1047,10 @@
       }
     });
     el.addEventListener('change',function(e){
+      if(e.target.id==='rvImportFile'){
+        var file=e.target.files&&e.target.files[0];if(file)importRevisitBackupFile(file);
+        e.target.value='';return;
+      }
       var key=e.target.dataset.rvSetting;if(!key)return;
       if(e.target.type==='checkbox')state.revisitSettings[key]=e.target.checked;
       else if(key==='calendarReminderMinutes')state.revisitSettings[key]=Number(e.target.value);
