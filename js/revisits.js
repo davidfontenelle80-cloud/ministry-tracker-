@@ -157,6 +157,7 @@
     map=null;
     var body=view==='map'?renderMap():view==='list'?renderList():renderToday();
     el.innerHTML='<div class="rv-shell">'+viewTabs()+body+renderSettings()+'</div>';
+    requestAnimationFrame(refreshRevisitSettingsStatus);
     if(view==='map')requestAnimationFrame(initMap);
   }
   function heading(title,subtitle,newBtn){
@@ -473,14 +474,90 @@
     var s=state.revisitSettings;
     var standaloneCount=standaloneVisits().length;
     return '<details class="rv-settings"><summary>'+esc(L('Return Visit settings','Configuración de revisitas'))+'</summary><div class="rv-settings-content">'+
-      '<div class="rv-cloud-note"><i class="fa-solid fa-cloud"></i> '+esc(L('Return Visits are included in Ministry cloud backup.','Las revisitas se incluyen en la copia de seguridad de Ministry.'))+'</div>'+
-      '<label class="rv-check"><input type="checkbox" data-rv-setting="calendarOnSave" '+(s.calendarOnSave?'checked':'')+'><span><strong>'+esc(L('Add to calendar after saving','Añadir al calendario al guardar'))+'</strong><br><span class="rv-muted">'+esc(L('You can also add any visit manually.','También puedes añadir cualquier visita manualmente.'))+'</span></span></label>'+
-      '<label class="rv-field"><span>'+esc(L('Calendar app','Calendario'))+'</span><select data-rv-setting="calendarMode"><option value="auto" '+(s.calendarMode==='auto'?'selected':'')+'>'+esc(L('Automatic','Automático'))+'</option><option value="ics" '+(s.calendarMode==='ics'?'selected':'')+'>ICS '+esc(L('(alarm included)','(incluye alarma)'))+'</option><option value="google" '+(s.calendarMode==='google'?'selected':'')+'>Google Calendar</option></select></label>'+
-      '<label class="rv-field"><span>'+esc(L('Calendar alarm','Alarma del calendario'))+'</span><select data-rv-setting="calendarReminderMinutes">'+[0,5,15,30,60].map(function(n){return '<option value="'+n+'" '+(Number(s.calendarReminderMinutes)===n?'selected':'')+'>'+ (n? n+' min':L('At time','A la hora')) +'</option>';}).join('')+'</select></label>'+
-      '<label class="rv-field"><span>'+esc(L('Directions app','App de navegación'))+'</span><select data-rv-setting="navApp"><option value="ask" '+(s.navApp==='ask'||s.navApp==='auto'?'selected':'')+'>'+esc(L('Ask every time','Preguntar siempre'))+'</option><option value="google" '+(s.navApp==='google'?'selected':'')+'>Google Maps</option><option value="apple" '+(s.navApp==='apple'?'selected':'')+'>Apple Maps</option><option value="waze" '+(s.navApp==='waze'?'selected':'')+'>Waze</option></select></label>'+
-      '<label class="rv-check"><input type="checkbox" data-rv-setting="pushReminderDefault" '+(s.pushReminderDefault?'checked':'')+'><span><strong>'+esc(L('5-minute app reminder by default','Recordatorio de 5 minutos por defecto'))+'</strong><br><span class="rv-muted">'+esc(L('Requires notifications to be allowed on this device.','Requiere permitir notificaciones en este dispositivo.'))+'</span></span></label>'+
-      (standaloneCount?'<button class="btn btn-secondary" type="button" data-rv-import><i class="fa-solid fa-file-import"></i>'+esc(L('Import '+standaloneCount+' from Revisita','Importar '+standaloneCount+' de Revisita'))+'</button>':'')+
+      '<div class="rv-cloud-note"><i class="fa-solid fa-cloud"></i> '+esc(L('Return Visits use Ministry’s language, theme, cloud backup and app installation. No separate account is needed.','Las revisitas usan el idioma, tema, copia en la nube e instalación de Ministry. No necesitas otra cuenta.'))+'</div>'+
+      '<section class="rv-settings-group"><strong>'+esc(L('Reminders & calendar','Recordatorios y calendario'))+'</strong>'+
+        '<label class="rv-check"><input type="checkbox" data-rv-setting="calendarOnSave" '+(s.calendarOnSave?'checked':'')+'><span><strong>'+esc(L('Add to calendar after saving','Añadir al calendario al guardar'))+'</strong><br><span class="rv-muted">'+esc(L('You can also add any Return Visit manually from its card.','También puedes añadir cualquier revisita manualmente desde su tarjeta.'))+'</span></span></label>'+
+        '<label class="rv-field"><span>'+esc(L('Calendar app','Calendario'))+'</span><select data-rv-setting="calendarMode"><option value="auto" '+(s.calendarMode==='auto'?'selected':'')+'>'+esc(L('Automatic','Automático'))+'</option><option value="ics" '+(s.calendarMode==='ics'?'selected':'')+'>ICS '+esc(L('(alarm included)','(incluye alarma)'))+'</option><option value="google" '+(s.calendarMode==='google'?'selected':'')+'>Google Calendar</option></select></label>'+
+        '<label class="rv-field"><span>'+esc(L('Calendar alarm','Alarma del calendario'))+'</span><select data-rv-setting="calendarReminderMinutes">'+[0,5,15,30,60,120].map(function(n){var label=n===0?L('At time','A la hora'):n===60?'1 h':n===120?'2 h':n+' min';return '<option value="'+n+'" '+(Number(s.calendarReminderMinutes)===n?'selected':'')+'>'+label+'</option>';}).join('')+'</select></label>'+
+        '<label class="rv-check"><input type="checkbox" data-rv-setting="pushReminderDefault" '+(s.pushReminderDefault?'checked':'')+'><span><strong>'+esc(L('5-minute app reminder by default','Aviso de 5 minutos por defecto'))+'</strong><br><span class="rv-muted">'+esc(L('A Return Visit must have both a date and time.','La revisita debe tener fecha y hora.'))+'</span></span></label>'+
+        '<div class="rv-settings-buttons"><button class="btn btn-secondary" type="button" data-rv-enable-push><i class="fa-solid fa-bell"></i>'+esc(L('Enable notifications','Activar avisos'))+'</button><button class="btn btn-secondary" type="button" data-rv-test-push><i class="fa-solid fa-paper-plane"></i>'+esc(L('Test notification','Probar aviso'))+'</button></div><div id="rvPushStatus" class="rv-muted" role="status"></div>'+
+      '</section>'+
+      '<section class="rv-settings-group"><strong>'+esc(L('Navigation','Navegación'))+'</strong><label class="rv-field"><span>'+esc(L('Open Directions with','Abrir “Cómo llegar” con'))+'</span><select data-rv-setting="navApp"><option value="ask" '+(s.navApp==='ask'||s.navApp==='auto'?'selected':'')+'>'+esc(L('Ask every time','Preguntar siempre'))+'</option><option value="google" '+(s.navApp==='google'?'selected':'')+'>Google Maps</option><option value="apple" '+(s.navApp==='apple'?'selected':'')+'>Apple Maps</option><option value="waze" '+(s.navApp==='waze'?'selected':'')+'>Waze</option></select></label></section>'+
+      '<section class="rv-settings-group"><strong>'+esc(L('Import & backup','Importar y copia'))+'</strong>'+
+        (standaloneCount?'<button class="btn btn-secondary w-full" type="button" data-rv-import><i class="fa-solid fa-file-import"></i>'+esc(L('Import '+standaloneCount+' Return Visits from Revisita','Importar '+standaloneCount+' revisitas desde Revisita'))+'</button>':'')+
+        '<button class="btn btn-secondary w-full" type="button" data-rv-import-file><i class="fa-solid fa-file-arrow-up"></i>'+esc(L('Import a Revisita backup file','Importar una copia de Revisita'))+'</button><input id="rvImportFile" type="file" accept="application/json,.json" hidden>'+
+        '<button class="btn btn-secondary w-full" type="button" data-rv-export><i class="fa-solid fa-file-arrow-down"></i>'+esc(L('Export Return Visits','Exportar revisitas'))+'</button>'+
+      '</section>'+
       '</div></details>';
+  }
+  function refreshRevisitSettingsStatus(){
+    var status=document.getElementById('rvPushStatus');if(!status)return;
+    if(!global.MinistryPush||typeof global.MinistryPush.diagnose!=='function'){
+      status.textContent=L('Notifications are not available in this build.','Los avisos no están disponibles en esta versión.');
+      return;
+    }
+    global.MinistryPush.diagnose().then(function(d){
+      if(!document.getElementById('rvPushStatus'))return;
+      var text=d.permission==='granted'?L('Notifications are allowed on this device.','Los avisos están permitidos en este dispositivo.'):
+        d.permission==='denied'?L('Notifications are blocked in device/browser settings.','Los avisos están bloqueados en los ajustes del dispositivo o navegador.'):
+        L('Notifications have not been enabled yet.','Los avisos todavía no se han activado.');
+      if(d.environmentBlock)text=d.environmentBlock;
+      document.getElementById('rvPushStatus').textContent=text;
+    }).catch(function(){status.textContent='';});
+  }
+  function enableRevisitPush(){
+    if(!global.MinistryPush||typeof global.MinistryPush.subscribe!=='function'){toast(L('Notifications are not available.','Los avisos no están disponibles.'));return;}
+    var status=document.getElementById('rvPushStatus');if(status)status.textContent=L('Setting up notifications…','Configurando avisos…');
+    global.MinistryPush.subscribe().then(function(){
+      toast(L('Notifications enabled.','Avisos activados.'));
+      refreshRevisitSettingsStatus();
+    }).catch(function(err){
+      toast((err&&err.message)||L('Could not enable notifications.','No se pudieron activar los avisos.'));
+      refreshRevisitSettingsStatus();
+    });
+  }
+  function testRevisitPush(){
+    if(!global.MinistryPush||typeof global.MinistryPush.sendTestPush!=='function'){toast(L('Notifications are not available.','Los avisos no están disponibles.'));return;}
+    var status=document.getElementById('rvPushStatus');if(status)status.textContent=L('Sending test…','Enviando prueba…');
+    global.MinistryPush.sendTestPush().then(function(result){
+      toast(result&&result.ok===false?L('The test notification could not be sent.','No se pudo enviar el aviso de prueba.'):L('Test notification sent.','Aviso de prueba enviado.'));
+      refreshRevisitSettingsStatus();
+    });
+  }
+  function exportRevisitBackup(){
+    var s=state.revisitSettings||{};
+    var payload={app:'Revisita',schemaVersion:3,exportedAt:nowIso(),visits:state.ministryRevisits,settings:{navApp:s.navApp||'ask',calendarOnSave:s.calendarOnSave===true,calendarMode:s.calendarMode||'auto',reminderMinutes:Number(s.calendarReminderMinutes)||5}};
+    var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    var url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='return-visits-'+todayKey()+'.json';document.body.append(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},30000);
+    toast(L('Return Visits exported.','Revisitas exportadas.'));
+  }
+  function applyImportedRevisita(payload){
+    if(!payload||payload.app!=='Revisita'||!Array.isArray(payload.visits))throw new Error(L('This is not a valid Revisita backup.','Esta no es una copia válida de Revisita.'));
+    var incoming=payload.visits.map(normalizeVisit).filter(Boolean);
+    var by=new Map(state.ministryRevisits.map(function(v){return [v.id,v];}));
+    incoming.forEach(function(v){
+      var prev=by.get(v.id);
+      if(!prev||String(v.updatedAt||'')>=String(prev.updatedAt||''))by.set(v.id,v);
+    });
+    state.ministryRevisits=Array.from(by.values());
+    var s=payload.settings||{};
+    if(['ask','google','apple','waze'].indexOf(s.navApp)>=0)state.revisitSettings.navApp=s.navApp;
+    if(typeof s.calendarOnSave==='boolean')state.revisitSettings.calendarOnSave=s.calendarOnSave;
+    if(['auto','ics','google'].indexOf(s.calendarMode)>=0)state.revisitSettings.calendarMode=s.calendarMode;
+    if(Number.isFinite(Number(s.reminderMinutes)))state.revisitSettings.calendarReminderMinutes=Math.max(0,Math.min(120,Number(s.reminderMinutes)));
+    persist();render();
+    toast(L('Imported '+incoming.length+' Return Visits and compatible settings.','Se importaron '+incoming.length+' revisitas y la configuración compatible.'));
+  }
+  function importRevisitBackupFile(file){
+    if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(){
+      try{applyImportedRevisita(JSON.parse(String(reader.result||'')));}
+      catch(err){toast((err&&err.message)||L('Could not import the backup.','No se pudo importar la copia.'));}
+    };
+    reader.readAsText(file);
   }
 
   function ensureDialogs(){
