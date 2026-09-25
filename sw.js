@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v87-return-visits-parity';
+const CACHE_VERSION = 'ministry-tracker-v88-address-first-return-visits';
 
 const PRECACHE_URLS = [
   './',
