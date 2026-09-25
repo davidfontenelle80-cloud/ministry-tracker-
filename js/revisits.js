@@ -486,11 +486,27 @@
       if(e.target.closest('[data-rv-close-new]'))closeDialog('rvNewDialog');
       if(e.target.closest('[data-rv-close-visit]'))closeDialog('rvVisitDialog');
       if(e.target.closest('[data-rv-close-log]'))closeDialog('rvLogDialog');
+      if(e.target.closest('[data-rv-close-address]'))closeDialog('rvAddressDialog');
+      if(e.target.closest('[data-rv-close-directions]'))closeDialog('rvDirectionsDialog');
       if(e.target.closest('[data-rv-new-here]')){
         closeDialog('rvNewDialog');
+        movePinId='';
         requestLocation(function(loc){beginGpsPin(loc,'create');},{center:false});
       }
       if(e.target.closest('[data-rv-new-map]')){closeDialog('rvNewDialog');view='map';movePinId='';pendingPurpose='create';render();toast(L('Tap the map, then confirm the pin.','Toca el mapa y confirma la ubicación.'));}
+      if(e.target.closest('[data-rv-new-address]')){
+        closeDialog('rvNewDialog');movePinId='';
+        dialog('rvAddressSearch').value='';
+        showDialog('rvAddressDialog');
+        setTimeout(function(){dialog('rvAddressSearch').focus();},60);
+      }
+      if(e.target.closest('[data-rv-find-address]')){
+        var av=findActive();if(!av)return;
+        movePinId=av.id;
+        dialog('rvAddressSearch').value=dialog('rvVisitAddress').value.trim()||av.address||'';
+        closeDialog('rvVisitDialog');showDialog('rvAddressDialog');
+        setTimeout(function(){dialog('rvAddressSearch').focus();},60);
+      }
       var preset=e.target.closest('[data-rv-date-preset]');
       if(preset){var val=preset.dataset.rvDatePreset;dialog('rvVisitDueDate').value=val==='month'?addMonths(todayKey(),1):addDays(todayKey(),Number(val));}
       var lp=e.target.closest('[data-rv-log-preset]');
@@ -500,14 +516,29 @@
       if(e.target.closest('[data-rv-dialog-log]')){var lv2=findActive();if(lv2){closeDialog('rvVisitDialog');openLog(lv2.id);}}
       if(e.target.closest('[data-rv-dialog-move]')){
         var mv=findActive();if(!mv)return;
-        movePinId=mv.id;pendingPurpose='move';pendingLocation={lat:mv.lat,lng:mv.lng,address:mv.address||''};
+        movePinId=mv.id;pendingPurpose='move';pendingLocation={lat:mv.lat,lng:mv.lng,address:mv.address||'',accuracy:null};
         closeDialog('rvVisitDialog');view='map';render();
+      }
+      var nav=e.target.closest('[data-rv-nav-app]');
+      if(nav){
+        var nv=state.ministryRevisits.find(function(x){return x.id===directionsVisitId;});
+        var app=nav.dataset.rvNavApp;
+        if(dialog('rvRememberNav')&&dialog('rvRememberNav').checked){state.revisitSettings.navApp=app;persist();}
+        closeDialog('rvDirectionsDialog');
+        if(nv)global.open(directionsUrl(nv,app),'_blank','noopener');
       }
       });
     }
     dialog('rvVisitForm').addEventListener('submit',saveVisit);
     dialog('rvDeleteBtn').addEventListener('click',deleteActive);
     dialog('rvLogForm').addEventListener('submit',saveLog);
+    dialog('rvAddressForm').addEventListener('submit',function(e){
+      e.preventDefault();
+      var q=dialog('rvAddressSearch').value.trim();
+      if(!q)return;
+      var submit=e.submitter;if(submit)submit.disabled=true;
+      searchAddressToMap(q).finally(function(){if(submit)submit.disabled=false;});
+    });
   }
   function findActive(){return state.ministryRevisits.find(function(v){return v.id===activeVisitId;});}
 
