@@ -285,7 +285,7 @@
       refreshConfirmPanel();
       reverseGeocode(ll.lat,ll.lng).then(function(address){
         if(pendingLocation){
-          pendingLocation.address=address||pendingTypedAddress||pendingLocation.address||'';
+          pendingLocation.address=pendingTypedAddress||address||pendingLocation.address||'';
           refreshConfirmPanel();
         }
       });
