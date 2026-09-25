@@ -541,6 +541,7 @@
         '<button class="btn btn-secondary w-full" type="button" data-rv-import-file><i class="fa-solid fa-file-arrow-up"></i>'+esc(L('Import a Revisita backup file','Importar una copia de Revisita'))+'</button><input id="rvImportFile" type="file" accept="application/json,.json" hidden>'+
         '<button class="btn btn-secondary w-full" type="button" data-rv-export><i class="fa-solid fa-file-arrow-down"></i>'+esc(L('Export Return Visits','Exportar revisitas'))+'</button>'+
       '</section>'+
+      '<section class="rv-settings-group"><strong>'+esc(L('Privacy & data','Privacidad y datos'))+'</strong><div class="rv-muted">'+esc(L('Return Visit names, notes and locations stay in Ministry storage and are included in your Ministry cloud backup. Map/address lookup uses OpenStreetMap services when online.','Los nombres, notas y ubicaciones de las revisitas se guardan en Ministry y se incluyen en la copia en la nube de Ministry. El mapa y la búsqueda de direcciones usan servicios de OpenStreetMap cuando hay conexión.'))+'</div><button class="btn btn-secondary rv-danger w-full" type="button" data-rv-delete-all><i class="fa-solid fa-trash"></i>'+esc(L('Delete all Return Visits','Borrar todas las revisitas'))+'</button></section>'+
       '</div></details>';
   }
   function refreshRevisitSettingsStatus(){
@@ -576,6 +577,15 @@
       toast(result&&result.ok===false?L('The test notification could not be sent.','No se pudo enviar el aviso de prueba.'):L('Test notification sent.','Aviso de prueba enviado.'));
       refreshRevisitSettingsStatus();
     });
+  }
+  function deleteAllRevisits(){
+    var count=state.ministryRevisits.length;
+    if(!count){toast(L('There are no Return Visits to delete.','No hay revisitas para borrar.'));return;}
+    if(!confirm(L('Delete all '+count+' saved Return Visits? This cannot be undone.','¿Borrar las '+count+' revisitas guardadas? Esta acción no se puede deshacer.')))return;
+    var ids=state.ministryRevisits.map(function(v){return v.id;});
+    state.ministryRevisits=[];persist();render();
+    ids.forEach(clearPush);
+    toast(L('All Return Visits deleted.','Se borraron todas las revisitas.'));
   }
   function exportRevisitBackup(){
     var s=state.revisitSettings||{};
@@ -1088,6 +1098,7 @@
       if(e.target.closest('[data-rv-import]')){importStandalone();return;}
       if(e.target.closest('[data-rv-import-file]')){var fileInput=document.getElementById('rvImportFile');if(fileInput)fileInput.click();return;}
       if(e.target.closest('[data-rv-export]')){exportRevisitBackup();return;}
+      if(e.target.closest('[data-rv-delete-all]')){deleteAllRevisits();return;}
     });
     el.addEventListener('input',function(e){
       if(e.target.id==='rvSearch'){
