@@ -17,8 +17,11 @@
   var map=null;
   var initialized=false;
   var activeVisitId='';
+  var directionsVisitId='';
   var importChecked=false;
   var dialogClicksBound=false;
+  var autoLocationRequested=false;
+  var mapHasOpened=false;
 
   function L(en,es){return state.lang==='es'?es:en;}
   function esc(v){
@@ -66,9 +69,9 @@
   function telUrl(phone){return digits(phone).length>=7?'tel:'+String(phone).replace(/[^\d+]/g,''):'';}
   function coord(n){return String(+Number(n).toFixed(6));}
   function mapLink(v){return 'https://www.google.com/maps/search/?api=1&query='+coord(v.lat)+','+coord(v.lng);}
-  function directionsUrl(v){
-    var app=state.revisitSettings.navApp||'auto';
-    if(app==='auto')app=isIOS()?'apple':'google';
+  function directionsUrl(v,app){
+    app=app||state.revisitSettings.navApp||'ask';
+    if(app==='auto'||app==='ask')app=isIOS()?'apple':'google';
     var ll=coord(v.lat)+','+coord(v.lng);
     if(app==='waze')return 'https://waze.com/ul?ll='+ll+'&navigate=yes';
     if(app==='apple')return 'https://maps.apple.com/?daddr='+ll+'&dirflg=d';
@@ -130,8 +133,10 @@
     var rvLabel=document.getElementById('notesModeRevisitsLabel');
     if(noteLabel)noteLabel.textContent=L('Notes','Notas');
     if(rvLabel)rvLabel.textContent=L('Revisits','Revisitas');
-    if(mode==='revisits')render();
-    else if(typeof renderNotes==='function')renderNotes();
+    if(mode==='revisits'){
+      render();
+      autoLocateOnRevisitsOpen();
+    } else if(typeof renderNotes==='function')renderNotes();
   }
 
   function viewTabs(){
@@ -171,7 +176,7 @@
     var place=placeLine(v)||L('Pinned location','Ubicación marcada');
     return '<article class="rv-card" data-rv-card="'+esc(v.id)+'">'+
       '<div class="rv-card-head"><div class="min-w-0"><div class="rv-card-title">'+esc(v.name)+'</div><div class="rv-card-meta"><span>'+esc(when)+'</span>'+(distance?'<span>'+esc(distance)+'</span>':'')+'</div></div>'+visitStatus(v)+'</div>'+
-      '<div class="rv-muted">'+esc(place)+'</div>'+
+      '<button class="rv-muted rv-place-link" type="button" data-rv-directions="'+esc(v.id)+'"><i class="fa-solid fa-location-dot"></i><span>'+esc(place)+'</span></button>'+
       (!compact&&v.nextTopic?'<div class="rv-small"><strong>'+esc(L('Next topic:','Próximo tema:'))+'</strong> '+esc(v.nextTopic)+'</div>':'')+
       '<div class="rv-card-actions">'+
         '<button class="btn btn-secondary" type="button" data-rv-open="'+esc(v.id)+'"><i class="fa-solid fa-pen"></i>'+esc(L('Open','Abrir'))+'</button>'+
@@ -257,6 +262,7 @@
       '<div id="rvLocationConfirm" class="rv-location-confirm" '+(pendingLocation?'':'hidden')+'>'+
         '<strong>'+esc(L('Is this the right location?','¿Es esta la ubicación correcta?'))+'</strong>'+
         '<div id="rvPendingAddress" class="rv-muted">'+esc(pendingLocation?(pendingLocation.address||L('Approximate location','Ubicación aproximada')):'')+'</div>'+
+        '<div id="rvPendingAccuracy" class="rv-small">'+(pendingLocation&&Number.isFinite(pendingLocation.accuracy)?esc(L('GPS accuracy: ','Precisión GPS: ')+Math.round(pendingLocation.accuracy)+' m'):'')+'</div>'+
         '<div id="rvPendingCoords" class="rv-small font-mono">'+(pendingLocation?esc(coord(pendingLocation.lat)+', '+coord(pendingLocation.lng)):'')+'</div>'+
         '<div class="rv-card-actions"><button class="btn btn-secondary" data-rv-cancel-pin>'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" data-rv-confirm-pin>'+esc(L('Confirm pin','Confirmar ubicación'))+'</button></div>'+
       '</div></div>';
@@ -282,27 +288,74 @@
     var vis=mapVisits();
     map.setMarkers(vis);
     if(currentLocation)map.setUserLocation(currentLocation.lat,currentLocation.lng);
-    if(pendingLocation){map.setDraft(pendingLocation.lat,pendingLocation.lng);map.setView(pendingLocation.lat,pendingLocation.lng,Math.max(map.zoom,17));}
-    else if(!state.revisitMap.manual&&vis.length)map.fitPoints(vis,15);
+    if(pendingLocation){
+      map.setDraft(pendingLocation.lat,pendingLocation.lng);
+      map.setView(pendingLocation.lat,pendingLocation.lng,Math.max(map.zoom,17));
+    } else if(currentLocation&&!mapHasOpened){
+      map.setView(currentLocation.lat,currentLocation.lng,17);
+    } else if(!currentLocation&&!state.revisitMap.manual&&vis.length){
+      map.fitPoints(vis,15);
+    }
+    mapHasOpened=true;
   }
   function refreshConfirmPanel(){
     var panel=document.getElementById('rvLocationConfirm');if(!panel)return;
     panel.hidden=!pendingLocation;
-    var a=document.getElementById('rvPendingAddress'),c=document.getElementById('rvPendingCoords');
+    var a=document.getElementById('rvPendingAddress'),acc=document.getElementById('rvPendingAccuracy'),c=document.getElementById('rvPendingCoords');
     if(a)a.textContent=pendingLocation?(pendingLocation.address||L('Looking up approximate address…','Buscando dirección aproximada…')):'';
+    if(acc)acc.textContent=pendingLocation&&Number.isFinite(pendingLocation.accuracy)?L('GPS accuracy: ','Precisión GPS: ')+Math.round(pendingLocation.accuracy)+' m':'';
     if(c)c.textContent=pendingLocation?coord(pendingLocation.lat)+', '+coord(pendingLocation.lng):'';
   }
-  function requestLocation(onDone){
+  function locationErrorMessage(e){
+    if(e&&e.code===1){
+      return L(
+        'Location permission is blocked. Allow location for Ministry in your browser or phone settings, then tap Use my location again.',
+        'El permiso de ubicación está bloqueado. Permite la ubicación para Ministry en el navegador o en los ajustes del teléfono y vuelve a tocar Usar mi ubicación.'
+      );
+    }
+    if(e&&e.code===3)return L('Location request timed out. Try again.','La solicitud de ubicación tardó demasiado. Inténtalo de nuevo.');
+    return L('Could not get your location. You can still place the pin manually.','No se pudo obtener tu ubicación. Aún puedes colocar el pin manualmente.');
+  }
+  function setCurrentLocationFromPosition(p){
+    currentLocation={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy};
+    if(map)map.setUserLocation(currentLocation.lat,currentLocation.lng);
+    return currentLocation;
+  }
+  function autoLocateOnRevisitsOpen(){
+    if(autoLocationRequested||!navigator.geolocation)return;
+    autoLocationRequested=true;
+    navigator.geolocation.getCurrentPosition(function(p){
+      var loc=setCurrentLocationFromPosition(p);
+      if(mode==='revisits'){
+        if(view==='map'&&map&&!pendingLocation)map.setView(loc.lat,loc.lng,17);
+        else render();
+      }
+    },function(e){
+      if(e&&e.code===1)toast(locationErrorMessage(e));
+    },{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+  }
+  function requestLocation(onDone,options){
+    options=options||{};
     if(!navigator.geolocation){toast(L('GPS is not supported on this device.','GPS no está disponible en este dispositivo.'));return;}
     toast(L('Finding your location…','Buscando tu ubicación…'));
     navigator.geolocation.getCurrentPosition(function(p){
-      currentLocation={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy};
-      if(map){map.setUserLocation(currentLocation.lat,currentLocation.lng);map.setView(currentLocation.lat,currentLocation.lng,17);}
-      if(onDone)onDone(currentLocation);
+      var loc=setCurrentLocationFromPosition(p);
+      if(options.center!==false&&map)map.setView(loc.lat,loc.lng,17);
+      if(onDone)onDone(loc);
     },function(e){
-      var msg=e.code===1?L('Allow location access to use GPS.','Permite acceso a la ubicación para usar GPS.'):L('Could not get your location.','No se pudo obtener tu ubicación.');
-      toast(msg);
+      toast(locationErrorMessage(e));
     },{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
+  }
+  function beginGpsPin(loc,purpose){
+    pendingPurpose=purpose||'create';
+    pendingLocation={lat:loc.lat,lng:loc.lng,address:'',accuracy:Number.isFinite(loc.accuracy)?loc.accuracy:null};
+    view='map';
+    render();
+    reverseGeocode(loc.lat,loc.lng).then(function(address){
+      if(!pendingLocation)return;
+      pendingLocation.address=address||'';
+      refreshConfirmPanel();
+    });
   }
   function compactAddress(result){
     var a=result&&result.address;if(!a)return String(result&&result.display_name||'').split(',').slice(0,3).join(',').trim();
@@ -318,6 +371,32 @@
       .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
       .then(compactAddress).catch(function(){return '';});
   }
+  function forwardGeocode(query){
+    query=String(query||'').trim();
+    if(!query)return Promise.resolve(null);
+    if(!navigator.onLine){toast(L('Address search needs an internet connection.','La búsqueda de direcciones necesita conexión a internet.'));return Promise.resolve(null);}
+    var q=new URLSearchParams({format:'jsonv2',addressdetails:'1',limit:'1',q:query,'accept-language':state.lang==='es'?'es':'en'});
+    return fetch('https://nominatim.openstreetmap.org/search?'+q.toString(),{headers:{Accept:'application/json'}})
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+      .then(function(rows){
+        var row=rows&&rows[0];if(!row)return null;
+        var lat=Number(row.lat),lng=Number(row.lon);if(!Number.isFinite(lat)||!Number.isFinite(lng))return null;
+        return {lat:lat,lng:lng,address:compactAddress(row)||String(row.display_name||query),accuracy:null};
+      }).catch(function(){return null;});
+  }
+  function searchAddressToMap(query){
+    toast(L('Finding address…','Buscando dirección…'));
+    return forwardGeocode(query).then(function(loc){
+      if(!loc){toast(L('Address not found. Try adding the city or area.','No se encontró la dirección. Añade la ciudad o el sector e inténtalo de nuevo.'));return false;}
+      pendingLocation=loc;
+      pendingPurpose=movePinId?'move':'create';
+      view='map';
+      closeDialog('rvAddressDialog');
+      render();
+      toast(L('Verify the pin, then confirm the location.','Verifica la ubicación y luego confírmala.'));
+      return true;
+    });
+  }
 
   function renderSettings(){
     var s=state.revisitSettings;
@@ -327,7 +406,7 @@
       '<label class="rv-check"><input type="checkbox" data-rv-setting="calendarOnSave" '+(s.calendarOnSave?'checked':'')+'><span><strong>'+esc(L('Add to calendar after saving','Añadir al calendario al guardar'))+'</strong><br><span class="rv-muted">'+esc(L('You can also add any visit manually.','También puedes añadir cualquier visita manualmente.'))+'</span></span></label>'+
       '<label class="rv-field"><span>'+esc(L('Calendar app','Calendario'))+'</span><select data-rv-setting="calendarMode"><option value="auto" '+(s.calendarMode==='auto'?'selected':'')+'>'+esc(L('Automatic','Automático'))+'</option><option value="ics" '+(s.calendarMode==='ics'?'selected':'')+'>ICS '+esc(L('(alarm included)','(incluye alarma)'))+'</option><option value="google" '+(s.calendarMode==='google'?'selected':'')+'>Google Calendar</option></select></label>'+
       '<label class="rv-field"><span>'+esc(L('Calendar alarm','Alarma del calendario'))+'</span><select data-rv-setting="calendarReminderMinutes">'+[0,5,15,30,60].map(function(n){return '<option value="'+n+'" '+(Number(s.calendarReminderMinutes)===n?'selected':'')+'>'+ (n? n+' min':L('At time','A la hora')) +'</option>';}).join('')+'</select></label>'+
-      '<label class="rv-field"><span>'+esc(L('Directions app','App de navegación'))+'</span><select data-rv-setting="navApp"><option value="auto" '+(s.navApp==='auto'?'selected':'')+'>'+esc(L('Automatic','Automático'))+'</option><option value="google" '+(s.navApp==='google'?'selected':'')+'>Google Maps</option><option value="apple" '+(s.navApp==='apple'?'selected':'')+'>Apple Maps</option><option value="waze" '+(s.navApp==='waze'?'selected':'')+'>Waze</option></select></label>'+
+      '<label class="rv-field"><span>'+esc(L('Directions app','App de navegación'))+'</span><select data-rv-setting="navApp"><option value="ask" '+(s.navApp==='ask'||s.navApp==='auto'?'selected':'')+'>'+esc(L('Ask every time','Preguntar siempre'))+'</option><option value="google" '+(s.navApp==='google'?'selected':'')+'>Google Maps</option><option value="apple" '+(s.navApp==='apple'?'selected':'')+'>Apple Maps</option><option value="waze" '+(s.navApp==='waze'?'selected':'')+'>Waze</option></select></label>'+
       '<label class="rv-check"><input type="checkbox" data-rv-setting="pushReminderDefault" '+(s.pushReminderDefault?'checked':'')+'><span><strong>'+esc(L('5-minute app reminder by default','Recordatorio de 5 minutos por defecto'))+'</strong><br><span class="rv-muted">'+esc(L('Requires notifications to be allowed on this device.','Requiere permitir notificaciones en este dispositivo.'))+'</span></span></label>'+
       (standaloneCount?'<button class="btn btn-secondary" type="button" data-rv-import><i class="fa-solid fa-file-import"></i>'+esc(L('Import '+standaloneCount+' from Revisita','Importar '+standaloneCount+' de Revisita'))+'</button>':'')+
       '</div></details>';
@@ -338,11 +417,12 @@
     var wrap=document.createElement('div');
     wrap.id='rvDialogsHost';
     wrap.innerHTML=
-      '<dialog id="rvNewDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('New revisit','Nueva revisita'))+'</h2><div class="rv-muted">'+esc(L('Where is the person?','¿Dónde está la persona?'))+'</div></div><button class="rv-icon-btn" data-rv-close-new>×</button></div><div class="rv-list"><button class="btn btn-primary w-full" data-rv-new-here><i class="fa-solid fa-location-crosshairs"></i>'+esc(L('Here — use my location','Aquí — usar mi ubicación'))+'</button><button class="btn btn-secondary w-full" data-rv-new-map><i class="fa-solid fa-map-pin"></i>'+esc(L('Choose on map','Elegir en el mapa'))+'</button></div></div></dialog>'+
+      '<dialog id="rvNewDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('New revisit','Nueva revisita'))+'</h2><div class="rv-muted">'+esc(L('Where is the person?','¿Dónde está la persona?'))+'</div></div><button class="rv-icon-btn" data-rv-close-new>×</button></div><div class="rv-list"><button class="btn btn-primary w-full" data-rv-new-here><i class="fa-solid fa-location-crosshairs"></i>'+esc(L('Here — use my location','Aquí — usar mi ubicación'))+'</button><button class="btn btn-secondary w-full" data-rv-new-map><i class="fa-solid fa-map-pin"></i>'+esc(L('Choose on map','Elegir en el mapa'))+'</button><button class="btn btn-secondary w-full" data-rv-new-address><i class="fa-solid fa-location-dot"></i>'+esc(L('Enter an address','Escribir una dirección'))+'</button></div></div></dialog>'+
+      '<dialog id="rvAddressDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Find an address','Buscar una dirección'))+'</h2><div class="rv-muted">'+esc(L('Type an address, then verify the pin on the map.','Escribe una dirección y luego verifica la ubicación en el mapa.'))+'</div></div><button class="rv-icon-btn" data-rv-close-address>×</button></div><form id="rvAddressForm" class="rv-form"><label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><input id="rvAddressSearch" type="search" maxlength="220" autocomplete="street-address" required placeholder="'+esc(L('Street, city, state or area','Calle, ciudad, estado o sector'))+'"></label><div class="rv-dialog-actions"><button class="btn btn-secondary" type="button" data-rv-close-address>'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i>'+esc(L('Find on map','Buscar en el mapa'))+'</button></div></form></div></dialog>'+
       '<dialog id="rvVisitDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2 id="rvVisitDialogTitle">'+esc(L('Revisit','Revisita'))+'</h2><div id="rvVisitCoords" class="rv-muted font-mono"></div></div><button class="rv-icon-btn" data-rv-close-visit>×</button></div><div id="rvExistingActions" class="rv-card-actions"></div><form id="rvVisitForm" class="rv-form"><input type="hidden" id="rvVisitId"><input type="hidden" id="rvVisitLat"><input type="hidden" id="rvVisitLng">'+
         '<label class="rv-field"><span>'+esc(L('Name','Nombre'))+'</span><input id="rvVisitName" maxlength="80" required autocomplete="off"></label>'+
         '<div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Phone','Teléfono'))+'</span><input id="rvVisitPhone" type="tel" maxlength="40" autocomplete="tel"></label><label class="rv-field"><span>'+esc(L('Reference / landmark','Referencia'))+'</span><input id="rvVisitReference" maxlength="120"></label></div>'+
-        '<label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><input id="rvVisitAddress" maxlength="180"></label>'+
+        '<label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><div class="rv-field-row"><input id="rvVisitAddress" maxlength="180" style="flex:1"><button id="rvFindAddressBtn" class="btn btn-secondary" type="button" data-rv-find-address><i class="fa-solid fa-location-dot"></i>'+esc(L('Map','Mapa'))+'</button></div></label>'+
         '<label class="rv-field"><span>'+esc(L('Notes','Notas'))+'</span><textarea id="rvVisitNotes" maxlength="800"></textarea></label>'+
         '<div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('What you left','Qué le dejaste'))+'</span><input id="rvVisitLeftWith" maxlength="160"></label><label class="rv-field"><span>'+esc(L('Next topic','Próximo tema'))+'</span><input id="rvVisitNextTopic" maxlength="200"></label></div>'+
         '<div class="rv-quick-dates"><button class="rv-chip" type="button" data-rv-date-preset="7">+1 '+esc(L('week','semana'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="14">+2 '+esc(L('weeks','semanas'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="month">+1 '+esc(L('month','mes'))+'</button></div>'+
@@ -350,7 +430,8 @@
         '<label class="rv-check"><input id="rvVisitNotify" type="checkbox"><span><strong>'+esc(L('App reminder 5 minutes before','Aviso en la app 5 minutos antes'))+'</strong><br><span class="rv-muted">'+esc(L('Works when notifications are enabled.','Funciona cuando las notificaciones están activadas.'))+'</span></span></label>'+
         '<div id="rvHistoryBlock" class="rv-history" hidden></div>'+
         '<div class="rv-dialog-actions"><button id="rvDeleteBtn" class="btn btn-secondary rv-danger" type="button" hidden><i class="fa-solid fa-trash"></i>'+esc(L('Delete','Eliminar'))+'</button><button class="btn btn-secondary" type="button" data-rv-close-visit>'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" type="submit"><i class="fa-solid fa-check"></i>'+esc(L('Save','Guardar'))+'</button></div></form></div></dialog>'+
-      '<dialog id="rvLogDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Log visit','Registrar visita'))+'</h2><div id="rvLogName" class="rv-muted"></div></div><button class="rv-icon-btn" data-rv-close-log>×</button></div><form id="rvLogForm" class="rv-form"><label class="rv-field"><span>'+esc(L('What happened?','¿Qué pasó?'))+'</span><textarea id="rvLogNote" maxlength="600"></textarea></label><label class="rv-field"><span>'+esc(L('What you left','Qué le dejaste'))+'</span><input id="rvLogLeftWith" maxlength="160"></label><label class="rv-field"><span>'+esc(L('Next topic','Tema para la próxima vez'))+'</span><input id="rvLogNextTopic" maxlength="200"></label><div class="rv-quick-dates"><button class="rv-chip" type="button" data-rv-log-preset="7">+1 '+esc(L('week','semana'))+'</button><button class="rv-chip" type="button" data-rv-log-preset="14">+2 '+esc(L('weeks','semanas'))+'</button><button class="rv-chip" type="button" data-rv-log-preset="month">+1 '+esc(L('month','mes'))+'</button></div><div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Return date','Volver el'))+'</span><input id="rvLogDueDate" type="date"></label><label class="rv-field"><span>'+esc(L('Return time','Hora'))+'</span><input id="rvLogDueTime" type="time" step="60"></label></div><label class="rv-check"><input id="rvLogEnd" type="checkbox"><span>'+esc(L('Do not return — move to history','No volver — pasar al historial'))+'</span></label><div class="rv-dialog-actions"><button class="btn btn-secondary" type="button" data-rv-close-log>'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" type="submit">'+esc(L('Save visit','Guardar visita'))+'</button></div></form></div></dialog>';
+      '<dialog id="rvLogDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Log visit','Registrar visita'))+'</h2><div id="rvLogName" class="rv-muted"></div></div><button class="rv-icon-btn" data-rv-close-log>×</button></div><form id="rvLogForm" class="rv-form"><label class="rv-field"><span>'+esc(L('What happened?','¿Qué pasó?'))+'</span><textarea id="rvLogNote" maxlength="600"></textarea></label><label class="rv-field"><span>'+esc(L('What you left','Qué le dejaste'))+'</span><input id="rvLogLeftWith" maxlength="160"></label><label class="rv-field"><span>'+esc(L('Next topic','Tema para la próxima vez'))+'</span><input id="rvLogNextTopic" maxlength="200"></label><div class="rv-quick-dates"><button class="rv-chip" type="button" data-rv-log-preset="7">+1 '+esc(L('week','semana'))+'</button><button class="rv-chip" type="button" data-rv-log-preset="14">+2 '+esc(L('weeks','semanas'))+'</button><button class="rv-chip" type="button" data-rv-log-preset="month">+1 '+esc(L('month','mes'))+'</button></div><div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Return date','Volver el'))+'</span><input id="rvLogDueDate" type="date"></label><label class="rv-field"><span>'+esc(L('Return time','Hora'))+'</span><input id="rvLogDueTime" type="time" step="60"></label></div><label class="rv-check"><input id="rvLogEnd" type="checkbox"><span>'+esc(L('Do not return — move to history','No volver — pasar al historial'))+'</span></label><div class="rv-dialog-actions"><button class="btn btn-secondary" type="button" data-rv-close-log>'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" type="submit">'+esc(L('Save visit','Guardar visita'))+'</button></div></form></div></dialog>'+
+      '<dialog id="rvDirectionsDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Start navigation','Iniciar navegación'))+'</h2><div id="rvDirectionsName" class="rv-muted"></div></div><button class="rv-icon-btn" data-rv-close-directions>×</button></div><div class="rv-list"><button class="btn btn-secondary w-full" type="button" data-rv-nav-app="google"><i class="fa-brands fa-google"></i>Google Maps</button><button class="btn btn-secondary w-full" type="button" data-rv-nav-app="apple"><i class="fa-brands fa-apple"></i>Apple Maps</button><button class="btn btn-secondary w-full" type="button" data-rv-nav-app="waze"><i class="fa-solid fa-diamond-turn-right"></i>Waze</button><label class="rv-check"><input id="rvRememberNav" type="checkbox"><span>'+esc(L('Remember my choice','Recordar mi elección'))+'</span></label></div></div></dialog>';
     document.body.appendChild(wrap);
     bindDialogs();
   }
@@ -380,6 +461,7 @@
     dialog('rvVisitDialogTitle').textContent=v?v.name:L('New revisit','Nueva revisita');
     dialog('rvVisitCoords').textContent=coord(p.lat)+', '+coord(p.lng);
     dialog('rvDeleteBtn').hidden=!v;
+    var findAddressBtn=dialog('rvFindAddressBtn');if(findAddressBtn)findAddressBtn.hidden=!v;
     var actions=dialog('rvExistingActions');
     actions.innerHTML=v?'<button class="btn btn-secondary" type="button" data-rv-dialog-move><i class="fa-solid fa-location-dot"></i>'+esc(L('Move pin','Mover pin'))+'</button><button class="btn btn-secondary" type="button" data-rv-dialog-calendar><i class="fa-solid fa-calendar-plus"></i>'+esc(L('Calendar','Calendario'))+'</button><button class="btn btn-secondary" type="button" data-rv-dialog-directions><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Directions','Cómo llegar'))+'</button>'+(v.status!=='completed'?'<button class="btn btn-primary" type="button" data-rv-dialog-log><i class="fa-solid fa-check"></i>'+esc(L('Log','Registrar'))+'</button>':''):'';
     renderHistory(v);
@@ -404,13 +486,27 @@
       if(e.target.closest('[data-rv-close-new]'))closeDialog('rvNewDialog');
       if(e.target.closest('[data-rv-close-visit]'))closeDialog('rvVisitDialog');
       if(e.target.closest('[data-rv-close-log]'))closeDialog('rvLogDialog');
+      if(e.target.closest('[data-rv-close-address]'))closeDialog('rvAddressDialog');
+      if(e.target.closest('[data-rv-close-directions]'))closeDialog('rvDirectionsDialog');
       if(e.target.closest('[data-rv-new-here]')){
         closeDialog('rvNewDialog');
-        requestLocation(function(loc){
-          reverseGeocode(loc.lat,loc.lng).then(function(address){openEditor(null,{lat:loc.lat,lng:loc.lng,address:address||''});});
-        });
+        movePinId='';
+        requestLocation(function(loc){beginGpsPin(loc,'create');},{center:false});
       }
       if(e.target.closest('[data-rv-new-map]')){closeDialog('rvNewDialog');view='map';movePinId='';pendingPurpose='create';render();toast(L('Tap the map, then confirm the pin.','Toca el mapa y confirma la ubicación.'));}
+      if(e.target.closest('[data-rv-new-address]')){
+        closeDialog('rvNewDialog');movePinId='';
+        dialog('rvAddressSearch').value='';
+        showDialog('rvAddressDialog');
+        setTimeout(function(){dialog('rvAddressSearch').focus();},60);
+      }
+      if(e.target.closest('[data-rv-find-address]')){
+        var av=findActive();if(!av)return;
+        movePinId=av.id;
+        dialog('rvAddressSearch').value=dialog('rvVisitAddress').value.trim()||av.address||'';
+        closeDialog('rvVisitDialog');showDialog('rvAddressDialog');
+        setTimeout(function(){dialog('rvAddressSearch').focus();},60);
+      }
       var preset=e.target.closest('[data-rv-date-preset]');
       if(preset){var val=preset.dataset.rvDatePreset;dialog('rvVisitDueDate').value=val==='month'?addMonths(todayKey(),1):addDays(todayKey(),Number(val));}
       var lp=e.target.closest('[data-rv-log-preset]');
@@ -420,14 +516,29 @@
       if(e.target.closest('[data-rv-dialog-log]')){var lv2=findActive();if(lv2){closeDialog('rvVisitDialog');openLog(lv2.id);}}
       if(e.target.closest('[data-rv-dialog-move]')){
         var mv=findActive();if(!mv)return;
-        movePinId=mv.id;pendingPurpose='move';pendingLocation={lat:mv.lat,lng:mv.lng,address:mv.address||''};
+        movePinId=mv.id;pendingPurpose='move';pendingLocation={lat:mv.lat,lng:mv.lng,address:mv.address||'',accuracy:null};
         closeDialog('rvVisitDialog');view='map';render();
+      }
+      var nav=e.target.closest('[data-rv-nav-app]');
+      if(nav){
+        var nv=state.ministryRevisits.find(function(x){return x.id===directionsVisitId;});
+        var app=nav.dataset.rvNavApp;
+        if(dialog('rvRememberNav')&&dialog('rvRememberNav').checked){state.revisitSettings.navApp=app;persist();}
+        closeDialog('rvDirectionsDialog');
+        if(nv)global.open(directionsUrl(nv,app),'_blank','noopener');
       }
       });
     }
     dialog('rvVisitForm').addEventListener('submit',saveVisit);
     dialog('rvDeleteBtn').addEventListener('click',deleteActive);
     dialog('rvLogForm').addEventListener('submit',saveLog);
+    dialog('rvAddressForm').addEventListener('submit',function(e){
+      e.preventDefault();
+      var q=dialog('rvAddressSearch').value.trim();
+      if(!q)return;
+      var submit=e.submitter;if(submit)submit.disabled=true;
+      searchAddressToMap(q).finally(function(){if(submit)submit.disabled=false;});
+    });
   }
   function findActive(){return state.ministryRevisits.find(function(v){return v.id===activeVisitId;});}
 
@@ -557,7 +668,18 @@
       persist();toast(L('Calendar opened.','Calendario abierto.'));
     }catch(e){console.warn('[MinistryRevisits] calendar handoff failed',e);toast(L('Could not open the calendar.','No se pudo abrir el calendario.'));}
   }
-  function openDirections(v){global.open(directionsUrl(v),'_blank','noopener');}
+  function openDirections(v){
+    if(!v)return;
+    var app=state.revisitSettings.navApp||'ask';
+    if(app&&app!=='ask'&&app!=='auto'){global.open(directionsUrl(v,app),'_blank','noopener');return;}
+    ensureDialogs();
+    directionsVisitId=v.id;
+    var name=dialog('rvDirectionsName');if(name)name.textContent=[v.name,placeLine(v)].filter(Boolean).join(' · ');
+    var remember=dialog('rvRememberNav');if(remember)remember.checked=false;
+    var apple=dialog('rvDirectionsDialog')&&dialog('rvDirectionsDialog').querySelector('[data-rv-nav-app="apple"]');
+    if(apple)apple.hidden=!isIOS()&&/Android/i.test(navigator.userAgent);
+    showDialog('rvDirectionsDialog');
+  }
 
   function standaloneVisits(){
     if(importChecked&&standaloneVisits.cache)return standaloneVisits.cache;
@@ -583,9 +705,9 @@
       var log=e.target.closest('[data-rv-log]');if(log){openLog(log.dataset.rvLog);return;}
       var dir=e.target.closest('[data-rv-directions]');if(dir){var v=state.ministryRevisits.find(function(x){return x.id===dir.dataset.rvDirections;});if(v)openDirections(v);return;}
       var f=e.target.closest('[data-rv-filter]');if(f){listFilter=f.dataset.rvFilter;render();return;}
-      var mm=e.target.closest('[data-rv-map-mode]');if(mm){mapMode=mm.dataset.rvMapMode;if(mapMode==='nearby'&&!currentLocation){requestLocation(function(){render();});}else render();return;}
+      var mm=e.target.closest('[data-rv-map-mode]');if(mm){mapMode=mm.dataset.rvMapMode;if(mapMode==='nearby'&&!currentLocation){requestLocation(function(){render();},{center:false});}else render();return;}
       var z=e.target.closest('[data-rv-zoom]');if(z&&map){map.setZoom(map.zoom+Number(z.dataset.rvZoom));return;}
-      if(e.target.closest('[data-rv-locate]')){requestLocation(function(loc){if(map)map.setView(loc.lat,loc.lng,17);});return;}
+      if(e.target.closest('[data-rv-locate]')){requestLocation(function(loc){beginGpsPin(loc,movePinId?'move':'create');},{center:false});return;}
       if(e.target.closest('[data-rv-cancel-pin]')){pendingLocation=null;movePinId='';if(map)map.setDraft(null,null);refreshConfirmPanel();return;}
       if(e.target.closest('[data-rv-confirm-pin]')){
         if(!pendingLocation)return;

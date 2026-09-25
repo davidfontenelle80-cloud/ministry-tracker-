@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v83-revisits';
+const CACHE_VERSION = 'ministry-tracker-v84-revisit-location-nav';
 
 const PRECACHE_URLS = [
   './',
