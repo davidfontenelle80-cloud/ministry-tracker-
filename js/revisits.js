@@ -377,30 +377,95 @@
       .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
       .then(compactAddress).catch(function(){return '';});
   }
+  function savedAddressSuggestions(){
+    var seen=new Set(),out=[];
+    state.ministryRevisits.forEach(function(v){
+      var a=String(v.address||'').trim();
+      if(!a||seen.has(a.toLowerCase()))return;
+      seen.add(a.toLowerCase());
+      out.push(a);
+    });
+    return out.slice(0,20);
+  }
+  function populateAddressDatalist(){
+    var list=dialog('rvAddressDatalist');if(!list)return;
+    list.innerHTML=savedAddressSuggestions().map(function(a){return '<option value="'+esc(a)+'"></option>';}).join('');
+  }
+  function addressSearchLabel(row,query){
+    if(!row)return String(query||'');
+    var full=String(row.display_name||'').trim();
+    var compact=compactAddress(row);
+    return compact||full||String(query||'');
+  }
   function forwardGeocode(query){
     query=String(query||'').trim();
-    if(!query)return Promise.resolve(null);
-    if(!navigator.onLine){toast(L('Address search needs an internet connection.','La búsqueda de direcciones necesita conexión a internet.'));return Promise.resolve(null);}
-    var q=new URLSearchParams({format:'jsonv2',addressdetails:'1',limit:'1',q:query,'accept-language':state.lang==='es'?'es':'en'});
+    if(!query)return Promise.resolve([]);
+    if(!navigator.onLine){
+      toast(L('Address search needs an internet connection.','La búsqueda de direcciones necesita conexión a internet.'));
+      return Promise.resolve([]);
+    }
+    var args={format:'jsonv2',addressdetails:'1',limit:'5',q:query,'accept-language':state.lang==='es'?'es':'en'};
+    if(currentLocation){
+      var span=.75;
+      args.viewbox=[currentLocation.lng-span,currentLocation.lat+span,currentLocation.lng+span,currentLocation.lat-span].join(',');
+      args.bounded='0';
+    }
+    var q=new URLSearchParams(args);
     return fetch('https://nominatim.openstreetmap.org/search?'+q.toString(),{headers:{Accept:'application/json'}})
       .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
       .then(function(rows){
-        var row=rows&&rows[0];if(!row)return null;
-        var lat=Number(row.lat),lng=Number(row.lon);if(!Number.isFinite(lat)||!Number.isFinite(lng))return null;
-        return {lat:lat,lng:lng,address:compactAddress(row)||String(row.display_name||query),accuracy:null};
-      }).catch(function(){return null;});
+        return (rows||[]).map(function(row){
+          var lat=Number(row.lat),lng=Number(row.lon);
+          if(!Number.isFinite(lat)||!Number.isFinite(lng))return null;
+          var label=addressSearchLabel(row,query);
+          var full=String(row.display_name||label);
+          return {lat:lat,lng:lng,address:label,fullAddress:full,accuracy:null};
+        }).filter(Boolean);
+      }).catch(function(){return [];});
+  }
+  function renderAddressResults(results,query){
+    addressSearchResults=Array.isArray(results)?results:[];
+    var box=dialog('rvAddressResults');if(!box)return;
+    if(!addressSearchResults.length){
+      box.innerHTML='<div class="rv-address-empty">'+esc(L('No exact match found. You can still place this address on the map.','No se encontró una coincidencia exacta. Aún puedes colocar esta dirección en el mapa.'))+'</div>';
+      return;
+    }
+    box.innerHTML='<div class="rv-address-results-title">'+esc(L('Choose the correct address','Elige la dirección correcta'))+'</div>'+
+      addressSearchResults.map(function(loc,i){
+        return '<button class="rv-address-result" type="button" data-rv-address-result="'+i+'"><i class="fa-solid fa-location-dot"></i><span><strong>'+esc(loc.address||query)+'</strong><small>'+esc(loc.fullAddress||'')+'</small></span></button>';
+      }).join('');
+  }
+  function useAddressResult(index){
+    var loc=addressSearchResults[Number(index)];if(!loc)return;
+    pendingTypedAddress=loc.address||loc.fullAddress||'';
+    pendingLocation={lat:loc.lat,lng:loc.lng,address:pendingTypedAddress,accuracy:null};
+    pendingPurpose=movePinId?'move':'create';
+    view='map';
+    closeDialog('rvAddressDialog');
+    render();
+    toast(L('Verify the pin, then confirm the location.','Verifica la ubicación y luego confírmala.'));
+  }
+  function useTypedAddressOnMap(){
+    var input=dialog('rvAddressSearch');
+    var query=input?input.value.trim():'';
+    if(!query)return;
+    pendingTypedAddress=query;
+    pendingLocation=null;
+    pendingPurpose=movePinId?'move':'create';
+    view='map';
+    closeDialog('rvAddressDialog');
+    render();
+    requestAnimationFrame(function(){
+      if(map&&currentLocation)map.setView(currentLocation.lat,currentLocation.lng,17);
+    });
+    toast(L('Tap the correct spot on the map, then confirm the pin.','Toca el lugar correcto en el mapa y luego confirma la ubicación.'));
   }
   function searchAddressToMap(query){
     toast(L('Finding address…','Buscando dirección…'));
-    return forwardGeocode(query).then(function(loc){
-      if(!loc){toast(L('Address not found. Try adding the city or area.','No se encontró la dirección. Añade la ciudad o el sector e inténtalo de nuevo.'));return false;}
-      pendingLocation=loc;
-      pendingPurpose=movePinId?'move':'create';
-      view='map';
-      closeDialog('rvAddressDialog');
-      render();
-      toast(L('Verify the pin, then confirm the location.','Verifica la ubicación y luego confírmala.'));
-      return true;
+    return forwardGeocode(query).then(function(results){
+      renderAddressResults(results,query);
+      if(!results.length)toast(L('Choose the location manually on the map if needed.','Si hace falta, elige la ubicación manualmente en el mapa.'));
+      return results;
     });
   }
 
