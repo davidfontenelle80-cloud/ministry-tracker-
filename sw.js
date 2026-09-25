@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v91-person-card-entry';
+const CACHE_VERSION = 'ministry-tracker-v92-today-reminder-actions';
 
 const PRECACHE_URLS = [
   './',
@@ -40,24 +40,26 @@ const PRECACHE_URLS = [
   './js/firebase/cloud-backup.js',
 ];
 
-function notificationTargetUrl(data = {}) {
+function notificationTargetUrl(data = {}, notificationAction = '') {
   const base = new URL(data.url || '/ministry-tracker-/', self.location.origin);
   const sourceType = data.sourceType || 'ministry-note';
   const sourceId = data.sourceId || '';
   base.searchParams.set('screen', 'notes');
   base.searchParams.set('sourceType', sourceType);
   if (sourceId) base.searchParams.set('sourceId', sourceId);
+  if (notificationAction) base.searchParams.set('notificationAction', notificationAction);
   base.hash = 'notification';
   return base.href;
 }
 
-function notificationRouteMessage(data = {}) {
+function notificationRouteMessage(data = {}, notificationAction = '') {
   return {
     type: 'NOTIFICATION_CLICK_ROUTE',
     screen: 'notes',
     sourceType: data.sourceType || 'ministry-note',
     sourceId: data.sourceId || '',
-    url: notificationTargetUrl(data),
+    notificationAction: notificationAction || '',
+    url: notificationTargetUrl(data, notificationAction),
   };
 }
 
@@ -124,8 +126,13 @@ self.addEventListener('message', event => {
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const data = (event.notification && event.notification.data) || {};
-  const targetUrl = notificationTargetUrl(data);
-  const routeMessage = notificationRouteMessage(data);
+  const action = event.action || '';
+  // Dismiss means exactly that: close the notification and leave the record
+  // untouched in Today/Overdue. No app launch is necessary.
+  if (action === 'dismiss') return;
+
+  const targetUrl = notificationTargetUrl(data, action);
+  const routeMessage = notificationRouteMessage(data, action);
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
@@ -148,17 +155,27 @@ self.addEventListener('push', event => {
     data = { title: 'Ministry Tracker', body: event.data ? event.data.text() : '' };
   }
   const title = data.title || 'Ministry Tracker';
+  const sourceType = data.sourceType || 'ministry-note';
+  const sourceId = data.sourceId || '';
   const options = {
     body: data.body || data.message || '',
     icon: data.icon || './icons/icon-192.png',
     badge: data.badge || './icons/icon-192.png',
-    tag: data.tag || data.sourceId || 'ministry-tracker-reminder',
+    tag: data.tag || sourceId || 'ministry-tracker-reminder',
     data: {
       url: data.url || '/ministry-tracker-/',
-      sourceType: data.sourceType || 'ministry-note',
-      sourceId: data.sourceId || ''
+      sourceType,
+      sourceId
     },
     requireInteraction: !!data.requireInteraction
   };
+  if (sourceId) {
+    const doneTitle = sourceType === 'revisit' ? 'Log visit' : sourceType === 'bible-study' ? 'Log study' : 'Done';
+    options.actions = [
+      { action: 'done', title: doneTitle },
+      { action: 'snooze', title: 'Snooze 15m' },
+      { action: 'dismiss', title: 'Dismiss' }
+    ];
+  }
   event.waitUntil(self.registration.showNotification(title, options));
 });
