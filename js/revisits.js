@@ -488,19 +488,38 @@
     var wrap=document.createElement('div');
     wrap.id='rvDialogsHost';
     wrap.innerHTML=
-      '<dialog id="rvNewDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('New Return Visit','Nueva revisita'))+'</h2><div class="rv-muted">'+esc(L('Where is the person?','¿Dónde está la persona?'))+'</div></div><button class="rv-icon-btn" data-rv-close-new>×</button></div><div class="rv-list"><button class="btn btn-primary w-full" data-rv-new-here><i class="fa-solid fa-location-crosshairs"></i>'+esc(L('Here — use my location','Aquí — usar mi ubicación'))+'</button><button class="btn btn-secondary w-full" data-rv-new-map><i class="fa-solid fa-map-pin"></i>'+esc(L('Choose on map','Elegir en el mapa'))+'</button><button class="btn btn-secondary w-full" data-rv-new-address><i class="fa-solid fa-location-dot"></i>'+esc(L('Enter an address','Escribir una dirección'))+'</button></div></div></dialog>'+
-      '<dialog id="rvAddressDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Find an address','Buscar una dirección'))+'</h2><div class="rv-muted">'+esc(L('Type an address, then verify the pin on the map.','Escribe una dirección y luego verifica la ubicación en el mapa.'))+'</div></div><button class="rv-icon-btn" data-rv-close-address>×</button></div><form id="rvAddressForm" class="rv-form"><label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><input id="rvAddressSearch" type="search" maxlength="220" autocomplete="street-address" required placeholder="'+esc(L('Street, city, state or area','Calle, ciudad, estado o sector'))+'"></label><div class="rv-dialog-actions"><button class="btn btn-secondary" type="button" data-rv-close-address>'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i>'+esc(L('Find on map','Buscar en el mapa'))+'</button></div></form></div></dialog>'+
-      '<dialog id="rvVisitDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2 id="rvVisitDialogTitle">'+esc(L('Return Visit','Revisita'))+'</h2><div id="rvVisitCoords" class="rv-muted font-mono"></div></div><button class="rv-icon-btn" data-rv-close-visit>×</button></div><div id="rvExistingActions" class="rv-card-actions"></div><form id="rvVisitForm" class="rv-form"><input type="hidden" id="rvVisitId"><input type="hidden" id="rvVisitLat"><input type="hidden" id="rvVisitLng">'+
-        '<label class="rv-field"><span>'+esc(L('Name','Nombre'))+'</span><input id="rvVisitName" maxlength="80" required autocomplete="off"></label>'+
-        '<div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Phone','Teléfono'))+'</span><input id="rvVisitPhone" type="tel" maxlength="40" autocomplete="tel"></label><label class="rv-field"><span>'+esc(L('Reference / landmark','Referencia'))+'</span><input id="rvVisitReference" maxlength="120"></label></div>'+
-        '<label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><div class="rv-field-row"><input id="rvVisitAddress" maxlength="180" style="flex:1"><button id="rvFindAddressBtn" class="btn btn-secondary" type="button" data-rv-find-address><i class="fa-solid fa-location-dot"></i>'+esc(L('Map','Mapa'))+'</button></div></label>'+
-        '<label class="rv-field"><span>'+esc(L('Notes','Notas'))+'</span><textarea id="rvVisitNotes" maxlength="800"></textarea></label>'+
-        '<div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('What you left','Qué le dejaste'))+'</span><input id="rvVisitLeftWith" maxlength="160"></label><label class="rv-field"><span>'+esc(L('Next topic','Próximo tema'))+'</span><input id="rvVisitNextTopic" maxlength="200"></label></div>'+
-        '<div class="rv-quick-dates"><button class="rv-chip" type="button" data-rv-date-preset="7">+1 '+esc(L('week','semana'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="14">+2 '+esc(L('weeks','semanas'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="month">+1 '+esc(L('month','mes'))+'</button></div>'+
-        '<div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Next date','Próxima fecha'))+'</span><input id="rvVisitDueDate" type="date"></label><label class="rv-field"><span>'+esc(L('Time','Hora'))+'</span><input id="rvVisitDueTime" type="time" step="60"></label></div>'+
-        '<label class="rv-check"><input id="rvVisitNotify" type="checkbox"><span><strong>'+esc(L('App reminder 5 minutes before','Aviso en la app 5 minutos antes'))+'</strong><br><span class="rv-muted">'+esc(L('Works when notifications are enabled.','Funciona cuando las notificaciones están activadas.'))+'</span></span></label>'+
-        '<div id="rvHistoryBlock" class="rv-history" hidden></div>'+
-        '<div class="rv-dialog-actions"><button id="rvDeleteBtn" class="btn btn-secondary rv-danger" type="button" hidden><i class="fa-solid fa-trash"></i>'+esc(L('Delete','Eliminar'))+'</button><button class="btn btn-secondary" type="button" data-rv-close-visit>'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" type="submit"><i class="fa-solid fa-check"></i>'+esc(L('Save','Guardar'))+'</button></div></form></div></dialog>'+
+      '<dialog id="rvNewDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('New Return Visit','Nueva revisita'))+'</h2><div class="rv-muted">'+esc(L('How do you want to locate the person?','¿Cómo quieres ubicar a la persona?'))+'</div></div><button class="rv-icon-btn" data-rv-close-new>×</button></div><div class="rv-list">'+
+        '<button class="rv-choice-btn is-primary" type="button" data-rv-new-here><i class="fa-solid fa-location-crosshairs"></i><span><strong>'+esc(L('Here — use my location','Aquí — usar mi ubicación'))+'</strong><small>'+esc(L('Use GPS while you are at the house.','Usa el GPS cuando estés frente a la casa.'))+'</small></span></button>'+
+        '<button class="rv-choice-btn" type="button" data-rv-new-address><i class="fa-solid fa-location-dot"></i><span><strong>'+esc(L('Enter an address','Escribir una dirección'))+'</strong><small>'+esc(L('Search the address and verify the pin.','Busca la dirección y verifica el pin.'))+'</small></span></button>'+
+        '<button class="rv-choice-btn" type="button" data-rv-new-map><i class="fa-solid fa-map-pin"></i><span><strong>'+esc(L('Choose on the map','Elegir en el mapa'))+'</strong><small>'+esc(L('Drop the pin exactly where you want it.','Coloca el pin exactamente donde quieras.'))+'</small></span></button>'+
+      '</div></div></dialog>'+
+      '<dialog id="rvAddressDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Find an address','Buscar una dirección'))+'</h2><div class="rv-muted">'+esc(L('Enter the address, choose the best match, then verify the pin.','Escribe la dirección, elige la mejor coincidencia y verifica el pin.'))+'</div></div><button class="rv-icon-btn" data-rv-close-address>×</button></div>'+
+        '<form id="rvAddressForm" class="rv-form"><label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><input id="rvAddressSearch" type="search" maxlength="220" list="rvAddressDatalist" autocomplete="street-address" autocapitalize="words" spellcheck="false" required placeholder="'+esc(L('Street, city, state or area','Calle, ciudad, estado o sector'))+'"><datalist id="rvAddressDatalist"></datalist></label>'+
+        '<div class="rv-address-actions"><button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i>'+esc(L('Search address','Buscar dirección'))+'</button><button class="btn btn-secondary" type="button" data-rv-address-manual-map><i class="fa-solid fa-map-pin"></i>'+esc(L('Place it on map','Colocarla en el mapa'))+'</button></div>'+
+        '<div id="rvAddressResults" class="rv-address-results"></div></form></div></dialog>'+
+      '<dialog id="rvVisitDialog" class="rv-dialog rv-visit-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2 id="rvVisitDialogTitle">'+esc(L('Return Visit','Revisita'))+'</h2><div id="rvVisitCoords" class="rv-muted font-mono"></div></div><button class="rv-icon-btn" data-rv-close-visit>×</button></div>'+
+        '<section id="rvVisitView" class="rv-visit-view" hidden>'+
+          '<button id="rvViewPlace" class="rv-view-place" type="button" data-rv-view-directions><i class="fa-solid fa-location-dot"></i><span></span></button>'+
+          '<div id="rvViewSchedule" class="rv-view-schedule"></div>'+
+          '<div class="rv-view-primary-actions"><button class="btn btn-primary" type="button" data-rv-view-directions><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Directions','Cómo llegar'))+'</button><button id="rvViewLogBtn" class="btn btn-primary" type="button" data-rv-view-log><i class="fa-solid fa-check"></i>'+esc(L('Log visit','Registrar visita'))+'</button></div>'+
+          '<div id="rvViewContact" class="rv-view-contact" hidden><a id="rvViewCall" class="btn btn-secondary" href="#"><i class="fa-solid fa-phone"></i>'+esc(L('Call','Llamar'))+'</a><a id="rvViewWhatsapp" class="btn btn-secondary" href="#" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i>WhatsApp</a></div>'+
+          '<dl id="rvViewDetails" class="rv-view-details"></dl>'+
+          '<div id="rvViewHistory" class="rv-history" hidden></div>'+
+          '<div class="rv-view-secondary-actions"><button class="btn btn-secondary" type="button" data-rv-view-calendar><i class="fa-solid fa-calendar-plus"></i>'+esc(L('Calendar','Calendario'))+'</button><button id="rvViewReminderBtn" class="btn btn-secondary" type="button" data-rv-view-reminder><i class="fa-solid fa-bell"></i><span>'+esc(L('Set reminder','Poner aviso'))+'</span></button><button class="btn btn-secondary" type="button" data-rv-view-share><i class="fa-solid fa-share-nodes"></i>'+esc(L('Share','Compartir'))+'</button><button class="btn btn-secondary" type="button" data-rv-view-map><i class="fa-solid fa-map-location-dot"></i>'+esc(L('View on map','Ver en mapa'))+'</button><button class="btn btn-secondary" type="button" data-rv-view-edit><i class="fa-solid fa-pen"></i>'+esc(L('Edit','Editar'))+'</button></div>'+
+        '</section>'+
+        '<form id="rvVisitForm" class="rv-form"><input type="hidden" id="rvVisitId"><input type="hidden" id="rvVisitLat"><input type="hidden" id="rvVisitLng">'+
+          '<label class="rv-field"><span>'+esc(L('Name','Nombre'))+' *</span><input id="rvVisitName" maxlength="120" required autocomplete="off" placeholder="'+esc(L('Example: Smith family, Maria','Ej.: Familia Pérez, doña Carmen'))+'"></label>'+
+          '<label class="rv-field"><span>'+esc(L('Reference / how to find the house','Referencia / cómo encontrar la casa'))+'</span><textarea id="rvVisitReference" maxlength="300" rows="2" placeholder="'+esc(L('Example: green house across from the store','Ej.: casa verde frente al colmado'))+'"></textarea></label>'+
+          '<fieldset class="rv-schedule-box"><legend>'+esc(L('When will you return?','¿Cuándo vuelves?'))+'</legend><div class="rv-quick-dates"><button class="rv-chip" type="button" data-rv-date-preset="7">+1 '+esc(L('week','semana'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="14">+2 '+esc(L('weeks','semanas'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="month">+1 '+esc(L('month','mes'))+'</button></div><div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Return date','Volver el'))+'</span><input id="rvVisitDueDate" type="date"></label><label class="rv-field"><span>'+esc(L('Return time','Hora de volver'))+'</span><input id="rvVisitDueTime" type="time" step="60"></label></div><label class="rv-check"><input id="rvVisitNotify" type="checkbox"><span><strong>'+esc(L('App reminder 5 minutes before','Aviso en la app 5 minutos antes'))+'</strong><br><span class="rv-muted">'+esc(L('The phone may ask for notification permission.','El teléfono puede pedir permiso para las notificaciones.'))+'</span></span></label></fieldset>'+
+          '<details id="rvMoreDetails" class="rv-more-details"><summary>'+esc(L('More details (optional)','Más detalles (opcional)'))+'</summary><div class="rv-more-details-body">'+
+            '<label class="rv-field"><span>'+esc(L('Phone / WhatsApp','Teléfono / WhatsApp'))+'</span><input id="rvVisitPhone" type="tel" maxlength="40" autocomplete="tel"></label>'+
+            '<label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><div class="rv-field-row"><input id="rvVisitAddress" maxlength="220" autocomplete="street-address" style="flex:1"><button id="rvFindAddressBtn" class="btn btn-secondary" type="button" data-rv-find-address><i class="fa-solid fa-location-dot"></i>'+esc(L('Map','Mapa'))+'</button></div></label>'+
+            '<label class="rv-field"><span>'+esc(L('Notes','Notas'))+'</span><textarea id="rvVisitNotes" maxlength="1200" rows="4" placeholder="'+esc(L('What you discussed, what to remember, best time…','Qué hablaron, qué recordar, mejor horario…'))+'"></textarea></label>'+
+            '<label class="rv-field"><span>'+esc(L('What you left','Qué le dejaste'))+'</span><input id="rvVisitLeftWith" maxlength="160"></label>'+
+            '<label class="rv-field"><span>'+esc(L('Next topic','Tema para la próxima vez'))+'</span><input id="rvVisitNextTopic" maxlength="200"></label>'+
+          '</div></details>'+
+          '<div class="rv-dialog-actions"><button id="rvMovePinBtn" class="btn btn-secondary" type="button" data-rv-form-move hidden><i class="fa-solid fa-location-dot"></i>'+esc(L('Move pin','Mover pin'))+'</button><button id="rvDeleteBtn" class="btn btn-secondary rv-danger" type="button" hidden><i class="fa-solid fa-trash"></i>'+esc(L('Delete','Eliminar'))+'</button><button class="btn btn-secondary" type="button" data-rv-cancel-edit>'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" type="submit"><i class="fa-solid fa-check"></i>'+esc(L('Save','Guardar'))+'</button></div>'+
+        '</form></div></dialog>'+
       '<dialog id="rvLogDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Log visit','Registrar visita'))+'</h2><div id="rvLogName" class="rv-muted"></div></div><button class="rv-icon-btn" data-rv-close-log>×</button></div><form id="rvLogForm" class="rv-form"><label class="rv-field"><span>'+esc(L('What happened?','¿Qué pasó?'))+'</span><textarea id="rvLogNote" maxlength="600"></textarea></label><label class="rv-field"><span>'+esc(L('What you left','Qué le dejaste'))+'</span><input id="rvLogLeftWith" maxlength="160"></label><label class="rv-field"><span>'+esc(L('Next topic','Tema para la próxima vez'))+'</span><input id="rvLogNextTopic" maxlength="200"></label><div class="rv-quick-dates"><button class="rv-chip" type="button" data-rv-log-preset="7">+1 '+esc(L('week','semana'))+'</button><button class="rv-chip" type="button" data-rv-log-preset="14">+2 '+esc(L('weeks','semanas'))+'</button><button class="rv-chip" type="button" data-rv-log-preset="month">+1 '+esc(L('month','mes'))+'</button></div><div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Return date','Volver el'))+'</span><input id="rvLogDueDate" type="date"></label><label class="rv-field"><span>'+esc(L('Return time','Hora'))+'</span><input id="rvLogDueTime" type="time" step="60"></label></div><label class="rv-check"><input id="rvLogEnd" type="checkbox"><span>'+esc(L('Do not return — move to history','No volver — pasar al historial'))+'</span></label><div class="rv-dialog-actions"><button class="btn btn-secondary" type="button" data-rv-close-log>'+esc(L('Cancel','Cancelar'))+'</button><button class="btn btn-primary" type="submit">'+esc(L('Save visit','Guardar visita'))+'</button></div></form></div></dialog>'+
       '<dialog id="rvDirectionsDialog" class="rv-dialog"><div class="rv-dialog-body"><div class="rv-dialog-head"><div><h2>'+esc(L('Start navigation','Iniciar navegación'))+'</h2><div id="rvDirectionsName" class="rv-muted"></div></div><button class="rv-icon-btn" data-rv-close-directions>×</button></div><div class="rv-list"><button class="btn btn-secondary w-full" type="button" data-rv-nav-app="google"><i class="fa-brands fa-google"></i>Google Maps</button><button class="btn btn-secondary w-full" type="button" data-rv-nav-app="apple"><i class="fa-brands fa-apple"></i>Apple Maps</button><button class="btn btn-secondary w-full" type="button" data-rv-nav-app="waze"><i class="fa-solid fa-diamond-turn-right"></i>Waze</button><label class="rv-check"><input id="rvRememberNav" type="checkbox"><span>'+esc(L('Remember my choice','Recordar mi elección'))+'</span></label></div></div></dialog>';
     document.body.appendChild(wrap);
@@ -510,8 +529,68 @@
   function showDialog(id){var d=dialog(id);if(d&&!d.open)d.showModal();}
   function closeDialog(id){var d=dialog(id);if(d&&d.open)d.close();}
 
-  function openNewChooser(){ensureDialogs();showDialog('rvNewDialog');}
-  function openEditor(id,coords){
+  function whatsappUrl(phone){
+    var d=digits(phone);return d.length>=7?'https://wa.me/'+d:'';
+  }
+  function visitScheduleText(v){
+    if(!v||!v.dueDate)return L('No return date','Sin fecha para volver');
+    return [fmtDate(v.dueDate),v.dueTime?fmtTime(v.dueTime):''].filter(Boolean).join(' · ');
+  }
+  function historyHtml(v){
+    var h=v&&Array.isArray(v.history)?v.history.slice().reverse():[];
+    if(!h.length)return '';
+    return '<strong>'+esc(L('Visit history','Historial de visitas'))+'</strong>'+h.map(function(x){
+      var d=x.completedAt?new Date(x.completedAt):null;
+      var stamp=d&&!isNaN(d)?new Intl.DateTimeFormat(state.lang==='es'?'es-US':'en-US',{month:'short',day:'numeric',year:'numeric'}).format(d):'';
+      return '<div class="rv-history-item"><strong>'+esc(stamp)+'</strong>'+(x.note?'<div>'+esc(x.note)+'</div>':'')+(x.leftWith?'<div class="rv-muted">'+esc(L('Left: ','Dejó: ')+x.leftWith)+'</div>':'')+'</div>';
+    }).join('');
+  }
+  function renderVisitView(v){
+    var place=placeLine(v)||L('Pinned location','Ubicación marcada');
+    var placeEl=dialog('rvViewPlace');if(placeEl){placeEl.querySelector('span').textContent=place;}
+    var schedule=dialog('rvViewSchedule');if(schedule){
+      schedule.textContent=v.status==='completed'?L('In history','En historial'):visitScheduleText(v);
+      schedule.className='rv-view-schedule'+(scheduleBucket(v)==='overdue'?' is-overdue':'')+(v.status==='completed'?' is-history':'');
+    }
+    var rows=[
+      [L('Notes','Notas'),v.notes],
+      [L('What you left','Qué le dejaste'),v.leftWith],
+      [L('Next topic','Próximo tema'),v.nextTopic],
+      [L('Phone','Teléfono'),v.phone]
+    ].filter(function(row){return row[1];});
+    var details=dialog('rvViewDetails');if(details){
+      details.innerHTML=rows.map(function(row){return '<dt>'+esc(row[0])+'</dt><dd>'+esc(row[1])+'</dd>';}).join('');
+      details.hidden=!rows.length;
+    }
+    var tel=telUrl(v.phone),wa=whatsappUrl(v.phone),contact=dialog('rvViewContact');
+    if(contact)contact.hidden=!(tel||wa);
+    var call=dialog('rvViewCall');if(call){call.hidden=!tel;if(tel)call.href=tel;}
+    var whatsapp=dialog('rvViewWhatsapp');if(whatsapp){whatsapp.hidden=!wa;if(wa)whatsapp.href=wa;}
+    var hist=dialog('rvViewHistory');if(hist){hist.innerHTML=historyHtml(v);hist.hidden=!hist.innerHTML;}
+    var log=dialog('rvViewLogBtn');if(log)log.hidden=v.status==='completed';
+    var reminder=dialog('rvViewReminderBtn');
+    if(reminder){
+      var label=reminder.querySelector('span');
+      if(label)label.textContent=(v.notify5Min&&v.dueDate&&v.dueTime)?L('Reminder on · 5 min','Aviso activo · 5 min'):L('Set reminder','Poner aviso');
+    }
+  }
+  function setVisitDialogMode(mode,v){
+    var viewing=mode==='view';
+    var viewEl=dialog('rvVisitView'),form=dialog('rvVisitForm');
+    if(viewEl)viewEl.hidden=!viewing;
+    if(form)form.hidden=viewing;
+    var coords=dialog('rvVisitCoords');if(coords)coords.hidden=viewing;
+    var del=dialog('rvDeleteBtn');if(del)del.hidden=mode!=='edit';
+    var move=dialog('rvMovePinBtn');if(move)move.hidden=mode!=='edit';
+    if(v&&viewing)renderVisitView(v);
+  }
+  function openNewChooser(){
+    ensureDialogs();
+    populateAddressDatalist();
+    showDialog('rvNewDialog');
+  }
+  function openEditor(id,coords,options){
+    options=options||{};
     ensureDialogs();
     var v=id?state.ministryRevisits.find(function(x){return x.id===id;}):null;
     var p=v||coords;if(!p)return;
@@ -531,25 +610,13 @@
     dialog('rvVisitNotify').checked=v?v.notify5Min!==false:state.revisitSettings.pushReminderDefault!==false;
     dialog('rvVisitDialogTitle').textContent=v?v.name:L('New Return Visit','Nueva revisita');
     dialog('rvVisitCoords').textContent=coord(p.lat)+', '+coord(p.lng);
-    dialog('rvDeleteBtn').hidden=!v;
+    var more=dialog('rvMoreDetails');if(more)more.open=Boolean(v&&(v.phone||v.address||v.notes||v.leftWith||v.nextTopic));
     var findAddressBtn=dialog('rvFindAddressBtn');if(findAddressBtn)findAddressBtn.hidden=!v;
-    var actions=dialog('rvExistingActions');
-    actions.innerHTML=v?'<button class="btn btn-secondary" type="button" data-rv-dialog-move><i class="fa-solid fa-location-dot"></i>'+esc(L('Move pin','Mover pin'))+'</button><button class="btn btn-secondary" type="button" data-rv-dialog-calendar><i class="fa-solid fa-calendar-plus"></i>'+esc(L('Calendar','Calendario'))+'</button><button class="btn btn-secondary" type="button" data-rv-dialog-directions><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Directions','Cómo llegar'))+'</button>'+(v.status!=='completed'?'<button class="btn btn-primary" type="button" data-rv-dialog-log><i class="fa-solid fa-check"></i>'+esc(L('Log','Registrar'))+'</button>':''):'';
-    renderHistory(v);
+    var mode=!v?'new':options.edit?'edit':'view';
+    setVisitDialogMode(mode,v);
     showDialog('rvVisitDialog');
-    if(!v)setTimeout(function(){dialog('rvVisitName').focus();},80);
+    if(mode==='new')setTimeout(function(){dialog('rvVisitName').focus();},80);
   }
-  function renderHistory(v){
-    var box=dialog('rvHistoryBlock');if(!box)return;
-    var h=v&&Array.isArray(v.history)?v.history.slice().reverse():[];
-    box.hidden=!h.length;
-    box.innerHTML=h.length?'<strong>'+esc(L('Visit history','Historial de visitas'))+'</strong>'+h.map(function(x){
-      var d=x.completedAt?new Date(x.completedAt):null;
-      var stamp=d&&!isNaN(d)?new Intl.DateTimeFormat(state.lang==='es'?'es-US':'en-US',{month:'short',day:'numeric',year:'numeric'}).format(d):'';
-      return '<div class="rv-history-item"><strong>'+esc(stamp)+'</strong>'+(x.note?'<div>'+esc(x.note)+'</div>':'')+(x.leftWith?'<div class="rv-muted">'+esc(L('Left: ','Dejó: ')+x.leftWith)+'</div>':'')+'</div>';
-    }).join(''):'';
-  }
-
   function bindDialogs(){
     if(!dialogClicksBound){
       dialogClicksBound=true;
