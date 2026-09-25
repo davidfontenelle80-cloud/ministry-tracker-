@@ -69,6 +69,8 @@
   function placeLine(v){return [v.reference,v.address].filter(Boolean).join(' · ');}
   function digits(phone){return String(phone||'').replace(/\D+/g,'');}
   function telUrl(phone){return digits(phone).length>=7?'tel:'+String(phone).replace(/[^\d+]/g,''):'';}
+  function smsUrl(phone){return digits(phone).length>=7?'sms:'+String(phone).replace(/[^\d+]/g,''):'';}
+  function mailUrl(email){email=String(email||'').trim();return email&&email.indexOf('@')>0?'mailto:'+encodeURIComponent(email):'';}
   function coord(n){return String(+Number(n).toFixed(6));}
   function hasCoords(v){
     return !!v && v.lat!==null && v.lat!==undefined && v.lat!=='' && v.lng!==null && v.lng!==undefined && v.lng!=='' &&
@@ -108,6 +110,7 @@
       address:String(v.address||''),
       notes:String(v.notes||''),
       phone:String(v.phone||''),
+      email:String(v.email||''),
       leftWith:String(v.leftWith||''),
       nextTopic:String(v.nextTopic||''),
       calendarSlot:String(v.calendarSlot||''),
@@ -139,24 +142,34 @@
     }
     if(changed)saveState();
   }
-  function persist(){saveState();}
+  function persist(){
+    saveState();
+    if(global.MinistryOrganizer&&typeof global.MinistryOrganizer.refreshDashboard==='function')global.MinistryOrganizer.refreshDashboard();
+  }
 
   function root(){return document.getElementById('revisitsContent');}
   function notesRoot(){return document.getElementById('notesContent');}
   function activate(next){
-    mode=next==='revisits'?'revisits':'notes';
-    var n=notesRoot(),r=root();
+    mode=next==='revisits'?'revisits':next==='studies'?'studies':'notes';
+    var n=notesRoot(),r=root(),s=document.getElementById('studiesContent');
     if(n)n.classList.toggle('hidden',mode!=='notes');
     if(r)r.classList.toggle('hidden',mode!=='revisits');
+    if(s)s.classList.toggle('hidden',mode!=='studies');
     document.querySelectorAll('[data-notes-mode]').forEach(function(b){var on=b.dataset.notesMode===mode;b.classList.toggle('is-active',on);b.setAttribute('aria-selected',on?'true':'false');});
     var noteLabel=document.getElementById('notesModeNotesLabel');
     var rvLabel=document.getElementById('notesModeRevisitsLabel');
+    var studyLabel=document.getElementById('notesModeStudiesLabel');
     if(noteLabel)noteLabel.textContent=L('Notes','Notas');
     if(rvLabel)rvLabel.textContent=L('Return Visits','Revisitas');
+    if(studyLabel)studyLabel.textContent=L('Bible Studies','Estudios bíblicos');
     if(mode==='revisits'){
       render();
       autoLocateOnRevisitsOpen();
-    } else if(typeof renderNotes==='function')renderNotes();
+    }else if(mode==='studies'&&global.MinistryOrganizer&&typeof global.MinistryOrganizer.activateStudies==='function'){
+      global.MinistryOrganizer.activateStudies();
+    }else if(global.MinistryOrganizer&&typeof global.MinistryOrganizer.activateNotes==='function'){
+      global.MinistryOrganizer.activateNotes();
+    }else if(typeof renderNotes==='function')renderNotes();
   }
 
   function viewTabs(){
@@ -685,7 +698,7 @@
           '<button id="rvViewPlace" class="rv-view-place" type="button" data-rv-view-directions><i class="fa-solid fa-location-dot"></i><span></span></button>'+
           '<div id="rvViewSchedule" class="rv-view-schedule"></div>'+
           '<div class="rv-view-primary-actions"><button class="btn btn-primary" type="button" data-rv-view-directions><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Directions','Cómo llegar'))+'</button><button id="rvViewLogBtn" class="btn btn-primary" type="button" data-rv-view-log><i class="fa-solid fa-check"></i>'+esc(L('Log visit','Registrar visita'))+'</button></div>'+
-          '<div id="rvViewContact" class="rv-view-contact" hidden><a id="rvViewCall" class="btn btn-secondary" href="#"><i class="fa-solid fa-phone"></i>'+esc(L('Call','Llamar'))+'</a><a id="rvViewWhatsapp" class="btn btn-secondary" href="#" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i>WhatsApp</a></div>'+
+          '<div id="rvViewContact" class="rv-view-contact" hidden><a id="rvViewCall" class="btn btn-secondary" href="#"><i class="fa-solid fa-phone"></i>'+esc(L('Call','Llamar'))+'</a><a id="rvViewText" class="btn btn-secondary" href="#"><i class="fa-solid fa-message"></i>'+esc(L('Text','Texto'))+'</a><a id="rvViewWhatsapp" class="btn btn-secondary" href="#" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i>WhatsApp</a><a id="rvViewEmail" class="btn btn-secondary" href="#"><i class="fa-solid fa-envelope"></i>'+esc(L('Email','Correo'))+'</a></div>'+
           '<dl id="rvViewDetails" class="rv-view-details"></dl>'+
           '<div id="rvViewHistory" class="rv-history" hidden></div>'+
           '<div class="rv-view-secondary-actions"><button class="btn btn-secondary" type="button" data-rv-view-calendar><i class="fa-solid fa-calendar-plus"></i>'+esc(L('Calendar','Calendario'))+'</button><button id="rvViewReminderBtn" class="btn btn-secondary" type="button" data-rv-view-reminder><i class="fa-solid fa-bell"></i><span>'+esc(L('Set reminder','Poner aviso'))+'</span></button><button class="btn btn-secondary" type="button" data-rv-view-share><i class="fa-solid fa-share-nodes"></i>'+esc(L('Share','Compartir'))+'</button><button class="btn btn-secondary" type="button" data-rv-view-map><i class="fa-solid fa-map-location-dot"></i>'+esc(L('View on map','Ver en mapa'))+'</button><button class="btn btn-secondary" type="button" data-rv-view-edit><i class="fa-solid fa-pen"></i>'+esc(L('Edit','Editar'))+'</button></div>'+
@@ -695,7 +708,7 @@
           '<label class="rv-field"><span>'+esc(L('Reference / how to find the house','Referencia / cómo encontrar la casa'))+'</span><textarea id="rvVisitReference" maxlength="300" rows="2" placeholder="'+esc(L('Example: green house across from the store','Ej.: casa verde frente al colmado'))+'"></textarea></label>'+
           '<fieldset class="rv-schedule-box"><legend>'+esc(L('When will you return?','¿Cuándo vuelves?'))+'</legend><div class="rv-quick-dates"><button class="rv-chip" type="button" data-rv-date-preset="7">+1 '+esc(L('week','semana'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="14">+2 '+esc(L('weeks','semanas'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="month">+1 '+esc(L('month','mes'))+'</button></div><div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Return date','Volver el'))+'</span><input id="rvVisitDueDate" type="date"></label><label class="rv-field"><span>'+esc(L('Return time','Hora de volver'))+'</span><input id="rvVisitDueTime" type="time" step="60"></label></div><label class="rv-check"><input id="rvVisitNotify" type="checkbox"><span><strong>'+esc(L('App reminder 5 minutes before','Aviso en la app 5 minutos antes'))+'</strong><br><span class="rv-muted">'+esc(L('The phone may ask for notification permission.','El teléfono puede pedir permiso para las notificaciones.'))+'</span></span></label></fieldset>'+
           '<details id="rvMoreDetails" class="rv-more-details"><summary>'+esc(L('More details (optional)','Más detalles (opcional)'))+'</summary><div class="rv-more-details-body">'+
-            '<label class="rv-field"><span>'+esc(L('Phone / WhatsApp','Teléfono / WhatsApp'))+'</span><input id="rvVisitPhone" type="tel" maxlength="40" autocomplete="tel"></label>'+
+            '<div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Phone / WhatsApp','Teléfono / WhatsApp'))+'</span><input id="rvVisitPhone" type="tel" maxlength="40" autocomplete="tel"></label><label class="rv-field"><span>'+esc(L('Email','Correo electrónico'))+'</span><input id="rvVisitEmail" type="email" maxlength="160" autocomplete="email"></label></div>'+
             '<label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><div class="rv-field-row"><input id="rvVisitAddress" maxlength="220" autocomplete="street-address" style="flex:1"><button id="rvFindAddressBtn" class="btn btn-secondary" type="button" data-rv-find-address><i class="fa-solid fa-location-dot"></i>'+esc(L('Map','Mapa'))+'</button></div></label>'+
             '<label class="rv-field"><span>'+esc(L('Notes','Notas'))+'</span><textarea id="rvVisitNotes" maxlength="1200" rows="4" placeholder="'+esc(L('What you discussed, what to remember, best time…','Qué hablaron, qué recordar, mejor horario…'))+'"></textarea></label>'+
             '<label class="rv-field"><span>'+esc(L('What you left','Qué le dejaste'))+'</span><input id="rvVisitLeftWith" maxlength="160"></label>'+
@@ -739,16 +752,19 @@
       [L('Notes','Notas'),v.notes],
       [L('What you left','Qué le dejaste'),v.leftWith],
       [L('Next topic','Próximo tema'),v.nextTopic],
-      [L('Phone','Teléfono'),v.phone]
+      [L('Phone','Teléfono'),v.phone],
+      [L('Email','Correo electrónico'),v.email]
     ].filter(function(row){return row[1];});
     var details=dialog('rvViewDetails');if(details){
       details.innerHTML=rows.map(function(row){return '<dt>'+esc(row[0])+'</dt><dd>'+esc(row[1])+'</dd>';}).join('');
       details.hidden=!rows.length;
     }
-    var tel=telUrl(v.phone),wa=whatsappUrl(v.phone),contact=dialog('rvViewContact');
-    if(contact)contact.hidden=!(tel||wa);
+    var tel=telUrl(v.phone),sms=smsUrl(v.phone),wa=whatsappUrl(v.phone),mail=mailUrl(v.email),contact=dialog('rvViewContact');
+    if(contact)contact.hidden=!(tel||sms||wa||mail);
     var call=dialog('rvViewCall');if(call){call.hidden=!tel;if(tel)call.href=tel;}
+    var text=dialog('rvViewText');if(text){text.hidden=!sms;if(sms)text.href=sms;}
     var whatsapp=dialog('rvViewWhatsapp');if(whatsapp){whatsapp.hidden=!wa;if(wa)whatsapp.href=wa;}
+    var email=dialog('rvViewEmail');if(email){email.hidden=!mail;if(mail)email.href=mail;}
     var hist=dialog('rvViewHistory');if(hist){hist.innerHTML=historyHtml(v);hist.hidden=!hist.innerHTML;}
     var log=dialog('rvViewLogBtn');if(log)log.hidden=v.status==='completed';
     var reminder=dialog('rvViewReminderBtn');
@@ -783,6 +799,7 @@
     dialog('rvVisitLng').value=hasCoords(p)?p.lng:'';
     dialog('rvVisitName').value=v?v.name:'';
     dialog('rvVisitPhone').value=v?v.phone:'';
+    dialog('rvVisitEmail').value=v?v.email:'';
     dialog('rvVisitReference').value=v?v.reference:'';
     dialog('rvVisitAddress').value=v?v.address:(coords&&coords.address)||'';
     dialog('rvVisitNotes').value=v?v.notes:'';
@@ -793,7 +810,7 @@
     dialog('rvVisitNotify').checked=v?v.notify5Min!==false:state.revisitSettings.pushReminderDefault!==false;
     dialog('rvVisitDialogTitle').textContent=v?v.name:L('New Return Visit','Nueva revisita');
     dialog('rvVisitCoords').textContent=hasCoords(p)?coord(p.lat)+', '+coord(p.lng):L('Address saved — map pin optional','Dirección guardada — el pin del mapa es opcional');
-    var more=dialog('rvMoreDetails');if(more)more.open=Boolean(v&&(v.phone||v.address||v.notes||v.leftWith||v.nextTopic));
+    var more=dialog('rvMoreDetails');if(more)more.open=Boolean(v&&(v.phone||v.email||v.address||v.notes||v.leftWith||v.nextTopic));
     var findAddressBtn=dialog('rvFindAddressBtn');if(findAddressBtn)findAddressBtn.hidden=!v;
     var mode=!v?'new':options.edit?'edit':'view';
     setVisitDialogMode(mode,v);
@@ -958,6 +975,7 @@
       id:id||makeId(),
       name:dialog('rvVisitName').value.trim()||L('Return visit','Revisita'),
       phone:dialog('rvVisitPhone').value.trim(),
+      email:dialog('rvVisitEmail').value.trim(),
       reference:dialog('rvVisitReference').value.trim(),
       address:dialog('rvVisitAddress').value.trim(),
       notes:dialog('rvVisitNotes').value.trim(),
@@ -1219,7 +1237,9 @@
     setTimeout(function(){
       if(typeof global.switchScreen==='function')global.switchScreen('notes');
       activate('revisits');
-      if(route.sourceId)openEditor(route.sourceId);
+      if(route.sourceId&&global.MinistryOrganizer&&typeof global.MinistryOrganizer.showNotificationQuickCard==='function'){
+        global.MinistryOrganizer.showNotificationQuickCard('revisit',route.sourceId);
+      }else if(route.sourceId)openEditor(route.sourceId);
     },120);
   }
   if(global.KHub&&typeof global.KHub.on==='function')global.KHub.on('notification:route',routeNotification);
