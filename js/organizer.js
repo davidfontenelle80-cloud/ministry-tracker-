@@ -526,24 +526,82 @@
     if(type==='bible-study'){if(typeof global.switchScreen==='function')global.switchScreen('notes');showOnly('studies');renderStudies();setTimeout(function(){openStudyDetail(id);},80);}
   }
   function quickRecord(sourceType,id){
+    if(sourceType==='ministry-note')return (state.ministryNotes||[]).find(function(x){return x.id===id;});
     if(sourceType==='revisit')return (state.ministryRevisits||[]).find(function(x){return x.id===id;});
     if(sourceType==='bible-study')return studyById(id);
     return null;
   }
+  function reminderTitle(sourceType,rec){
+    if(sourceType==='ministry-note')return rec.title||L('Note','Nota');
+    if(sourceType==='revisit')return L('Return Visit: ','Revisita: ')+(rec.name||'');
+    return L('Bible Study: ','Estudio bíblico: ')+(rec.name||'');
+  }
+  function reminderBody(sourceType,rec){
+    if(sourceType==='ministry-note')return scheduleText(rec);
+    return [scheduleText(rec),rec.address||rec.reference||''].filter(Boolean).join(' · ');
+  }
+  function snoozeReminder(sourceType,id,minutes){
+    ensureState();
+    var rec=quickRecord(sourceType,id);if(!rec||!global.MinistryPush)return Promise.resolve({ok:false,skipped:'missing'});
+    minutes=Math.max(1,Number(minutes)||15);
+    var fire=new Date(Date.now()+minutes*60000),iso=fire.toISOString();
+    if(sourceType==='ministry-note'){
+      rec=normalizeNote(Object.assign({},rec,{reminder:true,snoozedUntil:iso,reminderAt:iso,updatedAt:nowIso()}));
+      state.ministryNotes=state.ministryNotes.map(function(x){return x.id===id?rec:x;});
+    }else if(sourceType==='bible-study'){
+      rec=normalizeStudy(Object.assign({},rec,{notify:true,snoozedUntil:iso,updatedAt:nowIso()}));
+      state.ministryBibleStudies=state.ministryBibleStudies.map(function(x){return x.id===id?rec:x;});
+    }else if(sourceType==='revisit'){
+      rec=Object.assign({},rec,{notify5Min:true,snoozedUntil:iso,updatedAt:nowIso()});
+      state.ministryRevisits=state.ministryRevisits.map(function(x){return x.id===id?rec:x;});
+    }
+    persist();
+    return global.MinistryPush.syncReminder(sourceType,id,reminderTitle(sourceType,rec),reminderBody(sourceType,rec),iso).then(function(result){
+      if(!result||result.ok!==false)toast(L('Snoozed for ','Pospuesto por ')+minutes+L(' minutes.',' minutos.'));
+      return result;
+    });
+  }
+  function completeNotificationItem(sourceType,id){
+    if(sourceType==='ministry-note'){
+      var n=(state.ministryNotes||[]).find(function(x){return x.id===id;});if(!n)return;
+      n=normalizeNote(Object.assign({},n,{completed:true,status:'done',reminder:false,snoozedUntil:'',updatedAt:nowIso()}));
+      state.ministryNotes=state.ministryNotes.map(function(x){return x.id===id?n:x;});
+      persist();
+      if(global.MinistryPush)global.MinistryPush.clearReminder('ministry-note',id);
+      renderNotes();closeDialog('orgNotificationQuick');toast(L('Marked done.','Marcado como hecho.'));
+      return;
+    }
+    closeDialog('orgNotificationQuick');
+    if(sourceType==='revisit'&&global.MinistryRevisits&&typeof global.MinistryRevisits.log==='function'){global.MinistryRevisits.log(id);return;}
+    if(sourceType==='bible-study'){openStudyLog(id);}
+  }
+  function handleNotificationAction(sourceType,id,action){
+    if(!sourceType||!id)return false;
+    if(action==='snooze'){snoozeReminder(sourceType,id,15);return true;}
+    if(action==='done'){completeNotificationItem(sourceType,id);return true;}
+    return false;
+  }
   function showNotificationQuickCard(sourceType,id){
     ensureDialogs();ensureState();
-    var rec=quickRecord(sourceType,id);if(!rec){openRecord(sourceType,id);return;}
+    var rec=quickRecord(sourceType,id);if(!rec){openRecord(sourceType==='ministry-note'?'note':sourceType,id);return;}
     activeStudyId=sourceType==='bible-study'?id:activeStudyId;
-    D('orgQuickType').textContent=sourceType==='revisit'?L('Return Visit reminder','Recordatorio de revisita'):L('Bible Study reminder','Recordatorio de estudio bíblico');
-    D('orgQuickTitle').textContent=rec.name||'';
+    activeNoteId=sourceType==='ministry-note'?id:activeNoteId;
+    var isNote=sourceType==='ministry-note',isRevisit=sourceType==='revisit';
+    D('orgQuickType').textContent=isNote?L('Note reminder','Recordatorio de nota'):isRevisit?L('Return Visit reminder','Recordatorio de revisita'):L('Bible Study reminder','Recordatorio de estudio bíblico');
+    D('orgQuickTitle').textContent=isNote?(rec.title||L('Untitled note','Nota sin título')):(rec.name||'');
     D('orgQuickSchedule').textContent=scheduleText(rec);
-    D('orgQuickPlace').textContent=rec.address||rec.reference||'';
+    D('orgQuickPlace').textContent=isNote?'':(rec.address||rec.reference||'');
     var acts=[];
-    var quickHasCoords=rec.lat!==null&&rec.lat!==undefined&&rec.lat!==''&&rec.lng!==null&&rec.lng!==undefined&&rec.lng!==''&&Number.isFinite(Number(rec.lat))&&Number.isFinite(Number(rec.lng));
-    if(rec.address||quickHasCoords)acts.push('<button class="btn btn-primary" type="button" data-org-quick-nav="'+sourceType+'" data-org-id="'+esc(id)+'"><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Navigate','Navegar'))+'</button>');
-    if(telUrl(rec.phone))acts.push('<a class="btn btn-primary" href="'+esc(telUrl(rec.phone))+'"><i class="fa-solid fa-phone"></i>'+esc(L('Call','Llamar'))+'</a>');
+    var quickHasCoords=!isNote&&rec.lat!==null&&rec.lat!==undefined&&rec.lat!==''&&rec.lng!==null&&rec.lng!==undefined&&rec.lng!==''&&Number.isFinite(Number(rec.lat))&&Number.isFinite(Number(rec.lng));
+    if(!isNote&&(rec.address||quickHasCoords))acts.push('<button class="btn btn-primary" type="button" data-org-quick-nav="'+sourceType+'" data-org-id="'+esc(id)+'"><i class="fa-solid fa-diamond-turn-right"></i>'+esc(L('Navigate','Navegar'))+'</button>');
+    if(!isNote&&telUrl(rec.phone))acts.push('<a class="btn btn-primary" href="'+esc(telUrl(rec.phone))+'"><i class="fa-solid fa-phone"></i>'+esc(L('Call','Llamar'))+'</a>');
     acts.push('<button class="btn btn-secondary" type="button" data-org-quick-open="'+sourceType+'" data-org-id="'+esc(id)+'"><i class="fa-solid fa-arrow-up-right-from-square"></i>'+esc(L('Full Card','Tarjeta completa'))+'</button>');
     D('orgQuickActions').innerHTML=acts.join('');
+    var doneLabel=isNote?L('Done','Hecho'):isRevisit?L('Log Visit','Registrar visita'):L('Log Study','Registrar estudio');
+    D('orgQuickReminderActions').innerHTML=
+      '<button class="btn btn-secondary" type="button" data-org-quick-done="'+sourceType+'" data-org-id="'+esc(id)+'"><i class="fa-solid fa-check"></i>'+esc(doneLabel)+'</button>'+
+      '<button class="btn btn-secondary" type="button" data-org-quick-snooze="'+sourceType+'" data-org-id="'+esc(id)+'"><i class="fa-solid fa-clock-rotate-left"></i>'+esc(L('Snooze 15m','Posponer 15m'))+'</button>'+
+      '<button class="btn btn-secondary" type="button" data-org-quick-dismiss><i class="fa-solid fa-xmark"></i>'+esc(L('Dismiss','Descartar'))+'</button>';
     showDialog('orgNotificationQuick');
   }
 
@@ -578,16 +636,24 @@
       var db=e.target.closest('[data-org-dashboard-open]');if(db){openRecord(db.dataset.orgDashboardOpen,db.dataset.orgId);return;}
       if(e.target.closest('[data-org-open-organizer]')){if(typeof global.switchScreen==='function')global.switchScreen('notes');showOnly('notes');renderNotes();return;}
       var qn=e.target.closest('[data-org-quick-nav]');if(qn){var qr=quickRecord(qn.dataset.orgQuickNav,qn.dataset.orgId);if(qr)openDirections(qr);return;}
-      var qo=e.target.closest('[data-org-quick-open]');if(qo){closeDialog('orgNotificationQuick');openRecord(qo.dataset.orgQuickOpen,qo.dataset.orgId);return;}
+      var qo=e.target.closest('[data-org-quick-open]');if(qo){closeDialog('orgNotificationQuick');openRecord(qo.dataset.orgQuickOpen==='ministry-note'?'note':qo.dataset.orgQuickOpen,qo.dataset.orgId);return;}
+      var qdone=e.target.closest('[data-org-quick-done]');if(qdone){completeNotificationItem(qdone.dataset.orgQuickDone,qdone.dataset.orgId);return;}
+      var qs=e.target.closest('[data-org-quick-snooze]');if(qs){snoozeReminder(qs.dataset.orgQuickSnooze,qs.dataset.orgId,15).finally(function(){closeDialog('orgNotificationQuick');});return;}
+      if(e.target.closest('[data-org-quick-dismiss]')){closeDialog('orgNotificationQuick');return;}
       if(e.target.closest('#langToggle'))setTimeout(function(){var h=document.getElementById('orgDialogsHost');if(h)h.remove();ensureDialogs();renderNotes();renderStudies();refreshDashboard();},50);
     },true);
   }
 
   function routeNotification(route){
-    if(!route)return;
-    if(route.sourceType==='bible-study'&&route.sourceId){
-      setTimeout(function(){if(typeof global.switchScreen==='function')global.switchScreen('notes');showOnly('studies');renderStudies();showNotificationQuickCard('bible-study',route.sourceId);},150);
-    }
+    if(!route||!route.sourceId)return;
+    if(route.sourceType!=='ministry-note'&&route.sourceType!=='bible-study')return;
+    setTimeout(function(){
+      if(typeof global.switchScreen==='function')global.switchScreen('notes');
+      if(route.sourceType==='bible-study'){showOnly('studies');renderStudies();}
+      else{showOnly('notes');renderNotes();}
+      if(handleNotificationAction(route.sourceType,route.sourceId,route.notificationAction||''))return;
+      showNotificationQuickCard(route.sourceType,route.sourceId);
+    },150);
   }
 
   function init(){
@@ -616,7 +682,9 @@
     openNote:openNoteDetail,
     openStudy:openStudyDetail,
     refreshDashboard:refreshDashboard,
-    showNotificationQuickCard:showNotificationQuickCard
+    showNotificationQuickCard:showNotificationQuickCard,
+    snoozeReminder:snoozeReminder,
+    handleNotificationAction:handleNotificationAction
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
   else init();
