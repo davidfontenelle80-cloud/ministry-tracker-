@@ -70,19 +70,36 @@
   function digits(phone){return String(phone||'').replace(/\D+/g,'');}
   function telUrl(phone){return digits(phone).length>=7?'tel:'+String(phone).replace(/[^\d+]/g,''):'';}
   function coord(n){return String(+Number(n).toFixed(6));}
-  function mapLink(v){return 'https://www.google.com/maps/search/?api=1&query='+coord(v.lat)+','+coord(v.lng);}
+  function hasCoords(v){
+    return !!v && Number.isFinite(Number(v.lat)) && Number.isFinite(Number(v.lng));
+  }
+  function navigationTarget(v){
+    if(!v)return '';
+    if(hasCoords(v))return coord(v.lat)+','+coord(v.lng);
+    return String(v.address||v.reference||'').trim();
+  }
+  function mapLink(v){
+    var target=navigationTarget(v);
+    return target?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(target):'';
+  }
   function directionsUrl(v,app){
     app=app||state.revisitSettings.navApp||'ask';
     if(app==='auto'||app==='ask')app=isIOS()?'apple':'google';
-    var ll=coord(v.lat)+','+coord(v.lng);
-    if(app==='waze')return 'https://waze.com/ul?ll='+ll+'&navigate=yes';
-    if(app==='apple')return 'https://maps.apple.com/?daddr='+ll+'&dirflg=d';
-    return 'https://www.google.com/maps/dir/?api=1&destination='+ll+'&travelmode=driving';
+    var target=navigationTarget(v);
+    if(!target)return '';
+    if(app==='waze'){
+      return hasCoords(v)
+        ? 'https://waze.com/ul?ll='+encodeURIComponent(target)+'&navigate=yes'
+        : 'https://waze.com/ul?q='+encodeURIComponent(target)+'&navigate=yes';
+    }
+    if(app==='apple')return 'https://maps.apple.com/?daddr='+encodeURIComponent(target)+'&dirflg=d';
+    return 'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(target)+'&travelmode=driving';
   }
   function normalizeVisit(v){
     if(!v||typeof v!=='object')return null;
-    var lat=Number(v.lat),lng=Number(v.lng);
-    if(!Number.isFinite(lat)||!Number.isFinite(lng))return null;
+    var lat=(v.lat===null||v.lat===undefined||v.lat==='')?null:Number(v.lat);
+    var lng=(v.lng===null||v.lng===undefined||v.lng==='')?null:Number(v.lng);
+    if(!Number.isFinite(lat)||!Number.isFinite(lng)){lat=null;lng=null;}
     return {
       id:String(v.id||makeId()),
       name:String(v.name||L('Return visit','Revisita')),
@@ -174,7 +191,7 @@
   }
   function visitCard(v,compact){
     var phone=telUrl(v.phone);
-    var distance=currentLocation&&global.MinistryRevisitMap?global.MinistryRevisitMap.formatDistance(global.MinistryRevisitMap.haversineKm(currentLocation.lat,currentLocation.lng,v.lat,v.lng)):'';
+    var distance=currentLocation&&hasCoords(v)&&global.MinistryRevisitMap?global.MinistryRevisitMap.formatDistance(global.MinistryRevisitMap.haversineKm(currentLocation.lat,currentLocation.lng,v.lat,v.lng)):'';
     var when=v.dueDate?[fmtDate(v.dueDate),v.dueTime?fmtTime(v.dueTime):''].filter(Boolean).join(' · '):L('No date set','Sin fecha');
     var place=placeLine(v)||L('Pinned location','Ubicación marcada');
     return '<article class="rv-card" data-rv-card="'+esc(v.id)+'">'+
@@ -248,7 +265,7 @@
   function filterChip(id,label){return '<button class="rv-chip'+(listFilter===id?' is-active':'')+'" type="button" data-rv-filter="'+id+'">'+esc(label)+'</button>';}
 
   function mapVisits(){
-    var t=todayKey(),arr=state.ministryRevisits.slice();
+    var arr=state.ministryRevisits.filter(hasCoords);
     if(mapMode==='today')arr=arr.filter(function(v){var b=scheduleBucket(v);return v.status==='active'&&(b==='today'||b==='overdue');});
     else if(mapMode==='active')arr=arr.filter(function(v){return v.status==='active';});
     else if(mapMode==='nearby')arr=currentLocation?arr.filter(function(v){return v.status==='active'&&global.MinistryRevisitMap.haversineKm(currentLocation.lat,currentLocation.lng,v.lat,v.lng)<=5;}):[];
