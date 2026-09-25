@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v94-info-first-new-entry';
+const CACHE_VERSION = 'ministry-tracker-v95-ios-bottom-nav-recovery';
 
 const PRECACHE_URLS = [
   './',
