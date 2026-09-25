@@ -161,7 +161,6 @@
   }
   function renderNotes(){
     ensureState();
-    showOnly('notes');
     var root=notesRoot();if(!root)return;
     var items=filtered(state.ministryNotes||[],noteFilter);
     root.innerHTML='<div class="org-shell">'+
@@ -187,7 +186,6 @@
   }
   function renderStudies(){
     ensureState();
-    showOnly('studies');
     var root=studiesRoot();if(!root)return;
     var items=filtered((state.ministryBibleStudies||[]).filter(function(s){return s.status!=='completed';}),studyFilter);
     root.innerHTML='<div class="org-shell">'+
