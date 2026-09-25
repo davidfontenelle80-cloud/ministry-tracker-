@@ -555,5 +555,6 @@
     refreshDashboard:refreshDashboard,
     showNotificationQuickCard:showNotificationQuickCard
   };
-  global.addEventListener('load',init);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+  else init();
 })(window);
