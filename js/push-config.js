@@ -8,10 +8,15 @@
     appName: 'Ministry Tracker'
   }, window.MINISTRY_TRACKER_PUSH_CONFIG || {});
 
-  // Load the reusable device-specific notification control without changing
-  // the large app bundle. The module waits for push.js and the Settings card.
-  var script = document.createElement('script');
-  script.src = 'js/push-toggle.js';
-  script.defer = true;
-  document.head.appendChild(script);
+  function loadModule(src) {
+    var script = document.createElement('script');
+    script.src = src;
+    script.async = false;
+    document.head.appendChild(script);
+  }
+
+  // Run the one-time organizer migration before organizer.js initializes.
+  // It waits for app state to exist, so loading it here is safe.
+  loadModule('js/organizer-migration.js');
+  loadModule('js/push-toggle.js');
 })();

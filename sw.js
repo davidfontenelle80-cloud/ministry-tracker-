@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v89-organizer-studies-dashboard';
+const CACHE_VERSION = 'ministry-tracker-v90-bible-study-note-migration';
 
 const PRECACHE_URLS = [
   './',
@@ -31,6 +31,7 @@ const PRECACHE_URLS = [
   './js/push-config.js',
   './js/push.js',
   './js/push-toggle.js',
+  './js/organizer-migration.js',
   './js/app.js',
   './js/revisit-map.js',
   './js/revisits.js',
