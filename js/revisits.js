@@ -118,6 +118,7 @@
       dueDate:String(v.dueDate||''),
       dueTime:/^\d{2}:\d{2}$/.test(v.dueTime||'')?v.dueTime:'',
       notify5Min:v.notify5Min!==false,
+      reminderMinutes:Number.isFinite(Number(v.reminderMinutes))?Math.max(0,Number(v.reminderMinutes)):5,
       status:v.status==='completed'?'completed':'active',
       completedAt:v.status==='completed'?(v.completedAt||null):null,
       history:Array.isArray(v.history)?v.history:[],
@@ -706,7 +707,7 @@
         '<form id="rvVisitForm" class="rv-form"><input type="hidden" id="rvVisitId"><input type="hidden" id="rvVisitLat"><input type="hidden" id="rvVisitLng">'+
           '<label class="rv-field"><span>'+esc(L('Name','Nombre'))+' *</span><input id="rvVisitName" maxlength="120" required autocomplete="off" placeholder="'+esc(L('Example: Smith family, Maria','Ej.: Familia Pérez, doña Carmen'))+'"></label>'+
           '<label class="rv-field"><span>'+esc(L('Reference / how to find the house','Referencia / cómo encontrar la casa'))+'</span><textarea id="rvVisitReference" maxlength="300" rows="2" placeholder="'+esc(L('Example: green house across from the store','Ej.: casa verde frente al colmado'))+'"></textarea></label>'+
-          '<fieldset class="rv-schedule-box"><legend>'+esc(L('When will you return?','¿Cuándo vuelves?'))+'</legend><div class="rv-quick-dates"><button class="rv-chip" type="button" data-rv-date-preset="7">+1 '+esc(L('week','semana'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="14">+2 '+esc(L('weeks','semanas'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="month">+1 '+esc(L('month','mes'))+'</button></div><div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Return date','Volver el'))+'</span><input id="rvVisitDueDate" type="date"></label><label class="rv-field"><span>'+esc(L('Return time','Hora de volver'))+'</span><input id="rvVisitDueTime" type="time" step="60"></label></div><label class="rv-check"><input id="rvVisitNotify" type="checkbox"><span><strong>'+esc(L('App reminder 5 minutes before','Aviso en la app 5 minutos antes'))+'</strong><br><span class="rv-muted">'+esc(L('The phone may ask for notification permission.','El teléfono puede pedir permiso para las notificaciones.'))+'</span></span></label></fieldset>'+
+          '<fieldset class="rv-schedule-box"><legend>'+esc(L('When will you return?','¿Cuándo vuelves?'))+'</legend><div class="rv-quick-dates"><button class="rv-chip" type="button" data-rv-date-preset="7">+1 '+esc(L('week','semana'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="14">+2 '+esc(L('weeks','semanas'))+'</button><button class="rv-chip" type="button" data-rv-date-preset="month">+1 '+esc(L('month','mes'))+'</button></div><div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Return date','Volver el'))+'</span><input id="rvVisitDueDate" type="date"></label><label class="rv-field"><span>'+esc(L('Return time','Hora de volver'))+'</span><input id="rvVisitDueTime" type="time" step="60"></label></div><label class="rv-check"><input id="rvVisitNotify" type="checkbox"><span><strong>'+esc(L('App reminder','Aviso en la app'))+'</strong><br><span class="rv-muted">'+esc(L('The phone may ask for notification permission.','El teléfono puede pedir permiso para las notificaciones.'))+'</span></span></label><label class="rv-field"><span>'+esc(L('Minutes before','Minutos antes'))+'</span><input id="rvVisitReminderMinutes" type="number" min="0" max="10080" step="1" value="5"></label></fieldset>'+
           '<details id="rvMoreDetails" class="rv-more-details"><summary>'+esc(L('More details (optional)','Más detalles (opcional)'))+'</summary><div class="rv-more-details-body">'+
             '<div class="rv-grid-2"><label class="rv-field"><span>'+esc(L('Phone / WhatsApp','Teléfono / WhatsApp'))+'</span><input id="rvVisitPhone" type="tel" maxlength="40" autocomplete="tel"></label><label class="rv-field"><span>'+esc(L('Email','Correo electrónico'))+'</span><input id="rvVisitEmail" type="email" maxlength="160" autocomplete="email"></label></div>'+
             '<label class="rv-field"><span>'+esc(L('Address','Dirección'))+'</span><div class="rv-field-row"><input id="rvVisitAddress" maxlength="220" autocomplete="street-address" style="flex:1"><button id="rvFindAddressBtn" class="btn btn-secondary" type="button" data-rv-find-address><i class="fa-solid fa-location-dot"></i>'+esc(L('Map','Mapa'))+'</button></div></label>'+
@@ -770,7 +771,7 @@
     var reminder=dialog('rvViewReminderBtn');
     if(reminder){
       var label=reminder.querySelector('span');
-      if(label)label.textContent=(v.notify5Min&&v.dueDate&&v.dueTime)?L('Reminder on · 5 min','Aviso activo · 5 min'):L('Set reminder','Poner aviso');
+      if(label)label.textContent=(v.notify5Min&&v.dueDate&&v.dueTime)?L('Reminder on · ','Aviso activo · ')+Math.max(0,Number(v.reminderMinutes)||0)+' min':L('Set reminder','Poner aviso');
     }
   }
   function setVisitDialogMode(mode,v){
@@ -808,6 +809,7 @@
     dialog('rvVisitDueDate').value=v?v.dueDate:'';
     dialog('rvVisitDueTime').value=v?v.dueTime:'';
     dialog('rvVisitNotify').checked=v?v.notify5Min!==false:state.revisitSettings.pushReminderDefault!==false;
+    dialog('rvVisitReminderMinutes').value=v?Math.max(0,Number(v.reminderMinutes)||0):5;
     dialog('rvVisitDialogTitle').textContent=v?v.name:L('New Return Visit','Nueva revisita');
     dialog('rvVisitCoords').textContent=hasCoords(p)?coord(p.lat)+', '+coord(p.lng):L('Address saved — map pin optional','Dirección guardada — el pin del mapa es opcional');
     var more=dialog('rvMoreDetails');if(more)more.open=Boolean(v&&(v.phone||v.email||v.address||v.notes||v.leftWith||v.nextTopic));
@@ -958,11 +960,11 @@
       openEditor(v.id,null,{edit:true});
       return;
     }
-    var next=Object.assign({},v,{notify5Min:true,updatedAt:nowIso()});
+    var next=Object.assign({},v,{notify5Min:true,reminderMinutes:Number.isFinite(Number(v.reminderMinutes))?Math.max(0,Number(v.reminderMinutes)):5,updatedAt:nowIso()});
     state.ministryRevisits=state.ministryRevisits.map(function(x){return x.id===v.id?next:x;});
     persist();renderVisitView(next);
     Promise.resolve(syncPush(next)).then(function(result){
-      if(!result||result.ok!==false)toast(L('Reminder set for 5 minutes before.','Aviso programado 5 minutos antes.'));
+      if(!result||result.ok!==false)toast(L('Reminder scheduled.','Aviso programado.'));
     });
   }
 
@@ -983,6 +985,7 @@
       nextTopic:dialog('rvVisitNextTopic').value.trim(),
       dueDate:due,dueTime:time,
       notify5Min:dialog('rvVisitNotify').checked,
+      reminderMinutes:Math.max(0,Number(dialog('rvVisitReminderMinutes').value)||0),
       calendarSlot:prev?prev.calendarSlot:'',
       calendarSeq:prev?prev.calendarSeq:0,
       status:prev?prev.status:'active',
@@ -1050,10 +1053,11 @@
     if(v.status==='completed'||!v.notify5Min||!v.dueDate||!v.dueTime){return Promise.resolve(clearPush(v.id)).then(function(){return {ok:true,skipped:'not-needed'};});}
     var at=new Date(v.dueDate+'T'+v.dueTime+':00');
     if(isNaN(at.getTime()))return Promise.resolve({ok:false,skipped:'invalid-time'});
-    var fire=new Date(at.getTime()-5*60000);
+    var mins=Math.max(0,Number(v.reminderMinutes)||0);
+    var fire=new Date(at.getTime()-mins*60000);
     if(fire.getTime()<=Date.now()+30000){
       clearPush(v.id);
-      toast(L('This visit is too soon for a 5-minute app reminder.','Esta visita está demasiado cerca para un aviso de 5 minutos.'));
+      toast(L('This Return Visit is too soon for the selected reminder time.','Esta revisita está demasiado cerca para el tiempo de aviso seleccionado.'));
       return Promise.resolve({ok:false,skipped:'too-soon'});
     }
     var body=[fmtDate(v.dueDate),fmtTime(v.dueTime),placeLine(v)].filter(Boolean).join(' · ');
