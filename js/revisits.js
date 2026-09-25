@@ -911,14 +911,28 @@
       var mm=e.target.closest('[data-rv-map-mode]');if(mm){mapMode=mm.dataset.rvMapMode;if(mapMode==='nearby'&&!currentLocation){requestLocation(function(){render();},{center:false});}else render();return;}
       var z=e.target.closest('[data-rv-zoom]');if(z&&map){map.setZoom(map.zoom+Number(z.dataset.rvZoom));return;}
       if(e.target.closest('[data-rv-locate]')){requestLocation(function(loc){beginGpsPin(loc,movePinId?'move':'create');},{center:false});return;}
-      if(e.target.closest('[data-rv-cancel-pin]')){pendingLocation=null;movePinId='';if(map)map.setDraft(null,null);refreshConfirmPanel();return;}
+      if(e.target.closest('[data-rv-cancel-pin]')){
+        var cancelledMove=movePinId;
+        pendingLocation=null;pendingTypedAddress='';movePinId='';
+        if(map)map.setDraft(null,null);
+        refreshConfirmPanel();
+        if(cancelledMove)openEditor(cancelledMove);
+        return;
+      }
       if(e.target.closest('[data-rv-confirm-pin]')){
         if(!pendingLocation)return;
-        var p=Object.assign({},pendingLocation),move=movePinId;pendingLocation=null;movePinId='';
+        var p=Object.assign({},pendingLocation),move=movePinId;
+        pendingLocation=null;pendingTypedAddress='';movePinId='';
         if(move){
           var old=state.ministryRevisits.find(function(x){return x.id===move;});
-          if(old){var moved=Object.assign({},old,{lat:p.lat,lng:p.lng,address:p.address||old.address,updatedAt:nowIso()});state.ministryRevisits=state.ministryRevisits.map(function(x){return x.id===move?moved:x;});persist();render();openEditor(move);toast(L('Pin moved.','Ubicación actualizada.'));}
-        }else{render();openEditor(null,p);}
+          if(old){
+            var moved=Object.assign({},old,{lat:p.lat,lng:p.lng,address:p.address||old.address,updatedAt:nowIso()});
+            state.ministryRevisits=state.ministryRevisits.map(function(x){return x.id===move?moved:x;});
+            persist();render();openEditor(move);toast(L('Pin moved.','Ubicación actualizada.'));
+          }
+        }else{
+          render();openEditor(null,p);
+        }
         return;
       }
       if(e.target.closest('[data-rv-import]')){importStandalone();return;}
