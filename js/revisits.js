@@ -823,16 +823,24 @@
     }
   }
   function syncPush(v){
-    if(!global.MinistryPush||typeof global.MinistryPush.syncReminder!=='function')return;
-    if(v.status==='completed'||!v.notify5Min||!v.dueDate||!v.dueTime){clearPush(v.id);return;}
+    if(!global.MinistryPush||typeof global.MinistryPush.syncReminder!=='function')return Promise.resolve({ok:false,skipped:'unavailable'});
+    if(v.status==='completed'||!v.notify5Min||!v.dueDate||!v.dueTime){return Promise.resolve(clearPush(v.id)).then(function(){return {ok:true,skipped:'not-needed'};});}
     var at=new Date(v.dueDate+'T'+v.dueTime+':00');
-    if(isNaN(at.getTime()))return;
+    if(isNaN(at.getTime()))return Promise.resolve({ok:false,skipped:'invalid-time'});
     var fire=new Date(at.getTime()-5*60000);
-    if(fire.getTime()<=Date.now()+30000){clearPush(v.id);toast(L('This visit is too soon for a 5-minute app reminder.','Esta visita está demasiado cerca para un aviso de 5 minutos.'));return;}
+    if(fire.getTime()<=Date.now()+30000){
+      clearPush(v.id);
+      toast(L('This visit is too soon for a 5-minute app reminder.','Esta visita está demasiado cerca para un aviso de 5 minutos.'));
+      return Promise.resolve({ok:false,skipped:'too-soon'});
+    }
     var body=[fmtDate(v.dueDate),fmtTime(v.dueTime),placeLine(v)].filter(Boolean).join(' · ');
-    global.MinistryPush.syncReminder('revisit',v.id,L('Return Visit: ','Revisita: ')+v.name,body,fire.toISOString()).then(function(result){
+    return global.MinistryPush.syncReminder('revisit',v.id,L('Return Visit: ','Revisita: ')+v.name,body,fire.toISOString()).then(function(result){
       if(result&&result.ok===false)toast(L('Return Visit saved, but the app reminder could not be scheduled.','Revisita guardada, pero no se pudo programar el aviso.'));
-    }).catch(function(){toast(L('Return Visit saved, but the app reminder could not be scheduled.','Revisita guardada, pero no se pudo programar el aviso.'));});
+      return result||{ok:true};
+    }).catch(function(){
+      toast(L('Return Visit saved, but the app reminder could not be scheduled.','Revisita guardada, pero no se pudo programar el aviso.'));
+      return {ok:false};
+    });
   }
 
   function calendarSlot(v){return v&&v.dueDate?(v.dueTime?v.dueDate+' '+v.dueTime:v.dueDate):'';}
