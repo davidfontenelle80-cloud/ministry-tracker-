@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v99-calendar-smart-message';
+const CACHE_VERSION = 'ministry-tracker-v100-calendar-soon-message';
 
 const PRECACHE_URLS = [
   './',
