@@ -79,34 +79,39 @@
     var out = [];
     function keep(date) { return DATE_RE.test(date || '') && date >= since; }
     function time(t) { return TIME_RE.test(t || '') ? t : ''; }
+    function keepRecord(v){return !!global.MinistryRecurrence.normalize(v.recurrence)||keep(v.dueDate);}
+    function eventDate(v){return v.dueDate||(v.recurrence&&v.recurrence.startDate)||'';}
 
     (st.ministryRevisits || []).forEach(function (v) {
-      if (!v || v.status === 'completed' || !keep(v.dueDate)) return;
+      if (!v || v.status === 'completed' || !keepRecord(v)) return;
       var place = [v.reference, v.address].filter(Boolean).join(' · ');
       out.push({
         uid: 'rv-' + v.id, kind: 'revisit',
         title: L('Return Visit: ', 'Revisita: ') + (v.name || ''),
-        date: v.dueDate, time: time(v.dueTime), durationMin: 30,
+        recurrence: global.MinistryRecurrence.normalize(v.recurrence),
+        date: eventDate(v), time: time(v.dueTime), durationMin: 30,
         location: place || (hasCoords(v) ? (+Number(v.lat).toFixed(6)) + ', ' + (+Number(v.lng).toFixed(6)) : ''),
         description: [v.nextTopic ? L('Next topic: ', 'Próximo tema: ') + v.nextTopic : '', v.leftWith ? L('Left: ', 'Dejó: ') + v.leftWith : ''].filter(Boolean).join('\n'),
         url: mapLink(v)
       });
     });
     (st.ministryNotes || []).forEach(function (n) {
-      if (!n || n.archived || n.completed || n.status === 'done' || n.status === 'completed' || !keep(n.dueDate)) return;
+      if (!n || n.archived || n.completed || n.status === 'done' || n.status === 'completed' || !keepRecord(n)) return;
       out.push({
         uid: 'note-' + n.id, kind: 'note',
         title: n.title || L('Note', 'Nota'),
-        date: n.dueDate, time: time(n.dueTime), durationMin: 30,
+        recurrence: global.MinistryRecurrence.normalize(n.recurrence),
+        date: eventDate(n), time: time(n.dueTime), durationMin: 30,
         description: String(n.body || '')
       });
     });
     (st.ministryBibleStudies || []).forEach(function (s) {
-      if (!s || s.status === 'completed' || !keep(s.dueDate)) return;
+      if (!s || s.status === 'completed' || !keepRecord(s)) return;
       out.push({
         uid: 'bs-' + s.id, kind: 'study',
         title: L('Bible Study: ', 'Estudio bíblico: ') + (s.name || ''),
-        date: s.dueDate, time: time(s.dueTime), durationMin: 60,
+        recurrence: global.MinistryRecurrence.normalize(s.recurrence),
+        date: eventDate(s), time: time(s.dueTime), durationMin: 60,
         location: s.address || '',
         description: [s.publication, s.lesson, s.notes].filter(Boolean).join('\n')
       });

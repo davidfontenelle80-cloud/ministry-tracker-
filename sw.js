@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v101-calendar-15min-message';
+const CACHE_VERSION = 'ministry-tracker-v102-recurring-organizer';
 
 const PRECACHE_URLS = [
   './',
@@ -30,6 +30,8 @@ const PRECACHE_URLS = [
   './js/perf.js',
   './js/push-config.js',
   './js/push.js',
+  './js/recurrence.js',
+  './js/recurrence-ui.js',
   './js/push-toggle.js',
   './js/organizer-migration.js',
   './js/app.js',
@@ -48,6 +50,7 @@ function notificationTargetUrl(data = {}, notificationAction = '') {
   base.searchParams.set('screen', 'notes');
   base.searchParams.set('sourceType', sourceType);
   if (sourceId) base.searchParams.set('sourceId', sourceId);
+  if (data.occurrenceKey) base.searchParams.set('occurrenceKey', data.occurrenceKey);
   if (notificationAction) base.searchParams.set('notificationAction', notificationAction);
   base.hash = 'notification';
   return base.href;
@@ -59,6 +62,7 @@ function notificationRouteMessage(data = {}, notificationAction = '') {
     screen: 'notes',
     sourceType: data.sourceType || 'ministry-note',
     sourceId: data.sourceId || '',
+    occurrenceKey: data.occurrenceKey || '',
     notificationAction: notificationAction || '',
     url: notificationTargetUrl(data, notificationAction),
   };
@@ -166,7 +170,8 @@ self.addEventListener('push', event => {
     data: {
       url: data.url || '/ministry-tracker-/',
       sourceType,
-      sourceId
+      sourceId,
+      occurrenceKey: data.occurrenceKey || ''
     },
     requireInteraction: !!data.requireInteraction
   };

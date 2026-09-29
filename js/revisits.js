@@ -6,6 +6,7 @@
 (function (global) {
   'use strict';
 
+  var R=global.MinistryRecurrence, RU=global.MinistryRecurrenceUI;
   var mode='notes';
   var view='today';
   var listFilter='active';
@@ -103,7 +104,8 @@
     var lat=(v.lat===null||v.lat===undefined||v.lat==='')?null:Number(v.lat);
     var lng=(v.lng===null||v.lng===undefined||v.lng==='')?null:Number(v.lng);
     if(!Number.isFinite(lat)||!Number.isFinite(lng)){lat=null;lng=null;}
-    return {
+    return R.project({
+      recurrence:R.normalize(v.recurrence),occurrenceKey:v.occurrenceKey||'',
       id:String(v.id||makeId()),
       name:String(v.name||L('Return visit','Revisita')),
       reference:String(v.reference||''),
@@ -126,7 +128,7 @@
       lat:lat,lng:lng,
       createdAt:v.createdAt||nowIso(),
       updatedAt:v.updatedAt||nowIso()
-    };
+    });
   }
   function ensureState(){
     var changed=false;
@@ -788,6 +790,7 @@
     var whatsapp=dialog('rvViewWhatsapp');if(whatsapp){whatsapp.hidden=!wa;if(wa)whatsapp.href=wa;}
     var email=dialog('rvViewEmail');if(email){email.hidden=!mail;if(mail)email.href=mail;}
     var hist=dialog('rvViewHistory');if(hist){hist.innerHTML=historyHtml(v);hist.hidden=!hist.innerHTML;}
+    RU.mountDetail(dialog('rvVisitView'),'revisit',v);
     var log=dialog('rvViewLogBtn');if(log)log.hidden=v.status==='completed';
     var reminder=dialog('rvViewReminderBtn');
     if(reminder){
@@ -835,6 +838,7 @@
     dialog('rvVisitCoords').textContent=hasCoords(p)?coord(p.lat)+', '+coord(p.lng):L('Address saved — map pin optional','Dirección guardada — el pin del mapa es opcional');
     var more=dialog('rvMoreDetails');if(more)more.open=Boolean(v&&(v.reference||v.email||v.notes||v.leftWith||v.nextTopic));
     var findAddressBtn=dialog('rvFindAddressBtn');if(findAddressBtn)findAddressBtn.hidden=!v;
+    RU.mountEditor(dialog('rvVisitForm'),v,'rvVisitDueDate','rvVisitDueTime');
     var mode=!v?'new':options.edit?'edit':'view';
     setVisitDialogMode(mode,v);
     showDialog('rvVisitDialog');
@@ -1029,6 +1033,7 @@
       createdAt:prev?prev.createdAt:nowIso(),updatedAt:nowIso()
     });
     if(!v)return;
+    try{v=RU.readEditor(dialog('rvVisitForm'),v);}catch(err){toast(err.message);return;}
     if(prev)state.ministryRevisits=state.ministryRevisits.map(function(x){return x.id===id?v:x;});
     else state.ministryRevisits.push(v);
     persist();closeDialog('rvVisitDialog');render();
@@ -1048,14 +1053,16 @@
     if(v.calendarSlot)toast(L('Deleted here. Remove its phone calendar event separately if needed.','Eliminada aquí. Borra por separado el evento del calendario si es necesario.'));
     else toast(L('Return Visit deleted.','Revisita eliminada.'));
   }
-  function openLog(id){
+  function openLog(id,occurrenceKey){
     ensureDialogs();var v=state.ministryRevisits.find(function(x){return x.id===id;});if(!v)return;
     activeVisitId=id;
     dialog('rvLogName').textContent=v.name;
     dialog('rvLogNote').value='';
     dialog('rvLogLeftWith').value='';
     dialog('rvLogNextTopic').value=v.nextTopic||'';
-    dialog('rvLogDueDate').value='';
+    dialog('rvLogForm').dataset.occurrenceKey=occurrenceKey||'';
+    var upcoming=v.recurrence?R.complete(v,occurrenceKey):null;
+    dialog('rvLogDueDate').value=upcoming?upcoming.dueDate:'';
     dialog('rvLogDueTime').value=v.dueTime||'';
     dialog('rvLogEnd').checked=false;
     showDialog('rvLogDialog');
@@ -1071,6 +1078,12 @@
       snoozedUntil:'',
       updatedAt:nowIso()
     });
+    if(!ended&&v.recurrence){
+      var base=R.complete(v,dialog('rvLogForm').dataset.occurrenceKey),date=dialog('rvLogDueDate').value,time=date?(dialog('rvLogDueTime').value||''):'';
+      if(!date&&base.dueDate){toast(L('Use Pause to suspend the schedule.','Usa Pausar para suspender el horario.'));return;}
+      if(date&&(date!==base.dueDate||time!==base.dueTime)){try{base=R.move(base,date,time,'once');}catch(err){toast(err.message);return;}}
+      next.recurrence=base.recurrence;next.occurrenceKey=base.occurrenceKey;
+    }
     if(ended){next.status='completed';next.completedAt=entry.completedAt;next.dueDate='';next.dueTime='';}
     else{next.status='active';next.completedAt=null;next.dueDate=dialog('rvLogDueDate').value||'';next.dueTime=next.dueDate?(dialog('rvLogDueTime').value||''):'';}
     state.ministryRevisits=state.ministryRevisits.map(function(x){return x.id===v.id?next:x;});
@@ -1091,8 +1104,10 @@
     if(isNaN(at.getTime()))return Promise.resolve({ok:false,skipped:'invalid-time'});
     var mins=Math.max(0,Number(v.reminderMinutes)||0);
     var snooze=v.snoozedUntil?new Date(v.snoozedUntil):null;
-    var fire=snooze&&!isNaN(snooze.getTime())&&snooze.getTime()>Date.now()+30000?snooze:new Date(at.getTime()-mins*60000);
-    if(fire.getTime()<=Date.now()+30000){
+    var occurrence=v.recurrence?R.next(v.recurrence,Date.now()+30000,mins):null;
+    var fire=snooze&&!isNaN(snooze.getTime())&&snooze.getTime()>Date.now()+30000?snooze:(v.recurrence?(occurrence?new Date(occurrence.fireAt):null):new Date(at.getTime()-mins*60000));
+    if(!fire&&v.recurrence)return Promise.resolve(clearPush(v.id));
+    if(!fire||fire.getTime()<=Date.now()+30000){
       clearPush(v.id);
       toast(L('This Return Visit is too soon for the selected reminder time.','Esta revisita está demasiado cerca para el tiempo de aviso seleccionado.'));
       return Promise.resolve({ok:false,skipped:'too-soon'});
@@ -1283,7 +1298,7 @@
         return;
       }
       if(route.notificationAction==='done'){
-        openLog(route.sourceId);
+        openLog(route.sourceId,route.occurrenceKey);
         return;
       }
       if(global.MinistryOrganizer&&typeof global.MinistryOrganizer.showNotificationQuickCard==='function'){
@@ -1293,12 +1308,14 @@
   }
   if(global.KHub&&typeof global.KHub.on==='function')global.KHub.on('notification:route',routeNotification);
 
+  RU.register('revisit',{get:function(id){return (state.ministryRevisits||[]).find(function(x){return x.id===id;});},save:function(v){state.ministryRevisits=state.ministryRevisits.map(function(x){return x.id===v.id?v:x;});persist();render();openEditor(v.id);},sync:syncPush});
   global.MinistryRevisits={
     init:init,
     activate:function(){if(typeof global.switchScreen==='function')global.switchScreen('notes');activate('revisits');},
     open:function(id){activate('revisits');openEditor(id);},
-    log:function(id){activate('revisits');openLog(id);},
-    render:render
+    log:function(id,occurrenceKey){activate('revisits');openLog(id,occurrenceKey);},
+    render:render,
+    syncPush:syncPush
   };
   global.addEventListener('load',init);
 })(window);

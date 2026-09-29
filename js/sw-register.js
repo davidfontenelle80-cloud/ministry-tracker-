@@ -33,6 +33,7 @@
         screen: 'notes',
         sourceType: u.searchParams.get('sourceType') || 'ministry-note',
         sourceId: u.searchParams.get('sourceId') || '',
+        occurrenceKey: u.searchParams.get('occurrenceKey') || '',
         notificationAction: u.searchParams.get('notificationAction') || '',
         url: u.href,
       };
@@ -65,6 +66,7 @@
         u.searchParams.delete('screen');
         u.searchParams.delete('sourceType');
         u.searchParams.delete('sourceId');
+        u.searchParams.delete('occurrenceKey');
         u.searchParams.delete('notificationAction');
         if (u.hash === '#notification') u.hash = '';
         history.replaceState(null, '', u.pathname + u.search + u.hash);
