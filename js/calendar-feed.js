@@ -162,21 +162,8 @@
     var removed = Object.keys(prev).filter(function (uid) { return !next[uid]; }).length;
     return { changed: changed, removed: removed };
   }
-  // "Soon" = a timed event that starts in the next 15 minutes (or already started and hasn't ended).
-  // The phone may not refresh before then (iPhone refreshes subscribed calendars on its own schedule),
-  // so the message warns that it can take up to 15 minutes to appear.
-  var SOON_MS = 15 * 60 * 1000;
-  function startsSoon(ev) {
-    if (!ev.time) return false;
-    var p = ev.date.split('-').map(Number), t = ev.time.split(':').map(Number);
-    var start = new Date(p[0], p[1] - 1, p[2], t[0], t[1]).getTime();
-    var end = start + (ev.durationMin || 30) * 60000;
-    var now = Date.now();
-    return start - now <= SOON_MS && end > now;
-  }
   function afterSaveMessage(diff) {
     if (!diff) return L('Will show in your calendar within 15 minutes.', 'Aparecerá en tu calendario en 15 minutos.');
-    if (diff.changed.some(startsSoon)) return L('Starts soon — it may not show in your calendar for up to 15 minutes.', 'Empieza pronto: puede tardar hasta 15 minutos en aparecer en tu calendario.');
     if (!diff.changed.length && diff.removed) return L('Will be removed from your calendar within 15 minutes.', 'Se quitará de tu calendario en 15 minutos.');
     return L('Will show in your calendar within 15 minutes.', 'Aparecerá en tu calendario en 15 minutos.');
   }
