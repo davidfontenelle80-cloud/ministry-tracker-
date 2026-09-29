@@ -119,6 +119,24 @@ test('long Spanish text folds on UTF-8 boundaries', () => {
   assert.ok(ics.includes('ñ'));
 });
 
+test('feed is never cached and edits bump SEQUENCE / LAST-MODIFIED', async () => {
+  const e = env();
+  await worker.fetch(req('POST', `/api/feed/${ID}`, { key: KEY, body: { events: sample } }), e);
+  const r1 = await worker.fetch(req('GET', `/feed/${ID}.ics`), e);
+  assert.match(r1.headers.get('cache-control'), /no-store/);
+  assert.ok(r1.headers.get('last-modified'));
+  const ics1 = await r1.text();
+  assert.match(ics1, /LAST-MODIFIED:\d{8}T\d{6}Z/);
+  const seq1 = Number(ics1.match(/SEQUENCE:(\d+)/)[1]);
+  assert.ok(seq1 > 1_700_000_000 && seq1 < 2_147_483_647);
+  await new Promise((r) => setTimeout(r, 1100));
+  await worker.fetch(req('POST', `/api/feed/${ID}`, { key: KEY, body: { events: [{ ...sample[0], title: 'Edited' }] } }), e);
+  const ics2 = await (await worker.fetch(req('GET', `/feed/${ID}.ics`), e)).text();
+  const seq2 = Number(ics2.match(/SEQUENCE:(\d+)/)[1]);
+  assert.ok(seq2 > seq1, 'SEQUENCE must increase after an edit');
+  assert.match(ics2, /SUMMARY:Edited/);
+});
+
 test('existing reminder routes still respond', async () => {
   const res = await worker.fetch(req('GET', '/api/health'), env());
   assert.notEqual(res.status, 404);

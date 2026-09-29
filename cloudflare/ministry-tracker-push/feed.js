@@ -124,6 +124,9 @@ function utcStamp(iso) {
 export function buildFeedIcs(record) {
   const name = clip(record && record.calName, 60) || 'Ministry';
   const stamp = utcStamp(record && record.updatedAt);
+  // SEQUENCE + LAST-MODIFIED rise with every save, so Calendar treats edited events as changed
+  // instead of keeping its old copy. Seconds since epoch fits comfortably in a 32-bit int.
+  const sequence = Math.floor(updatedMs(record) / 1000);
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -136,7 +139,7 @@ export function buildFeedIcs(record) {
   ];
   const events = Array.isArray(record && record.events) ? record.events : [];
   for (const ev of events) {
-    lines.push('BEGIN:VEVENT', `UID:${ev.uid}@ministry-tracker.khub`, `DTSTAMP:${stamp}`);
+    lines.push('BEGIN:VEVENT', `UID:${ev.uid}@ministry-tracker.khub`, `DTSTAMP:${stamp}`, `LAST-MODIFIED:${stamp}`, `SEQUENCE:${sequence}`);
     // Times are "floating" local time, exactly like the app's .ics export: the phone shows them
     // in its own time zone, so 3:00 PM in the app is 3:00 PM on the calendar.
     if (ev.time) {
@@ -155,6 +158,10 @@ export function buildFeedIcs(record) {
   }
   lines.push('END:VCALENDAR');
   return lines.map(foldLine).join('\r\n') + '\r\n';
+}
+
+function updatedMs(record) {
+  return Date.parse((record && record.updatedAt) || '') || Date.now();
 }
 
 /* ── Route handlers ───────────────────────────────────────────────── */
@@ -231,7 +238,10 @@ export async function handleFeedIcs(request, env, pathname, deps) {
     headers: {
       'content-type': 'text/calendar; charset=utf-8',
       'content-disposition': 'inline; filename="ministry.ics"',
-      'cache-control': 'private, max-age=300',
+      // Never let a phone or proxy reuse an old copy: a pull-to-refresh must download fresh.
+      'cache-control': 'no-store, no-cache, must-revalidate, max-age=0',
+      pragma: 'no-cache',
+      'last-modified': new Date(updatedMs(record)).toUTCString(),
       'x-robots-tag': 'noindex',
     },
   });
