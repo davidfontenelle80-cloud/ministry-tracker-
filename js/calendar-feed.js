@@ -17,7 +17,10 @@
   'use strict';
 
   var STORE_KEY = 'khub-calendar-feed-v1';
-  var DEBOUNCE_MS = 2500;
+  var DEBOUNCE_MS = 2500;      // background re-syncs (app opened, back online)
+  var SAVE_DEBOUNCE_MS = 700;  // after a save: fast, but still merges the several saveState() calls one save makes
+  var MIN_WRITE_GAP_MS = 1100; // Cloudflare KV allows 1 write per second to the same key
+  var lastWriteAt = 0;
   var PAST_DAYS = 60;
   var debounceTimer = null;
   var inFlight = null;
@@ -137,6 +140,7 @@
     var payload = { app: 'ministry-tracker', calName: L('Ministry', 'Ministerio'), events: events };
     var h = hash(JSON.stringify(payload));
     if (!force && h === cfg.lastHash) return Promise.resolve({ skipped: true, unchanged: true });
+    lastWriteAt = Date.now();
     inFlight = api('POST', payload).then(function (data) {
       cfg.lastHash = h; cfg.lastSyncAt = new Date().toISOString(); cfg.lastError = ''; cfg.lastCount = events.length;
       saveCfg(); renderCard();
@@ -152,6 +156,35 @@
     if (!cfg.enabled) return;
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(function () { syncNow(false).catch(function () { /* retried on next save / open */ }); }, DEBOUNCE_MS);
+  }
+  // After a save: send quickly, then offer a one-tap phone-calendar refresh.
+  // The refresh has to be a tap: iOS only opens the webcal: link from a user gesture.
+  function syncAfterSave() {
+    if (!cfg.enabled) return;
+    clearTimeout(debounceTimer);
+    var wait = Math.max(SAVE_DEBOUNCE_MS, MIN_WRITE_GAP_MS - (Date.now() - lastWriteAt));
+    debounceTimer = setTimeout(function () {
+      syncNow(false).then(function (res) {
+        if (res && res.skipped) return; // nothing on the calendar changed (e.g. a timer or settings save)
+        offerCalendarRefresh();
+      }).catch(function () { /* shown on the Settings card; retried on next save / open */ });
+    }, wait);
+  }
+  function openCalendarLink() {
+    var a = document.createElement('a');
+    a.href = webcalLink();
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  function offerCalendarRefresh() {
+    if (typeof global.toast !== 'function') return;
+    global.toast(L('Sent to calendar.', 'Enviado al calendario.'), {
+      actionLabel: L('Update calendar', 'Actualizar calendario'),
+      onAction: openCalendarLink,
+      duration: 7000
+    });
   }
 
   /* ── on / off / reset ──────────────────────────────────────────── */
@@ -295,7 +328,7 @@
     if (typeof original !== 'function' || original.__calFeedHooked) return typeof original === 'function';
     var wrapped = function () {
       var result = original.apply(this, arguments);
-      try { scheduleSync(); } catch (_) { /* never break saving */ }
+      try { syncAfterSave(); } catch (_) { /* never break saving */ }
       return result;
     };
     wrapped.__calFeedHooked = true;

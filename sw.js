@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v96-calendar-feed';
+const CACHE_VERSION = 'ministry-tracker-v97-calendar-refresh-button';
 
 const PRECACHE_URLS = [
   './',
