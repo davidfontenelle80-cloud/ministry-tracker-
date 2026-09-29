@@ -140,17 +140,44 @@
     var payload = { app: 'ministry-tracker', calName: L('Ministry', 'Ministerio'), events: events };
     var h = hash(JSON.stringify(payload));
     if (!force && h === cfg.lastHash) return Promise.resolve({ skipped: true, unchanged: true });
+    var sigs = {};
+    events.forEach(function (ev) { sigs[ev.uid] = JSON.stringify(ev); });
+    var diff = diffEvents(cfg.lastSigs || {}, sigs, events);
     lastWriteAt = Date.now();
     inFlight = api('POST', payload).then(function (data) {
       cfg.lastHash = h; cfg.lastSyncAt = new Date().toISOString(); cfg.lastError = ''; cfg.lastCount = events.length;
+      cfg.lastSigs = sigs;
       saveCfg(); renderCard();
-      return data;
+      return Object.assign({}, data, { diff: diff });
     }).catch(function (e) {
       cfg.lastError = e && e.message ? e.message : 'sync failed';
       saveCfg(); renderCard();
       throw e;
     }).finally(function () { inFlight = null; });
     return inFlight;
+  }
+  // What changed since the last successful send: added/edited events, and removed ones.
+  function diffEvents(prev, next, events) {
+    var changed = events.filter(function (ev) { return prev[ev.uid] !== next[ev.uid]; });
+    var removed = Object.keys(prev).filter(function (uid) { return !next[uid]; }).length;
+    return { changed: changed, removed: removed };
+  }
+  // "Soon" = a timed event that starts in the next 15 minutes (or already started and hasn't ended).
+  // The phone may not refresh before then, so the message tells the person how to see it now.
+  var SOON_MS = 15 * 60 * 1000;
+  function startsSoon(ev) {
+    if (!ev.time) return false;
+    var p = ev.date.split('-').map(Number), t = ev.time.split(':').map(Number);
+    var start = new Date(p[0], p[1] - 1, p[2], t[0], t[1]).getTime();
+    var end = start + (ev.durationMin || 30) * 60000;
+    var now = Date.now();
+    return start - now <= SOON_MS && end > now;
+  }
+  function afterSaveMessage(diff) {
+    if (!diff) return L('Will show in your calendar within 15 minutes.', 'Aparecerá en tu calendario en 15 minutos.');
+    if (diff.changed.some(startsSoon)) return L('Starts soon — open Calendar and pull down to see it now.', 'Empieza pronto: abre Calendario y desliza hacia abajo para verlo ya.');
+    if (!diff.changed.length && diff.removed) return L('Will be removed from your calendar within 15 minutes.', 'Se quitará de tu calendario en 15 minutos.');
+    return L('Will show in your calendar within 15 minutes.', 'Aparecerá en tu calendario en 15 minutos.');
   }
   function scheduleSync() {
     if (!cfg.enabled) return;
@@ -167,7 +194,8 @@
     debounceTimer = setTimeout(function () {
       syncNow(false).then(function (res) {
         if (res && res.skipped) return; // nothing on the calendar changed (e.g. a timer or settings save)
-        say(L('Sent to calendar.', 'Enviado al calendario.'));
+        var msg = afterSaveMessage(res && res.diff);
+        if (typeof global.toast === 'function') global.toast(msg, { duration: 5000 });
       }).catch(function () { /* shown on the Settings card; retried on next save / open */ });
     }, wait);
   }
