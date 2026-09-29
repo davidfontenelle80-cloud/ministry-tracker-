@@ -157,8 +157,9 @@
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(function () { syncNow(false).catch(function () { /* retried on next save / open */ }); }, DEBOUNCE_MS);
   }
-  // After a save: send quickly, then offer a one-tap phone-calendar refresh.
-  // The refresh has to be a tap: iOS only opens the webcal: link from a user gesture.
+  // After a save: send quickly, then confirm it went out.
+  // (A tap-to-refresh button was tried: on iPhone the webcal: link opens "Add Subscription
+  // Calendar" instead of refreshing the existing one, so it risked duplicates. Removed.)
   function syncAfterSave() {
     if (!cfg.enabled) return;
     clearTimeout(debounceTimer);
@@ -166,25 +167,9 @@
     debounceTimer = setTimeout(function () {
       syncNow(false).then(function (res) {
         if (res && res.skipped) return; // nothing on the calendar changed (e.g. a timer or settings save)
-        offerCalendarRefresh();
+        say(L('Sent to calendar.', 'Enviado al calendario.'));
       }).catch(function () { /* shown on the Settings card; retried on next save / open */ });
     }, wait);
-  }
-  function openCalendarLink() {
-    var a = document.createElement('a');
-    a.href = webcalLink();
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }
-  function offerCalendarRefresh() {
-    if (typeof global.toast !== 'function') return;
-    global.toast(L('Sent to calendar.', 'Enviado al calendario.'), {
-      actionLabel: L('Update calendar', 'Actualizar calendario'),
-      onAction: openCalendarLink,
-      duration: 7000
-    });
   }
 
   /* ── on / off / reset ──────────────────────────────────────────── */
