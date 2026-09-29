@@ -9,6 +9,8 @@
  * - ALLOWED_ORIGIN: https://davidfontenelle80-cloud.github.io
  */
 
+import { handleFeedUpsert, handleFeedDelete, handleFeedIcs } from './feed.js';
+
 const APP_ID = 'ministry-tracker';
 const DEFAULT_ALLOWED_ORIGIN = 'https://davidfontenelle80-cloud.github.io';
 const DEFAULT_TTL_SECONDS = 60 * 60 * 24 * 28;
@@ -456,6 +458,12 @@ async function route(request, env) {
     if (request.method === 'POST' && url.pathname === '/api/reminders') return handleUpsertReminder(request, env);
     if (request.method === 'DELETE' && url.pathname.startsWith('/api/reminders/')) return handleDeleteReminder(request, env, url.pathname);
     if (request.method === 'POST' && url.pathname === '/api/test-push') return handleTestPush(request, env);
+
+    // Calendar feed (subscribed calendar). See feed.js.
+    const feedDeps = { json, headers, requireStore };
+    if (request.method === 'POST' && url.pathname.startsWith('/api/feed/')) return handleFeedUpsert(request, env, url.pathname, feedDeps);
+    if (request.method === 'DELETE' && url.pathname.startsWith('/api/feed/')) return handleFeedDelete(request, env, url.pathname, feedDeps);
+    if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname.startsWith('/feed/')) return handleFeedIcs(request, env, url.pathname, feedDeps);
 
     return json({ ok: false, error: 'Not found.' }, 404, headers);
   } catch (error) {

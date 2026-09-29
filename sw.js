@@ -2,7 +2,7 @@
  * sw.js — KHub Boilerplate
  */
 
-const CACHE_VERSION = 'ministry-tracker-v95-ios-bottom-nav-recovery';
+const CACHE_VERSION = 'ministry-tracker-v96-calendar-feed';
 
 const PRECACHE_URLS = [
   './',
@@ -36,6 +36,7 @@ const PRECACHE_URLS = [
   './js/revisit-map.js',
   './js/revisits.js',
   './js/organizer.js',
+  './js/calendar-feed.js',
   './js/firebase/firebase-config.js',
   './js/firebase/cloud-backup.js',
 ];

@@ -16,6 +16,9 @@ Implemented in source:
 - `POST /api/reminders`
 - `DELETE /api/reminders/:sourceType/:sourceId`
 - `POST /api/test-push` sends VAPID Web Push
+- `POST /api/feed/:id` saves a device's calendar feed (`Authorization: Bearer <write key>`)
+- `DELETE /api/feed/:id` removes a calendar feed (same key)
+- `GET /feed/:id.ics` serves the subscribed calendar (the id in the link is the only secret; read-only)
 - scheduled cron handler sends due reminders
 - KV-based subscription/reminder storage
 - expired push subscription cleanup on 404/410
