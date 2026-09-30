@@ -1,3 +1,5 @@
+import '../../js/recurrence.js';
+const R = globalThis.MinistryRecurrence;
 /*
  * Calendar feed (subscribed calendar) for Ministry Tracker.
  *
@@ -58,6 +60,7 @@ export function sanitizeEvent(raw) {
   const url = clip(raw.url, 600);
   return {
     uid,
+    recurrence: R.normalize(raw.recurrence),
     kind: clip(raw.kind, 24),
     title: clip(raw.title, 200) || 'Ministry',
     date,
@@ -138,11 +141,31 @@ export function buildFeedIcs(record) {
     'X-PUBLISHED-TTL:PT15M',
   ];
   const events = Array.isArray(record && record.events) ? record.events : [];
+  // Expand a rolling 400-day horizon on every calendar fetch. No app-open
+  // job is required to extend it. Stable occurrence UIDs let moves replace
+  // their original event and pauses/skips remove it on the next refresh.
+  const expanded = [];
   for (const ev of events) {
+    if (!ev.recurrence) { expanded.push(ev); continue; }
+    const zoneToday = R.localParts(Date.now(), ev.recurrence.timeZone).date;
+    const from = R.addDays(zoneToday, -60);
+    const occurrences = R.occurrences(ev.recurrence, from, R.addDays(zoneToday, 400));
+    const r = ev.recurrence;
+    // Explicit one-time appointments/moves remain visible even beyond the rolling horizon.
+    const extra = r.paused ? (r.oneTime ? [{key:'one-time', ...r.oneTime}] : []) : Object.entries(r.exceptions).filter(([key,x]) => !x.skip && (!r.completedThrough || key > r.completedThrough)).map(([key,x]) => ({key, ...x}));
+    for (const o of extra) if (o.date >= from && !occurrences.some(x => x.key === o.key)) occurrences.push(o);
+    for (const o of occurrences) {
+      expanded.push({ ...ev, uid: ev.uid + '.' + o.key, date: o.date, time: o.time, timeZone: r.timeZone });
+    }
+  }
+  for (const ev of expanded) {
     lines.push('BEGIN:VEVENT', `UID:${ev.uid}@ministry-tracker.khub`, `DTSTAMP:${stamp}`, `LAST-MODIFIED:${stamp}`, `SEQUENCE:${sequence}`);
     // Times are "floating" local time, exactly like the app's .ics export: the phone shows them
     // in its own time zone, so 3:00 PM in the app is 3:00 PM on the calendar.
-    if (ev.time) {
+    if (ev.time && ev.timeZone) {
+      const start = R.epoch(ev.date, ev.time, ev.timeZone);
+      lines.push(`DTSTART:${utcStamp(start)}`, `DTEND:${utcStamp(start + ev.durationMin * 60000)}`);
+    } else if (ev.time) {
       lines.push(`DTSTART:${compactDate(ev.date)}T${ev.time.replace(':', '')}00`, `DTEND:${addMinutes(ev.date, ev.time, ev.durationMin)}`);
     } else {
       lines.push(`DTSTART;VALUE=DATE:${compactDate(ev.date)}`, `DTEND;VALUE=DATE:${nextDay(ev.date)}`);
@@ -202,6 +225,7 @@ export async function handleFeedUpsert(request, env, pathname, deps) {
   const auth = await authorize(store, id, request);
   if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status, headers);
 
+  if (data.events.some((ev) => ev && ev.recurrence && !R.normalize(ev.recurrence))) return json({ ok: false, error: 'Invalid recurrence.' }, 400, headers);
   const events = data.events.map(sanitizeEvent).filter(Boolean);
   const record = {
     keyHash: auth.hash,

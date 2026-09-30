@@ -1,9 +1,9 @@
 name: worker-tests
 on:
   push:
-    paths: ['cloudflare/**', '.github/workflows/worker-tests.yml']
+    paths: ['cloudflare/**', 'js/recurrence.js', '.github/workflows/worker-tests.yml']
   pull_request:
-    paths: ['cloudflare/**', '.github/workflows/worker-tests.yml']
+    paths: ['cloudflare/**', 'js/recurrence.js', '.github/workflows/worker-tests.yml']
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -12,4 +12,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test cloudflare/ministry-tracker-push/test/feed.test.mjs
+      - run: node --test cloudflare/ministry-tracker-push/test/*.test.mjs

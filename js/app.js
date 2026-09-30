@@ -781,6 +781,7 @@ function ministryNotePrimaryDate(note) {
 
 function ministryNoteOccursOnDate(note, dateStr) {
   if (!note || !dateStr) return false;
+  if (note.recurrence && window.MinistryRecurrence) return !note.completed && !note.archived && window.MinistryRecurrence.occurrences(note.recurrence,dateStr,dateStr).length > 0;
   return note.dueDate === dateStr || ministryNotePrimaryDate(note) === dateStr;
 }
 
@@ -2290,6 +2291,11 @@ function renderCalendar() {
   // Stage F — dates that have notes (dot indicators)
   const noteDates = new Set();
   (state.ministryNotes || []).forEach(n => {
+    if(n.recurrence && window.MinistryRecurrence){
+      const from = `${yr}-${String(mo).padStart(2,'0')}-01`, to = `${yr}-${String(mo).padStart(2,'0')}-${String(totalDays).padStart(2,'0')}`;
+      if(!n.completed&&!n.archived) window.MinistryRecurrence.occurrences(n.recurrence,from,to).forEach(o=>noteDates.add(o.date));
+      return;
+    }
     if (n.dueDate) noteDates.add(n.dueDate);
     const created = ministryNotePrimaryDate(n);
     if (created) noteDates.add(created);
@@ -2735,6 +2741,11 @@ function renderNotesListView(scr, cat) {
 
 function ministryNoteReminderFireAt(note) {
   if (!note) return '';
+  if(note.recurrence && window.MinistryRecurrence){
+    if(note.snoozedUntil && Date.parse(note.snoozedUntil)>Date.now()+30000) return note.snoozedUntil;
+    var next=window.MinistryRecurrence.next(note.recurrence,Date.now()+30000,note.reminderMinutes);
+    return next?next.fireAt:'';
+  }
   var rawDate;
   if (note.reminderAt) {
     rawDate = new Date(note.reminderAt);

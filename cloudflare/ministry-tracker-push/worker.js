@@ -9,6 +9,9 @@
  * - ALLOWED_ORIGIN: https://davidfontenelle80-cloud.github.io
  */
 
+import '../../js/recurrence.js';
+const R = globalThis.MinistryRecurrence;
+
 import { handleFeedUpsert, handleFeedDelete, handleFeedIcs } from './feed.js';
 
 const APP_ID = 'ministry-tracker';
@@ -76,13 +79,15 @@ function dueBucketKey(minute) {
   return `due:${minute}`;
 }
 
+function reminderTtl(fireAt) { return Math.max(DEFAULT_TTL_SECONDS, Math.ceil((Date.parse(fireAt) - Date.now()) / 1000) + DEFAULT_TTL_SECONDS); }
+
 async function addReminderToDueBucket(store, minute, key) {
   const bucketKey = dueBucketKey(minute);
   const current = await store.get(bucketKey, 'json').catch(() => null);
   const keys = Array.isArray(current && current.keys) ? current.keys : [];
   if (!keys.includes(key)) keys.push(key);
   await store.put(bucketKey, JSON.stringify({ minute, keys, updatedAt: new Date().toISOString() }), {
-    expirationTtl: DEFAULT_TTL_SECONDS,
+    expirationTtl: reminderTtl(minute + ':00Z'),
   });
 }
 
@@ -297,14 +302,26 @@ async function handleUpsertReminder(request, env) {
   const subscriptionId = String(data.subscriptionId || '').trim();
   const sourceType = String(data.sourceType || 'ministry-note').trim();
   const sourceId = String(data.sourceId || '').trim();
-  const fireAt = String(data.fireAt || '').trim();
-
+  let fireAt = String(data.fireAt || '').trim();
   if (!subscriptionId || !sourceType || !sourceId || !fireAt) {
     return json({ ok: false, error: 'subscriptionId, sourceType, sourceId, and fireAt are required.' }, 400, headers);
   }
 
   const subscription = await store.get(`subscription:${subscriptionId}`, 'json');
   if (!subscription) return json({ ok: false, error: 'Unknown subscriptionId.' }, 404, headers);
+
+  const recurrence = R.normalize(data.recurrence);
+  if (data.recurrence && !recurrence) return json({ ok: false, error: 'Invalid recurrence.' }, 400, headers);
+  const reminderMinutes = Math.max(0, Math.min(10080, Number(data.reminderMinutes) || 0));
+  let occurrence = null;
+  if (recurrence && data.occurrenceKey !== 'snooze') {
+    occurrence = R.next(recurrence, Date.now(), reminderMinutes);
+    if (!occurrence) {
+      await store.delete(reminderKey(subscriptionId, sourceType, sourceId));
+      return json({ ok: true, skipped: 'no-next-occurrence' }, 200, headers);
+    }
+    fireAt = occurrence.fireAt;
+  }
 
   const now = new Date().toISOString();
   const key = reminderKey(subscriptionId, sourceType, sourceId);
@@ -317,13 +334,18 @@ async function handleUpsertReminder(request, env) {
     title: String(data.title || 'Ministry Tracker Reminder'),
     body: String(data.body || ''),
     fireAt,
+    recurrence, reminderMinutes,
+    occurrenceKey: occurrence ? occurrence.key : String(data.occurrenceKey || ''),
+    occurrenceDate: occurrence ? occurrence.date : '',
+    occurrenceTime: occurrence ? occurrence.time : '',
+    revision: crypto.randomUUID(),
     dueBucketMinute: bucketMinute,
     url: data.url || '/ministry-tracker-/',
     createdAt: now,
     updatedAt: now,
   };
 
-  await store.put(key, JSON.stringify(record), { expirationTtl: DEFAULT_TTL_SECONDS });
+  await store.put(key, JSON.stringify(record), { expirationTtl: reminderTtl(record.fireAt) });
   await addReminderToDueBucket(store, bucketMinute, key);
   return json({ ok: true, reminder: record, dueBucketMinute: bucketMinute }, 200, headers);
 }
@@ -408,9 +430,10 @@ async function handleTestPush(request, env) {
   return json({ ok: true, result }, 200, headers);
 }
 
-async function processDueReminders(env) {
+export async function processDueReminders(env, deps = {}) {
   const store = requireStore(env);
-  const nowIso = new Date().toISOString();
+  const nowIso = new Date(deps.now || Date.now()).toISOString();
+  const deliver = deps.send || sendWebPush;
   const due = await getDueReminderEntries(store, nowIso);
   const results = [];
 
@@ -419,15 +442,29 @@ async function processDueReminders(env) {
     try {
       const subRecord = await store.get(`subscription:${reminder.subscriptionId}`, 'json');
       if (!subRecord) throw new Error('Missing subscription record.');
-      await sendWebPush(subRecord.subscription, {
+      const current = await store.get(entry.key, 'json');
+      if (!current || current.revision !== reminder.revision) continue;
+      await deliver(subRecord.subscription, {
         title: reminder.title,
-        body: reminder.body,
+        body: reminder.recurrence && reminder.occurrenceDate ? reminder.occurrenceDate + ' · ' + reminder.occurrenceTime : reminder.body,
         sourceType: reminder.sourceType,
         sourceId: reminder.sourceId,
+        occurrenceKey: reminder.occurrenceKey || '',
         url: reminder.url || '/ministry-tracker-/',
       }, env);
-      reminder.sentAt = new Date().toISOString();
-      await store.put(entry.key, JSON.stringify(reminder), { expirationTtl: DEFAULT_TTL_SECONDS });
+      // A cancellation/edit during delivery must not be resurrected by requeueing.
+      const latest = await store.get(entry.key, 'json');
+      if (!latest || latest.revision !== reminder.revision) { results.push({ key: entry.key, ok: true, superseded: true }); continue; }
+      const next = reminder.recurrence ? R.next(reminder.recurrence, Math.max(Date.parse(nowIso), Date.parse(reminder.fireAt)), reminder.reminderMinutes) : null;
+      if (next) {
+        Object.assign(reminder, { fireAt: next.fireAt, occurrenceKey: next.key, occurrenceDate: next.date, occurrenceTime: next.time, dueBucketMinute: dueBucketMinute(next.fireAt), updatedAt: nowIso });
+        delete reminder.sentAt; delete reminder.lastError;
+        await store.put(entry.key, JSON.stringify(reminder), { expirationTtl: reminderTtl(next.fireAt) });
+        await addReminderToDueBucket(store, reminder.dueBucketMinute, entry.key);
+      } else {
+        reminder.sentAt = nowIso;
+        await store.put(entry.key, JSON.stringify(reminder), { expirationTtl: DEFAULT_TTL_SECONDS });
+      }
       results.push({ key: entry.key, ok: true });
     } catch (error) {
       if (error && (error.status === 404 || error.status === 410)) {
@@ -436,9 +473,13 @@ async function processDueReminders(env) {
         results.push({ key: entry.key, ok: false, deleted: true, error: error.message });
         continue;
       }
+      const latest = await store.get(entry.key, 'json');
+      if (!latest || latest.revision !== reminder.revision) continue;
       reminder.lastError = error.message;
       reminder.lastAttemptAt = new Date().toISOString();
       await store.put(entry.key, JSON.stringify(reminder), { expirationTtl: DEFAULT_TTL_SECONDS });
+      // Keep transient failures reachable beyond the original ten-minute bucket.
+      await addReminderToDueBucket(store, dueBucketMinute(new Date(Date.parse(nowIso) + 60000)), entry.key);
       results.push({ key: entry.key, ok: false, error: error.message });
     }
   }

@@ -210,10 +210,21 @@
     });
   }
 
-  function syncReminder(sourceType, sourceId, title, body, fireAt) {
+  function doSyncReminder(sourceType, sourceId, title, body, fireAt) {
     var c;
     try { c = requireConfigured(); } catch (err) { return Promise.resolve(pushErrorResult('reminder:sync', err)); }
     var postReached = false;
+    var records = typeof state === 'undefined' ? [] : (sourceType === 'ministry-note' ? state.ministryNotes : sourceType === 'bible-study' ? state.ministryBibleStudies : state.ministryRevisits) || [];
+    var rec = records.find(function (x) { return x.id === sourceId; });
+    var recurrence = window.MinistryRecurrence.normalize(rec && rec.recurrence);
+    var minutes = Math.max(0, Math.min(10080, Number(rec && rec.reminderMinutes) || 0));
+    var occurrence = recurrence ? window.MinistryRecurrence.next(recurrence, Date.now() + 30000, minutes) : null;
+    // Snoozing is an extra one-time delivery; preserve the normal series.
+    var isSnooze = !!(rec && rec.snoozedUntil && rec.snoozedUntil === fireAt);
+    if (recurrence && !isSnooze) {
+      if (!occurrence) return doClearReminder(sourceType, sourceId);
+      fireAt = occurrence.fireAt;
+    }
     function attemptSync() {
       return subscribe().then(function (subData) {
         log('reminder:sync', { sourceType: sourceType, sourceId: sourceId, fireAt: fireAt });
@@ -227,7 +238,12 @@
             sourceId: sourceId,
             title: title,
             body: body || '',
-            fireAt: fireAt
+            fireAt: fireAt,
+            recurrence: recurrence,
+            reminderMinutes: minutes,
+            occurrenceKey: isSnooze ? 'snooze' : (occurrence ? occurrence.key : ''),
+            occurrenceDate: occurrence ? occurrence.date : '',
+            occurrenceTime: occurrence ? occurrence.time : ''
           })
         }).then(function (data) {
           data.postReached = true;
@@ -254,7 +270,7 @@
     });
   }
 
-  function clearReminder(sourceType, sourceId) {
+  function doClearReminder(sourceType, sourceId) {
     var c;
     try { c = requireConfigured(); } catch (err) { return Promise.resolve(pushErrorResult('reminder:clear', err)); }
     var id = getSubscriptionId();
@@ -307,11 +323,52 @@
     });
   }
 
+  // Device-local journal: a failed pause/delete must not leave an old recurring
+  // reminder running permanently. Replay the latest intent, never an old snapshot.
+  var OUTBOX_KEY = 'ministry-reminder-outbox-v1', pending = {}, chains = {};
+  try { pending = JSON.parse(localStorage.getItem(OUTBOX_KEY) || '{}') || {}; } catch (_) {}
+  function savePending() { try { localStorage.setItem(OUTBOX_KEY, JSON.stringify(pending)); } catch (_) {} }
+  function runJob(key, job) {
+    var previous = chains[key] || Promise.resolve();
+    var task = previous.catch(function () {}).then(function () {
+      if (!pending[key] || pending[key].revision !== job.revision) return { ok: true, skipped: 'superseded' };
+      var records = typeof state === 'undefined' ? [] : (job.sourceType === 'ministry-note' ? state.ministryNotes : job.sourceType === 'bible-study' ? state.ministryBibleStudies : state.ministryRevisits) || [];
+      var rec = records.find(function(x){return x.id === job.sourceId;});
+      var disabled = rec && (rec.completed || rec.archived || rec.status === 'completed' || rec.status === 'done' || (job.sourceType === 'ministry-note' ? !rec.reminder : job.sourceType === 'bible-study' ? !rec.notify : !rec.notify5Min));
+      var operation = job.action === 'clear' || !rec || disabled ? doClearReminder(job.sourceType, job.sourceId) : doSyncReminder(job.sourceType, job.sourceId, job.title, job.body, job.fireAt);
+      return Promise.resolve(operation).then(function(result){
+        if ((!result || result.ok !== false) && pending[key] && pending[key].revision === job.revision) { delete pending[key]; savePending(); }
+        return result;
+      });
+    });
+    chains[key] = task;
+    task.finally(function(){if(chains[key] === task) delete chains[key];}).catch(function(){});
+    return task;
+  }
+  function enqueue(action, sourceType, sourceId, title, body, fireAt) {
+    var key = sourceType + ':' + sourceId;
+    var job = { action: action, sourceType: sourceType, sourceId: sourceId, title: title || '', body: body || '', fireAt: fireAt || '', revision: Date.now() + '-' + Math.random() };
+    pending[key] = job; savePending(); return runJob(key, job);
+  }
+  function syncReminder(sourceType, sourceId, title, body, fireAt) { return enqueue('sync', sourceType, sourceId, title, body, fireAt); }
+  function clearReminder(sourceType, sourceId) { return enqueue('clear', sourceType, sourceId); }
+  function retryPending() {
+    Object.keys(pending).forEach(function(key){
+      var job = pending[key];
+      if (chains[key] || (job.action === 'sync' && (!('Notification' in window) || Notification.permission !== 'granted'))) return;
+      runJob(key, job).catch(function(){});
+    });
+  }
+  window.addEventListener('online', retryPending);
+  window.addEventListener('load', retryPending);
+  document.addEventListener('visibilitychange', function(){if(document.visibilityState === 'visible') retryPending();});
+
   window.MinistryPush = {
     isConfigured: isConfigured,
     diagnose: diagnose,
     subscribe: subscribe,
     syncReminder: syncReminder,
+    retryPending: retryPending,
     clearReminder: clearReminder,
     sendTestPush: sendTestPush
   };
