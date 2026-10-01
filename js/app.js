@@ -273,7 +273,7 @@ const I18N = {
     behindByLabel: 'Behind by',
     rightOnPace: 'Right on pace',
     monthsRemainingLabel: 'months remaining',
-    needThisMonth: 'Need this month',
+    needThisMonth: 'Left to monthly goal',
     addTimeWarn: 'The stopwatch is already running for today. Add this time on top of the running session?',
     addAnyway: 'Yes, add it',
     exportTitle: 'Export your backup',
@@ -563,7 +563,7 @@ const I18N = {
     behindByLabel: 'Atrasado',
     rightOnPace: 'Justo a ritmo',
     monthsRemainingLabel: 'meses restantes',
-    needThisMonth: 'Necesitas este mes',
+    needThisMonth: 'Falta para meta mensual',
     addTimeWarn: 'El cronómetro ya está corriendo para hoy. ¿Añadir este tiempo encima de la sesión activa?',
     addAnyway: 'Sí, añadir',
     exportTitle: 'Exportar respaldo',
@@ -997,6 +997,16 @@ function getServiceYearLabel(d = new Date()) { return getServiceYearStart(d).get
 function getServiceYearRange(d = new Date()) {
   const start = getServiceYearStart(d);
   return { start, end: new Date(start.getFullYear()+1, 7, 31) };
+}
+// Compare local calendar dates in UTC so time of day and DST cannot add a day.
+function calendarDayNumber(d) {
+  return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000;
+}
+function getServiceYearDayProgress(start, end, now = new Date()) {
+  const totalDays = calendarDayNumber(end) - calendarDayNumber(start) + 1;
+  const elapsedDays = Math.min(totalDays, Math.max(1,
+    calendarDayNumber(now) - calendarDayNumber(start) + 1));
+  return { totalDays, elapsedDays };
 }
 function getArchiveForServiceYear(serviceYear) {
   try {
@@ -1711,8 +1721,7 @@ function renderHome() {
   document.getElementById('homeSYBar').style.width = (syGoalMins ? Math.min(100, (syMins/syGoalMins)*100) : 0) + '%';
 
   const { start: syStart, end: syEnd } = getServiceYearRange();
-  const totalDays = Math.round((syEnd - syStart)/86400000) + 1;
-  const elapsedDays = Math.max(1, Math.round((new Date() - syStart)/86400000) + 1);
+  const { totalDays, elapsedDays } = getServiceYearDayProgress(syStart, syEnd, today);
   const projection = Math.round((syMins/elapsedDays) * totalDays);
   document.getElementById('homeProjection').textContent = formatHM(projection);
 
@@ -1754,18 +1763,16 @@ function renderHome() {
   const syMinsSoFar = syMins; // already computed above
   const remainingNeeded = Math.max(0, goalMins - syMinsSoFar);
 
-  // Count full months after the current partial month.
-  // Example: Sep 22 -> Oct through Aug = 11 full months remaining.
+  // Include the current month: October through August = 11 months remaining.
   const { start: syStart2, end: syEnd2 } = getServiceYearRange();
   const nowD = new Date();
   let monthsRemaining = 0;
-  let cursor = new Date(nowD.getFullYear(), nowD.getMonth() + 1, 1);
+  let cursor = new Date(nowD.getFullYear(), nowD.getMonth(), 1);
   while (cursor <= syEnd2) {
     monthsRemaining++;
     cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
   }
-  // In the final service-year month there are no future full months, so use the
-  // current month as the last remaining month instead of dividing by zero.
+  // Keep a positive denominator even if the service-year range is unavailable.
   monthsRemaining = Math.max(1, monthsRemaining);
 
   const perMonthNeeded = remainingNeeded / monthsRemaining;
@@ -1781,8 +1788,8 @@ function renderHome() {
 
   // Ahead/behind: compare service-year-so-far to where you "should be"
   // by this point in the year (expected portion of goal).
-  const totalDays2 = Math.round((syEnd2 - syStart2)/86400000) + 1;
-  const elapsedDays2 = Math.max(1, Math.round((nowD - syStart2)/86400000) + 1);
+  const { totalDays: totalDays2, elapsedDays: elapsedDays2 } =
+    getServiceYearDayProgress(syStart2, syEnd2, nowD);
   const expectedByNow = Math.round((goalMins / totalDays2) * elapsedDays2);
   const aheadMins = syMinsSoFar - expectedByNow;
 
@@ -3714,8 +3721,7 @@ function renderReports() {
   const elapsedMonths = Math.max(1, bars.filter(b => b.mins > 0).length);
   document.getElementById('reportAvg').textContent = formatHM(Math.round(syMins/elapsedMonths));
   const { start: syStart, end: syEnd } = getServiceYearRange(selectedDate);
-  const totalDays = Math.round((syEnd - syStart)/86400000) + 1;
-  const elapsedDays = Math.max(1, Math.round((new Date() - syStart)/86400000) + 1);
+  const { totalDays, elapsedDays } = getServiceYearDayProgress(syStart, syEnd);
   document.getElementById('reportProj').textContent = selectedSY < getServiceYearLabel() ? formatHM(syMins) : formatHM(Math.round((syMins/elapsedDays) * totalDays));
 
   // Categories
