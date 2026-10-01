@@ -34,7 +34,7 @@ const PRECACHE_URLS = [
   './js/recurrence-ui.js',
   './js/push-toggle.js',
   './js/organizer-migration.js',
-  './js/app.js',
+  './js/app.js?v=103-service-year-pace',
   './js/revisit-map.js',
   './js/revisits.js',
   './js/organizer.js',
