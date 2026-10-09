@@ -238,3 +238,28 @@ Sweep of the 11 organizer/Return Visit commits found and fixed:
 - **Flow:** saving a *new* Return Visit now opens its card (`openEditor(v.id)` → view mode); saving a *new* Bible Study opens its detail card (`openStudyDetail`). Edits still just close the sheet.
 - New Bible Study form was already info-first (no action buttons) — unchanged.
 - PWA cache bumped to **v94-info-first-new-entry**.
+
+## 2026-10-09 - Tracker catch-up (record only, no code changed)
+This file was last updated at commit 180aa7c (2026-09-25, v94). Main then received 13 commits that were never recorded here. This section records them from the commit log so the tracker matches the repo again. Nothing in this section was re-tested by the catch-up; it is a record of what landed, not a review.
+
+Repo state at catch-up: main head 2ae8206 (2026-10-01). sw.js CACHE_VERSION = `ministry-tracker-v103-service-year-pace`.
+
+### Commits on main after 180aa7c (oldest first)
+1. 38a6dff (2026-09-25) Fix iOS floating bottom navigation: guard against iOS stale viewport, self-heal the floating bottom nav in the iOS PWA, cache bump.
+2. e27b6ba (2026-09-29) Add subscribed calendar feed: Worker POST/DELETE /api/feed/:id and GET /feed/:id.ics; app js/calendar-feed.js re-syncs on save; Settings card; worker-tests CI added.
+3. 56bca6a (2026-09-29) Calendar feed: fast sync after save plus "Update calendar" button. Cache v97.
+4. 19ef9b5 (2026-09-29) Calendar feed: removed the "Update calendar" button, kept "Sent to calendar" message. Cache v98.
+5. 7b9490b (2026-09-29) Calendar feed: smart after-save message. Cache v99.
+6. ed07c11 (2026-09-29) Calendar feed: never cache, and mark edited events as changed (LAST-MODIFIED + SEQUENCE). Worker-only change.
+7. a04823a (2026-09-29) Calendar feed: "starts soon" message no longer suggests pull-to-refresh. Cache v100.
+8. d0ec89e (2026-09-29) Calendar feed: one simple after-save message. Cache v101.
+9. ea59f68 (2026-09-29) Add optional recurring organizer schedules, calendar occurrences, and background reminders.
+10. 14f950d (2026-09-30) Merge pull request #21 (codex/recurring-organizer-20260929): recurring schedules for notes, reminders, studies, and return visits.
+11. c9282c5 (2026-10-01) Fix remaining-month targets and calendar-day projections (timezone-safe progress shared by Home and Reports).
+12. 39a0968 (2026-10-01) Version the corrected pace script so browsers refresh cached JavaScript.
+13. 2ae8206 (2026-10-01) Precache the versioned service-year pace script for offline use.
+
+### Open items carried by this catch-up
+- Review status above is unchanged: NOT REVIEWED. The catch-up does not review or approve any of the 13 commits.
+- Worker deploy status is NOT VERIFIED by this catch-up. Commits e27b6ba and ed07c11 changed cloudflare/ministry-tracker-push and say they need `wrangler deploy`; whether the live Worker matches main head was not checked here.
+- Worker tests at main head 2ae8206: `node --test cloudflare/ministry-tracker-push/test/*.test.mjs` ran 32 tests, 32 pass, 0 fail (run 2026-10-09 on a fresh clone).
