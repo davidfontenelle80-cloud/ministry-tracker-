@@ -293,3 +293,11 @@ Approved by David in chat on 2026-10-09. Pilot scope: ministry-tracker-push only
 - Workflow committed: yes (this commit). First run: NOT RUN yet.
 - Cron schedule after an upload: NOT VERIFIED yet (expected unchanged; to be checked on the dashboard after the first run).
 - Deployed to production by this pilot: nothing.
+
+### Pilot live — 2026-10-09
+- Run #4 (commit adbd642) green: test passed, environment gate approved, `wrangler versions upload` succeeded.
+- New version f3d2ea94-c9e3-40e6-8767-3491dfb3d30c (message "preview adbd642") uploaded; receives ZERO traffic. Live traffic still 100% on 805840ac (2026-09-30).
+- Every-minute cron (`* * * * *`) verified unchanged via API.
+- Fixes along the way: whitespace-strip for pasted secrets (adbd642); replaced corrupted CLOUDFLARE_API_TOKEN with fresh token "ministry-tracker-github-preview" (Edit Cloudflare Workers template, no expiry), minted via browser.
+- Approval note: David explicitly delegated the gate approval to the browser ("why can't you use the browser and do this", 2026-10-09). The "Approve tap is his" rule above now means: his, or his explicit delegation in chat.
+- Deployed to production by this pilot: nothing.
