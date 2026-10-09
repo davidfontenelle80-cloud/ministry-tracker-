@@ -263,3 +263,33 @@ Repo state at catch-up: main head 2ae8206 (2026-10-01). sw.js CACHE_VERSION = `m
 - Review status above is unchanged: NOT REVIEWED. The catch-up does not review or approve any of the 13 commits.
 - Worker deploy status is NOT VERIFIED by this catch-up. Commits e27b6ba and ed07c11 changed cloudflare/ministry-tracker-push and say they need `wrangler deploy`; whether the live Worker matches main head was not checked here.
 - Worker tests at main head 2ae8206: `node --test cloudflare/ministry-tracker-push/test/*.test.mjs` ran 32 tests, 32 pass, 0 fail (run 2026-10-09 on a fresh clone).
+
+## 2026-10-09 - Worker preview upload pilot (decision record)
+Approved by David in chat on 2026-10-09. Pilot scope: ministry-tracker-push only. No other Worker and no other repo until David says the pilot has proved out.
+
+### What was added
+- `.github/workflows/worker-preview-upload.yml` (new). No other file changed: worker.js, feed.js, wrangler.toml and the two existing workflows are NOT modified.
+
+### What it does
+- Runs on a push to main that touches `cloudflare/ministry-tracker-push/**`, or on a manual "Run workflow".
+- Job `test`: runs the existing Worker tests. If they fail, nothing is uploaded.
+- Job `upload`: runs `wrangler versions upload` (wrangler pinned to 4.149.0) with the commit SHA as the version message. This uploads a version only. It gets no traffic.
+
+### Decisions (David)
+1. Preview only. The workflow has no `wrangler deploy`, no `wrangler versions deploy` and no `wrangler triggers deploy`. Going live stays David's manual "Promote version" in the Cloudflare dashboard.
+2. Preview links stay OFF. `preview_urls = false` in wrangler.toml is unchanged. The pilot is verified in the Workers dashboard version list, not through a public URL.
+3. Protection = GitHub Environment, not branch protection or CODEOWNERS. Reason: the repo has one collaborator (davidfontenelle80-cloud); GitHub does not let a PR author approve their own PR, and protecting main would block the direct-to-main commits used for all app work.
+   - Environment `cloudflare-preview`: required reviewer davidfontenelle80-cloud, deployments limited to branch main.
+   - Secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are environment secrets there. There are no repository-level secrets.
+   - Every upload run waits for David's Approve tap before it can read the token.
+4. The Cloudflare token ("github-preview-upload", Edit Cloudflare Workers template) can deploy to production. Cloudflare has no preview-only token. The limit is the workflow file plus the environment approval.
+
+### Rules for this file
+- Do NOT edit `.github/workflows/worker-preview-upload.yml` without David's explicit approval in chat.
+- Do NOT add a deploy step, a second Worker, or repository-level Cloudflare secrets.
+- Do NOT approve an upload run on David's behalf. The Approve tap is his.
+
+### Status at commit time
+- Workflow committed: yes (this commit). First run: NOT RUN yet.
+- Cron schedule after an upload: NOT VERIFIED yet (expected unchanged; to be checked on the dashboard after the first run).
+- Deployed to production by this pilot: nothing.
